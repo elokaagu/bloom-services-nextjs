@@ -12,10 +12,10 @@ let documentsStore: any[] = [
     owner_id: "user-1",
     storage_path: "documents/data-retention-policy.pdf",
     acl: "organization",
-    error: null
+    error: null,
   },
   {
-    id: "doc-2", 
+    id: "doc-2",
     title: "GDPR Compliance Guide.docx",
     status: "ready",
     created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -24,11 +24,11 @@ let documentsStore: any[] = [
     owner_id: "user-2",
     storage_path: "documents/gdpr-guide.docx",
     acl: "workspace",
-    error: null
+    error: null,
   },
   {
     id: "doc-3",
-    title: "Security Best Practices.pdf", 
+    title: "Security Best Practices.pdf",
     status: "ready",
     created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -36,7 +36,7 @@ let documentsStore: any[] = [
     owner_id: "user-3",
     storage_path: "documents/security-practices.pdf",
     acl: "workspace",
-    error: null
+    error: null,
   },
   {
     id: "doc-4",
@@ -48,7 +48,7 @@ let documentsStore: any[] = [
     owner_id: "user-1",
     storage_path: "documents/employee-handbook.docx",
     acl: "organization",
-    error: null
+    error: null,
   },
   {
     id: "doc-5",
@@ -60,7 +60,7 @@ let documentsStore: any[] = [
     owner_id: "user-2",
     storage_path: "documents/marketing-strategy.pptx",
     acl: "workspace",
-    error: null
+    error: null,
   },
   {
     id: "doc-6",
@@ -72,14 +72,14 @@ let documentsStore: any[] = [
     owner_id: "user-4",
     storage_path: "documents/failed-upload.pdf",
     acl: "workspace",
-    error: "Upload failed due to network timeout"
-  }
+    error: "Upload failed due to network timeout",
+  },
 ];
 
 export async function GET(req: NextRequest) {
   try {
     console.log("=== FETCH DOCUMENTS API START (LOCAL STORE) ===");
-    
+
     // Get query parameters
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId") || "default-workspace";
@@ -89,22 +89,29 @@ export async function GET(req: NextRequest) {
     console.log("Query parameters:", { workspaceId, status, search });
 
     // Filter documents
-    let filteredDocuments = documentsStore.filter(doc => doc.workspace_id === workspaceId);
+    let filteredDocuments = documentsStore.filter(
+      (doc) => doc.workspace_id === workspaceId
+    );
 
     // Add status filter if provided
     if (status && status !== "all") {
-      filteredDocuments = filteredDocuments.filter(doc => doc.status === status);
+      filteredDocuments = filteredDocuments.filter(
+        (doc) => doc.status === status
+      );
     }
 
     // Add search filter if provided
     if (search) {
-      filteredDocuments = filteredDocuments.filter(doc => 
+      filteredDocuments = filteredDocuments.filter((doc) =>
         doc.title.toLowerCase().includes(search.toLowerCase())
       );
     }
 
     // Sort by created_at descending
-    filteredDocuments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    filteredDocuments.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
     console.log(`Found ${filteredDocuments.length} documents`);
     console.log("=== FETCH DOCUMENTS API SUCCESS (LOCAL STORE) ===");
@@ -114,7 +121,6 @@ export async function GET(req: NextRequest) {
       documents: filteredDocuments,
       count: filteredDocuments.length,
     });
-
   } catch (error) {
     console.error("=== FETCH DOCUMENTS API ERROR ===", error);
     return NextResponse.json(
@@ -130,9 +136,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     console.log("=== ADD DOCUMENT API START (LOCAL STORE) ===");
-    
+
     const body = await req.json();
-    const { title, workspaceId, ownerId, status = "ready", acl = "workspace" } = body;
+    const {
+      title,
+      workspaceId,
+      ownerId,
+      status = "ready",
+      acl = "workspace",
+    } = body;
 
     const newDocument = {
       id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -144,7 +156,7 @@ export async function POST(req: NextRequest) {
       owner_id: ownerId || "default-user",
       storage_path: `documents/${title}`,
       acl,
-      error: null
+      error: null,
     };
 
     documentsStore.unshift(newDocument); // Add to beginning of array
@@ -156,7 +168,6 @@ export async function POST(req: NextRequest) {
       success: true,
       document: newDocument,
     });
-
   } catch (error) {
     console.error("=== ADD DOCUMENT API ERROR ===", error);
     return NextResponse.json(

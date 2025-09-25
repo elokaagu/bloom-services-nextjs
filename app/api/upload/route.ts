@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== UPLOAD API START (LOCAL STORE) ===");
-    
+
     // Parse form data
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -33,14 +33,14 @@ export async function POST(req: NextRequest) {
       workspaceId: workspaceId,
       ownerId: ownerId,
       status: "ready",
-      acl: "workspace"
+      acl: "workspace",
     };
 
     // Add to documents store
     const addResponse = await fetch(`${req.nextUrl.origin}/api/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(documentData)
+      body: JSON.stringify(documentData),
     });
 
     if (!addResponse.ok) {
@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
       success: true,
       document: document,
     });
-
   } catch (error) {
     console.error("=== UPLOAD API ERROR ===", error);
     return NextResponse.json(
