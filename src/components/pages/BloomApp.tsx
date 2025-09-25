@@ -39,7 +39,7 @@ export const BloomApp = () => {
     });
   };
 
-  const handleDocumentView = (document: Document) => {
+  const handleDocumentView = async (document: Document) => {
     if (document.status !== 'ready') {
       toast({
         title: "Document not ready",
@@ -47,6 +47,35 @@ export const BloomApp = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    try {
+      console.log("Viewing document:", document.id);
+      
+      // Fetch document details from API
+      const response = await fetch(`/api/documents/view?documentId=${document.id}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch document");
+      }
+
+      const result = await response.json();
+      console.log("Document fetched for view:", result);
+      
+      // Show success toast
+      toast({
+        title: "Document opened",
+        description: `Viewing ${document.title}`,
+      });
+      
+    } catch (error) {
+      console.error("Error viewing document:", error);
+      toast({
+        title: "Error opening document",
+        description: error instanceof Error ? error.message : "Failed to open document",
+        variant: "destructive",
+      });
     }
 
     setSelectedDocument(document);

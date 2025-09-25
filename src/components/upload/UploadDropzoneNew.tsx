@@ -70,7 +70,9 @@ export const UploadDropzone = ({
         if (!response.ok) {
           const errorData = await response.json();
           console.error("Upload failed:", errorData);
-          throw new Error(errorData.error || `Upload failed: ${response.status}`);
+          throw new Error(
+            errorData.error || `Upload failed: ${response.status}`
+          );
         }
 
         const result = await response.json();
@@ -105,7 +107,7 @@ export const UploadDropzone = ({
   const handleFiles = useCallback(
     (files: File[]) => {
       console.log("=== HANDLING FILES ===", files.length);
-      
+
       const newUploadFiles: UploadFile[] = files.map((file) => ({
         id: Math.random().toString(36).substr(2, 9),
         file,
@@ -283,9 +285,7 @@ export const UploadDropzone = ({
                   )}
 
                   {uploadFile.status === "error" && uploadFile.error && (
-                    <p className="text-xs text-red-500">
-                      {uploadFile.error}
-                    </p>
+                    <p className="text-xs text-red-500">{uploadFile.error}</p>
                   )}
 
                   {uploadFile.status === "success" && (

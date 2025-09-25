@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== UPLOAD API START ===");
-    
+
     // Parse form data
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -87,7 +87,6 @@ export async function POST(req: NextRequest) {
       success: true,
       document: document,
     });
-
   } catch (error) {
     console.error("=== UPLOAD API ERROR ===", error);
     return NextResponse.json(

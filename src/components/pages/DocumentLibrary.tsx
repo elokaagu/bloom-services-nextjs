@@ -223,23 +223,92 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     setIsUploadOpen(false);
   };
 
-  const handleDocumentDelete = (doc: Document) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-    setSelectedDocuments((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(doc.id);
-      return newSet;
-    });
+  const handleDocumentDelete = async (doc: Document) => {
+    try {
+      console.log("Deleting document:", doc.id);
+      
+      const response = await fetch(`/api/documents/${doc.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete document");
+      }
+
+      // Remove from local state
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      setSelectedDocuments((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(doc.id);
+        return newSet;
+      });
+
+      console.log("Document deleted successfully:", doc.id);
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      // You could show a toast notification here
+    }
   };
 
-  const handleDocumentShare = (doc: Document) => {
-    console.log("Sharing document:", doc);
+  const handleDocumentShare = async (doc: Document) => {
+    try {
+      console.log("Sharing document:", doc.id);
+      
+      // For now, we'll just log the share action
+      // In a real implementation, you would open a share modal
+      const response = await fetch("/api/documents/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentId: doc.id,
+          shareWith: "workspace", // This would come from a share modal
+          permissions: "read",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to share document");
+      }
+
+      const result = await response.json();
+      console.log("Document shared successfully:", result);
+      
+      // You could show a success toast here
+    } catch (error) {
+      console.error("Error sharing document:", error);
+      // You could show an error toast here
+    }
   };
 
-  const handleACLChange = (doc: Document, newACL: Document["acl"]) => {
-    setDocuments((prev) =>
-      prev.map((d) => (d.id === doc.id ? { ...d, acl: newACL } : d))
-    );
+  const handleACLChange = async (doc: Document, newACL: Document["acl"]) => {
+    try {
+      console.log("Updating ACL for document:", doc.id, "to:", newACL);
+      
+      const response = await fetch(`/api/documents/${doc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: { acl: newACL },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update document ACL");
+      }
+
+      // Update local state
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === doc.id ? { ...d, acl: newACL } : d))
+      );
+
+      console.log("Document ACL updated successfully:", doc.id);
+    } catch (error) {
+      console.error("Error updating document ACL:", error);
+      // You could show an error toast here
+    }
   };
 
   const handleDocumentSelect = (doc: Document, selected: boolean) => {
