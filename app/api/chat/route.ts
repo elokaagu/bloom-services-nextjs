@@ -36,14 +36,11 @@ export async function POST(req: NextRequest) {
     const topK = Number(process.env.RAG_TOP_K || 6);
 
     // Retrieve chunks only from docs user can access (RLS enforces this)
-    const { data: retrieved, error } = await supabase.rpc(
-      "match_chunks",
-      {
-        p_workspace_id: workspaceId,
-        p_query_embedding: qvec,
-        p_match_count: topK,
-      }
-    );
+    const { data: retrieved, error } = await supabase.rpc("match_chunks", {
+      p_workspace_id: workspaceId,
+      p_query_embedding: qvec,
+      p_match_count: topK,
+    });
 
     // Fallback if RPC not created yet: simple vector search join
     let chunks = retrieved as any[] | null;
