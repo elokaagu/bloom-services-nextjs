@@ -4,10 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 export async function GET(req: NextRequest) {
   try {
     console.log("=== VIEW DOCUMENT API START ===");
-    
+
     const { searchParams } = new URL(req.url);
     const documentId = searchParams.get("documentId");
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -77,7 +77,6 @@ export async function GET(req: NextRequest) {
         // downloadUrl: await generateSignedUrl(document.storage_path),
       },
     });
-
   } catch (error) {
     console.error("=== VIEW DOCUMENT API ERROR ===", error);
     return NextResponse.json(

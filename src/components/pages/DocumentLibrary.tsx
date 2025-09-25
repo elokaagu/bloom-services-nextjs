@@ -21,6 +21,7 @@ import {
   type Document,
 } from "@/components/documents/DocumentCard";
 import { UploadDropzone } from "@/components/upload/UploadDropzoneNew";
+import { useToast } from "@/hooks/use-toast";
 import {
   Upload,
   Search,
@@ -147,6 +148,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Fetch documents from database
   const fetchDocuments = async () => {
@@ -236,7 +238,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         throw new Error(errorData.error || "Failed to delete document");
       }
 
-      // Remove from local state
+      // Remove from local state immediately
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       setSelectedDocuments((prev) => {
         const newSet = new Set(prev);
@@ -246,18 +248,28 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
       console.log("Document deleted successfully:", doc.id);
       
+      // Show success toast
+      toast({
+        title: "Document deleted",
+        description: `${doc.title} has been deleted successfully`,
+      });
+      
       // Refresh the document list to ensure consistency
       fetchDocuments();
     } catch (error) {
       console.error("Error deleting document:", error);
-      // You could show a toast notification here
+      toast({
+        title: "Error deleting document",
+        description: error instanceof Error ? error.message : "Failed to delete document",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDocumentShare = async (doc: Document) => {
     try {
       console.log("Sharing document:", doc.id);
-      
+
       // For now, we'll just log the share action
       // In a real implementation, you would open a share modal
       const response = await fetch("/api/documents/share", {
@@ -277,7 +289,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
       const result = await response.json();
       console.log("Document shared successfully:", result);
-      
+
       // You could show a success toast here
     } catch (error) {
       console.error("Error sharing document:", error);
@@ -288,7 +300,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const handleACLChange = async (doc: Document, newACL: Document["acl"]) => {
     try {
       console.log("Updating ACL for document:", doc.id, "to:", newACL);
-      
+
       const response = await fetch(`/api/documents/${doc.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
