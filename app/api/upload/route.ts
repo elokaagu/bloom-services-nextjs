@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
     // Create document and add to local storage via documents API
     const documentData = {
       title: title,
-      workspaceId: workspaceId,
-      ownerId: ownerId,
+      workspaceId: "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
+      ownerId: "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID
       status: "ready",
       acl: "workspace",
     };

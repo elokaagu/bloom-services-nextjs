@@ -155,7 +155,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       setError(null);
 
       const params = new URLSearchParams({
-        workspaceId: "default-workspace",
+        workspaceId: "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
         ...(statusFilter !== "all" && { status: statusFilter }),
         ...(searchTerm && { search: searchTerm }),
       });
