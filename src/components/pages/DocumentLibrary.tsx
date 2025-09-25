@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
   SelectValue,
 } from "@/components/ui/select";
-import {
+import { 
   Dialog,
   DialogContent,
   DialogHeader,
@@ -21,12 +21,13 @@ import {
   type Document,
 } from "@/components/documents/DocumentCard";
 import { UploadDropzone } from "@/components/upload/UploadDropzoneNew";
+import { ShareModal } from "@/components/documents/ShareModal";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Upload,
-  Search,
-  Filter,
-  Grid,
+import { 
+  Upload, 
+  Search, 
+  Filter, 
+  Grid, 
   List,
   SortAsc,
   CheckSquare,
@@ -151,6 +152,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(
     new Set()
   );
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [documentToShare, setDocumentToShare] = useState<Document | null>(null);
   const { toast } = useToast();
 
   // Fetch documents from database
@@ -215,10 +218,10 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.owner.toLowerCase().includes(searchTerm.toLowerCase());
+                         doc.owner.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
     const matchesACL = aclFilter === "all" || doc.acl === aclFilter;
-
+    
     return matchesSearch && matchesStatus && matchesACL;
   });
 
@@ -273,42 +276,17 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     } finally {
       // Remove from deleting set
       setDeletingDocuments((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(doc.id);
-        return newSet;
-      });
+      const newSet = new Set(prev);
+      newSet.delete(doc.id);
+      return newSet;
+    });
     }
   };
 
   const handleDocumentShare = async (doc: Document) => {
-    try {
-      console.log("Sharing document:", doc.id);
-
-      // For now, we'll just log the share action
-      // In a real implementation, you would open a share modal
-      const response = await fetch("/api/documents/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          documentId: doc.id,
-          shareWith: "workspace", // This would come from a share modal
-          permissions: "read",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to share document");
-      }
-
-      const result = await response.json();
-      console.log("Document shared successfully:", result);
-
-      // You could show a success toast here
-    } catch (error) {
-      console.error("Error sharing document:", error);
-      // You could show an error toast here
-    }
+    console.log("Opening share modal for:", doc.id);
+    setDocumentToShare(doc);
+    setShareModalOpen(true);
   };
 
   const handleACLChange = async (doc: Document, newACL: Document["acl"]) => {
@@ -397,7 +375,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               )}
             </p>
           </div>
-
+          
           <div className="flex items-center justify-end space-x-2">
             <Button
               variant="outline"
@@ -461,7 +439,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
                 )}
               </div>
             )}
-
+            
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="text-xs sm:text-sm">
@@ -536,7 +514,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             <Square className="h-4 w-4" />
           )}
         </Button>
-
+        
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -571,7 +549,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             <SelectItem value="owner">Owner</SelectItem>
           </SelectContent>
         </Select>
-
+        
         <div className="flex items-center border rounded-lg flex-shrink-0">
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -595,7 +573,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       {/* Status Filter Tabs */}
       <div className="flex items-center space-x-0 border-b overflow-x-auto pb-0">
         {[
-          {
+          { 
             key: "all",
             label: "All",
             count: getStatusCount("all"),
@@ -690,8 +668,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         <div
           className={
             viewMode === "grid"
-              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
-              : "space-y-2"
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+            : "space-y-2"
           }
         >
           {filteredDocuments.map((document) => (
@@ -728,27 +706,27 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               )}
             </div>
           )}
-
+          
           <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
             {statusFilter === "failed" && getStatusCount("failed") === 0
               ? "No failed uploads!"
               : statusFilter === "ready" && getStatusCount("ready") > 0
               ? "All documents ready!"
-              : searchTerm
+              : searchTerm 
               ? "No documents found"
               : "No documents yet"}
           </h3>
-
+          
           <p className="text-muted-foreground mb-4 text-sm sm:text-base max-w-md mx-auto">
             {statusFilter === "failed" && getStatusCount("failed") === 0
               ? "Great job! All your uploads completed successfully. Keep up the good work!"
               : statusFilter === "ready" && getStatusCount("ready") > 0
               ? "Your documents are processed and ready to use. Start exploring your knowledge base!"
-              : searchTerm
+              : searchTerm 
               ? "Try adjusting your search terms or filters to find what you're looking for"
               : "Upload your first document to start building your knowledge base"}
           </p>
-
+          
           {!searchTerm && statusFilter !== "ready" && (
             <Button onClick={() => setIsUploadOpen(true)} size="sm">
               <Upload className="h-4 w-4 mr-2" />
@@ -757,6 +735,18 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           )}
         </div>
       ) : null}
+
+      {/* Share Modal */}
+      {documentToShare && (
+        <ShareModal
+          document={documentToShare}
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setDocumentToShare(null);
+          }}
+        />
+      )}
     </div>
   );
 };
