@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+"use client";
+
+import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,8 +24,8 @@ interface UploadFile {
 }
 
 interface UploadDropzoneProps {
-  onUploadComplete: (files: File[]) => void;
-  maxSize?: number; // in MB
+  onUploadComplete?: (files: File[]) => void;
+  maxSize?: number;
   acceptedTypes?: string[];
   workspaceId?: string;
   ownerId?: string;
@@ -42,22 +44,20 @@ export const UploadDropzone = ({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   }, []);
 
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files) {
-        const files = Array.from(e.target.files);
-        handleFiles(files);
-      }
-    },
-    []
-  );
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      handleFiles(files);
+    }
+  }, []);
 
-  const handleFiles = (files: File[]) => {
+  const handleFiles = useCallback((files: File[]) => {
+    console.log("=== HANDLING FILES ===", files.length);
+    
     const newUploadFiles: UploadFile[] = files.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
@@ -91,114 +91,92 @@ export const UploadDropzone = ({
     });
 
     setUploadFiles((prev) => [...prev, ...validatedFiles]);
-  };
 
-  const uploadFile = useCallback(
-    async (fileId: string) => {
-      const uploadFile = uploadFiles.find((f) => f.id === fileId);
-      if (!uploadFile) return;
+    // Start upload for valid files
+    validatedFiles.forEach((uploadFileItem) => {
+      if (uploadFileItem.status === "pending") {
+        uploadFile(uploadFileItem.id);
+      }
+    });
+  }, [maxSize, acceptedTypes]);
+
+  const uploadFile = useCallback(async (fileId: string) => {
+    const uploadFile = uploadFiles.find((f) => f.id === fileId);
+    if (!uploadFile) return;
+
+    console.log("=== STARTING UPLOAD ===", uploadFile.file.name);
+
+    setUploadFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
+      )
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile.file);
+      formData.append("workspaceId", workspaceId);
+      formData.append("ownerId", ownerId);
+      formData.append("title", uploadFile.file.name);
+
+      setUploadFiles((prev) =>
+        prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
+      );
+
+      console.log("=== SENDING REQUEST ===");
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("=== RESPONSE RECEIVED ===", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Upload failed:", errorData);
+        throw new Error(errorData.error || "Upload failed");
+      }
+
+      const result = await response.json();
+      console.log("=== UPLOAD SUCCESS ===", result);
 
       setUploadFiles((prev) =>
         prev.map((f) =>
-          f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
+          f.id === fileId ? { ...f, progress: 100, status: "success" } : f
         )
       );
 
-      try {
-        // Upload file to Supabase
-        const formData = new FormData();
-        formData.append("file", uploadFile.file);
-        formData.append("workspaceId", workspaceId);
-        formData.append("ownerId", ownerId);
-        formData.append("title", uploadFile.file.name);
-
-        setUploadFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
-        );
-
-        const uploadResponse = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("Upload failed");
-        }
-
-        const { document } = await uploadResponse.json();
-
-        setUploadFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, progress: 75 } : f))
-        );
-
-        // Trigger ingestion
-        const ingestResponse = await fetch("/api/ingest", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentId: document.id }),
-        });
-
-        if (!ingestResponse.ok) {
-          throw new Error("Ingestion failed");
-        }
-
-        setUploadFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId ? { ...f, progress: 100, status: "success" } : f
-          )
-        );
-
-        // Notify parent component
-        onUploadComplete([uploadFile.file]);
-      } catch (error) {
-        setUploadFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId
-              ? {
-                  ...f,
-                  status: "error",
-                  error:
-                    error instanceof Error ? error.message : "Upload failed",
-                }
-              : f
-          )
-        );
-      }
-    },
-    [uploadFiles, workspaceId, ownerId, onUploadComplete]
-  );
-
-  // Auto-start upload for pending files
-  useEffect(() => {
-    const pendingFiles = uploadFiles.filter(
-      (file) => file.status === "pending"
-    );
-    pendingFiles.forEach((file) => {
-      uploadFile(file.id);
-    });
-  }, [uploadFiles.length, uploadFile]);
+      onUploadComplete?.([uploadFile.file]);
+    } catch (error) {
+      console.error("=== UPLOAD ERROR ===", error);
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: "error",
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
+            : f
+        )
+      );
+    }
+  }, [uploadFiles, workspaceId, ownerId, onUploadComplete]);
 
   const removeFile = (fileId: string) => {
     setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase();
-    return <FileText className="h-4 w-4" />;
-  };
-
   const getStatusIcon = (status: UploadFile["status"]) => {
     switch (status) {
       case "success":
-        return <CheckCircle className="h-4 w-4 text-success" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "error":
-        return <AlertCircle className="h-4 w-4 text-destructive" />;
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
       case "uploading":
-        return <File className="h-4 w-4 text-primary animate-pulse" />;
-      case "pending":
-        return <File className="h-4 w-4 text-muted-foreground" />;
+        return <File className="h-4 w-4 text-blue-500 animate-pulse" />;
       default:
-        return <File className="h-4 w-4 text-muted-foreground" />;
+        return <File className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -252,7 +230,7 @@ export const UploadDropzone = ({
             {uploadFiles.map((uploadFile) => (
               <div key={uploadFile.id} className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  {getFileIcon(uploadFile.file.name)}
+                  <FileText className="h-4 w-4" />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -296,14 +274,14 @@ export const UploadDropzone = ({
                   )}
 
                   {uploadFile.status === "error" && uploadFile.error && (
-                    <p className="text-xs text-destructive">
+                    <p className="text-xs text-red-500">
                       {uploadFile.error}
                     </p>
                   )}
 
                   {uploadFile.status === "success" && (
                     <div className="flex items-center space-x-1">
-                      <Badge className="text-xs bg-primary text-primary-foreground">
+                      <Badge className="text-xs bg-green-500 text-white">
                         Upload complete
                       </Badge>
                     </div>
