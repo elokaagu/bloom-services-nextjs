@@ -46,6 +46,8 @@ export async function GET(req: NextRequest) {
         owner_id,
         storage_path,
         error,
+        summary,
+        summary_updated_at,
         users!documents_owner_id_fkey (
           name,
           email

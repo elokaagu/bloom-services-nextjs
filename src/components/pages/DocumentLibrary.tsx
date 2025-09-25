@@ -191,6 +191,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             acl: doc.acl || "workspace",
             owner: doc.users?.name || doc.users?.email || "Unknown User",
             error: doc.error,
+            summary: doc.summary,
+            summaryUpdatedAt: doc.summary_updated_at,
           })
         );
 
@@ -287,6 +289,48 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     console.log("Opening share modal for:", doc.id);
     setDocumentToShare(doc);
     setShareModalOpen(true);
+  };
+
+  const generateSummary = async (doc: Document) => {
+    try {
+      console.log("Generating summary for:", doc.id);
+      
+      const response = await fetch("/api/documents/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: doc.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate summary");
+      }
+
+      const result = await response.json();
+      console.log("Summary generated:", result.summary);
+
+      // Update local state with the new summary
+      setDocuments((prev) =>
+        prev.map((d) => 
+          d.id === doc.id 
+            ? { ...d, summary: result.summary, summaryUpdatedAt: new Date().toISOString() }
+            : d
+        )
+      );
+
+      toast({
+        title: "Summary generated",
+        description: `Summary created for ${doc.title}`,
+      });
+
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      toast({
+        title: "Error generating summary",
+        description: error instanceof Error ? error.message : "Failed to generate summary",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleACLChange = async (doc: Document, newACL: Document["acl"]) => {
@@ -680,6 +724,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               onDelete={handleDocumentDelete}
               onShare={handleDocumentShare}
               onACLChange={handleACLChange}
+              onGenerateSummary={generateSummary}
               isSelected={selectedDocuments.has(document.id)}
               onSelect={handleDocumentSelect}
               showSelection={true}

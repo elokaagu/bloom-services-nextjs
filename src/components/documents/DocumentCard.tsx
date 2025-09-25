@@ -56,6 +56,8 @@ export interface Document {
   queryCount?: number;
   lastAccessed?: string;
   tags?: string[];
+  summary?: string;
+  summaryUpdatedAt?: string;
 }
 
 interface DocumentCardProps {
@@ -64,6 +66,7 @@ interface DocumentCardProps {
   onDelete: (doc: Document) => void;
   onShare: (doc: Document) => void;
   onACLChange?: (doc: Document, newACL: Document["acl"]) => void;
+  onGenerateSummary?: (doc: Document) => void;
   isSelected?: boolean;
   onSelect?: (doc: Document, selected: boolean) => void;
   showSelection?: boolean;
@@ -150,6 +153,7 @@ export const DocumentCard = ({
   onDelete,
   onShare,
   onACLChange,
+  onGenerateSummary,
   isSelected,
   onSelect,
   showSelection,
@@ -205,6 +209,21 @@ export const DocumentCard = ({
             <h3 className="text-sm font-medium text-foreground truncate">
               {document.title}
             </h3>
+            
+            {/* Document Summary */}
+            {document.summary && (
+              <div className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                {document.summary.split('\n').slice(0, 2).map((line, index) => (
+                  <div key={index} className="line-clamp-2">
+                    {line}
+                  </div>
+                ))}
+                {document.summary.split('\n').length > 2 && (
+                  <div className="text-primary/70 mt-1">...</div>
+                )}
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-xs text-muted-foreground">
                 {document.size}
@@ -255,6 +274,17 @@ export const DocumentCard = ({
                 <Share className="mr-2 h-4 w-4" />
                 Share
               </DropdownMenuItem>
+              {!document.summary && document.status === "ready" && onGenerateSummary && (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGenerateSummary(document);
+                  }}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Summary
+                </DropdownMenuItem>
+              )}
               {document.status === "failed" && (
                 <DropdownMenuItem 
                   onClick={(e) => {
