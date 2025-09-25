@@ -93,80 +93,86 @@ export const UploadDropzone = ({
     setUploadFiles((prev) => [...prev, ...validatedFiles]);
   };
 
-  const uploadFile = useCallback(async (fileId: string) => {
-    const uploadFile = uploadFiles.find((f) => f.id === fileId);
-    if (!uploadFile) return;
-
-    setUploadFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
-      )
-    );
-
-    try {
-      // Upload file to Supabase
-      const formData = new FormData();
-      formData.append("file", uploadFile.file);
-      formData.append("workspaceId", workspaceId);
-      formData.append("ownerId", ownerId);
-      formData.append("title", uploadFile.file.name);
-
-      setUploadFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
-      );
-
-      const uploadResponse = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const { document } = await uploadResponse.json();
-
-      setUploadFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, progress: 75 } : f))
-      );
-
-      // Trigger ingestion
-      const ingestResponse = await fetch("/api/ingest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: document.id }),
-      });
-
-      if (!ingestResponse.ok) {
-        throw new Error("Ingestion failed");
-      }
+  const uploadFile = useCallback(
+    async (fileId: string) => {
+      const uploadFile = uploadFiles.find((f) => f.id === fileId);
+      if (!uploadFile) return;
 
       setUploadFiles((prev) =>
         prev.map((f) =>
-          f.id === fileId ? { ...f, progress: 100, status: "success" } : f
+          f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
         )
       );
 
-      // Notify parent component
-      onUploadComplete([uploadFile.file]);
-    } catch (error) {
-      setUploadFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId
-            ? {
-                ...f,
-                status: "error",
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : f
-        )
-      );
-    }
-  }, [uploadFiles, workspaceId, ownerId, onUploadComplete]);
+      try {
+        // Upload file to Supabase
+        const formData = new FormData();
+        formData.append("file", uploadFile.file);
+        formData.append("workspaceId", workspaceId);
+        formData.append("ownerId", ownerId);
+        formData.append("title", uploadFile.file.name);
+
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
+        );
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const { document } = await uploadResponse.json();
+
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: 75 } : f))
+        );
+
+        // Trigger ingestion
+        const ingestResponse = await fetch("/api/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentId: document.id }),
+        });
+
+        if (!ingestResponse.ok) {
+          throw new Error("Ingestion failed");
+        }
+
+        setUploadFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId ? { ...f, progress: 100, status: "success" } : f
+          )
+        );
+
+        // Notify parent component
+        onUploadComplete([uploadFile.file]);
+      } catch (error) {
+        setUploadFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  status: "error",
+                  error:
+                    error instanceof Error ? error.message : "Upload failed",
+                }
+              : f
+          )
+        );
+      }
+    },
+    [uploadFiles, workspaceId, ownerId, onUploadComplete]
+  );
 
   // Auto-start upload for pending files
   useEffect(() => {
-    const pendingFiles = uploadFiles.filter(file => file.status === "pending");
+    const pendingFiles = uploadFiles.filter(
+      (file) => file.status === "pending"
+    );
     pendingFiles.forEach((file) => {
       uploadFile(file.id);
     });
