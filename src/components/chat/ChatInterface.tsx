@@ -38,9 +38,11 @@ interface Message {
 
 interface ChatInterfaceProps {
   onSourceView: (citation: Citation) => void;
+  workspaceId?: string;
+  userId?: string;
 }
 
-export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
+export const ChatInterface = ({ onSourceView, workspaceId = 'default-workspace', userId = 'default-user' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -125,27 +127,56 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const question = input;
     setInput("");
     setIsLoading(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      const randomResponse =
-        mockResponses[Math.floor(Math.random() * mockResponses.length)];
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          workspaceId, 
+          userId, 
+          question 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Chat request failed');
+      }
+
+      const { answer, citations } = await response.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: randomResponse.content,
-        citations: randomResponse.citations,
+        content: answer,
+        citations: citations?.map((c: any) => ({
+          id: c.chunkId.toString(),
+          documentTitle: `Document ${c.documentId}`,
+          snippet: 'Retrieved from document',
+          relevanceScore: 0.9,
+        })),
         timestamp: new Date(),
-        isError: randomResponse.isError,
-        errorType: randomResponse.errorType,
+        isError: false,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "assistant",
+        content: "Sorry, I encountered an error while processing your question. Please try again.",
+        timestamp: new Date(),
+        isError: true,
+        errorType: "system",
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

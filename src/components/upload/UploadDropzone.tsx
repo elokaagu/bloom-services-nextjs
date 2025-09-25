@@ -25,12 +25,16 @@ interface UploadDropzoneProps {
   onUploadComplete: (files: File[]) => void;
   maxSize?: number; // in MB
   acceptedTypes?: string[];
+  workspaceId?: string;
+  ownerId?: string;
 }
 
 export const UploadDropzone = ({ 
   onUploadComplete, 
   maxSize = 50, 
-  acceptedTypes = ['.pdf', '.docx', '.pptx', '.txt', '.xlsx'] 
+  acceptedTypes = ['.pdf', '.docx', '.pptx', '.txt', '.xlsx'],
+  workspaceId = 'default-workspace',
+  ownerId = 'default-user'
 }: UploadDropzoneProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
@@ -77,42 +81,75 @@ export const UploadDropzone = ({
 
     setUploadFiles(prev => [...prev, ...validatedFiles]);
 
-    // Start upload simulation for valid files
-    validatedFiles.forEach(uploadFile => {
-      if (uploadFile.status === 'pending') {
-        simulateUpload(uploadFile.id);
+    // Start upload for valid files
+    validatedFiles.forEach(uploadFileItem => {
+      if (uploadFileItem.status === 'pending') {
+        uploadFile(uploadFileItem.id);
       }
     });
   };
 
-  const simulateUpload = (fileId: string) => {
+  const uploadFile = async (fileId: string) => {
+    const uploadFile = uploadFiles.find(f => f.id === fileId);
+    if (!uploadFile) return;
+
     setUploadFiles(prev => prev.map(f => 
-      f.id === fileId ? { ...f, status: 'uploading' } : f
+      f.id === fileId ? { ...f, status: 'uploading', progress: 10 } : f
     ));
 
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        
-        setUploadFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, progress: 100, status: 'success' } : f
-        ));
-        
-        // Notify parent component
-        const uploadFile = uploadFiles.find(f => f.id === fileId);
-        if (uploadFile) {
-          onUploadComplete([uploadFile.file]);
-        }
-      } else {
-        setUploadFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, progress } : f
-        ));
+    try {
+      // Upload file to Supabase
+      const formData = new FormData();
+      formData.append('file', uploadFile.file);
+      formData.append('workspaceId', workspaceId);
+      formData.append('ownerId', ownerId);
+      formData.append('title', uploadFile.file.name);
+
+      setUploadFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, progress: 50 } : f
+      ));
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
       }
-    }, 200);
+
+      const { document } = await uploadResponse.json();
+
+      setUploadFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, progress: 75 } : f
+      ));
+
+      // Trigger ingestion
+      const ingestResponse = await fetch('/api/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: document.id }),
+      });
+
+      if (!ingestResponse.ok) {
+        throw new Error('Ingestion failed');
+      }
+
+      setUploadFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, progress: 100, status: 'success' } : f
+      ));
+
+      // Notify parent component
+      onUploadComplete([uploadFile.file]);
+    } catch (error) {
+      setUploadFiles(prev => prev.map(f => 
+        f.id === fileId ? { 
+          ...f, 
+          status: 'error', 
+          error: error instanceof Error ? error.message : 'Upload failed' 
+        } : f
+      ));
+    }
   };
 
   const removeFile = (fileId: string) => {
