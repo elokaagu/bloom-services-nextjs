@@ -35,8 +35,8 @@ export const UploadDropzone = ({
   onUploadComplete,
   maxSize = 50,
   acceptedTypes = [".pdf", ".docx", ".pptx", ".txt", ".xlsx"],
-  workspaceId = "default-workspace",
-  ownerId = "default-user",
+  workspaceId = "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
+  ownerId = "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID
 }: UploadDropzoneProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
