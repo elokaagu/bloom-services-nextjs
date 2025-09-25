@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const workspaceId =
-      (formData.get("workspaceId") as string) || "default-workspace";
-    const ownerId = (formData.get("ownerId") as string) || "default-user";
+      (formData.get("workspaceId") as string) || "550e8400-e29b-41d4-a716-446655440001";
+    const ownerId = (formData.get("ownerId") as string) || "550e8400-e29b-41d4-a716-446655440002";
     const title = (formData.get("title") as string) || file?.name;
 
     console.log("Form data parsed:", {
@@ -37,11 +37,14 @@ export async function POST(req: NextRequest) {
     };
 
     // Add to Supabase database
-    const addResponse = await fetch(`${req.nextUrl.origin}/api/documents-supabase`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(documentData),
-    });
+    const addResponse = await fetch(
+      `${req.nextUrl.origin}/api/documents-supabase`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(documentData),
+      }
+    );
 
     if (!addResponse.ok) {
       throw new Error("Failed to add document to store");
