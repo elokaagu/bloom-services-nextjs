@@ -30,7 +30,44 @@ export async function POST(req: NextRequest) {
     console.log("Processing question:", question);
     console.log("Workspace:", workspaceId, "User:", userId);
 
+    // Check environment variables
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Missing Supabase environment variables");
+      return NextResponse.json(
+        { error: "Server configuration error - missing Supabase credentials" },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("Missing OpenAI API key");
+      return NextResponse.json(
+        { error: "Server configuration error - missing OpenAI API key" },
+        { status: 500 }
+      );
+    }
+
     const supabase = supabaseService();
+
+    // Test database connection first
+    const { data: testData, error: testError } = await supabase
+      .from("documents")
+      .select("id")
+      .limit(1);
+
+    if (testError) {
+      console.error("Database connection error:", testError);
+      return NextResponse.json(
+        { 
+          error: "Database connection failed", 
+          details: testError.message,
+          suggestion: "Please check if the database schema has been set up correctly"
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log("Database connection successful");
 
     // Log query
     const { data: qrow } = await supabase

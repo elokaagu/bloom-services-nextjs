@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Download, 
-  Share, 
-  FileText, 
+import {
+  ArrowLeft,
+  Download,
+  Share,
+  FileText,
   Eye,
   Users,
   Lock,
@@ -18,7 +18,7 @@ import {
   MessageCircle,
   Calendar,
   User,
-  FileIcon
+  FileIcon,
 } from "lucide-react";
 import { Document } from "@/components/documents/DocumentCard";
 
@@ -30,7 +30,7 @@ interface DocumentViewProps {
 // Mock document content for demonstration
 const getMockContent = (document: Document): string => {
   switch (document.id) {
-    case '1':
+    case "1":
       return `# Data Retention Policy 2024
 
 ## Overview
@@ -54,7 +54,7 @@ All departments must adhere to these retention schedules and implement appropria
 ## Contact Information
 For questions about this policy, contact the Data Protection Officer at dpo@company.com`;
 
-    case '2':
+    case "2":
       return `# GDPR Compliance Guide
 
 ## Introduction
@@ -85,41 +85,51 @@ Organizations must conduct privacy impact assessments, implement privacy by desi
     default:
       return `# ${document.title}
 
-This is a preview of the document content. The full document contains detailed information about ${document.title.toLowerCase().replace(/\.[^/.]+$/, "")}.
+This is a preview of the document content. The full document contains detailed information about ${document.title
+        .toLowerCase()
+        .replace(/\.[^/.]+$/, "")}.
 
 ## Document Summary
 - File Type: ${document.type.toUpperCase()}
-- Summary: ${document.summary ? document.summary.split('\n')[0] : 'No summary available yet'}
+- Summary: ${
+        document.summary
+          ? document.summary.split("\n")[0]
+          : "No summary available yet"
+      }
 - Owner: ${document.owner}
-- Last Accessed: ${document.lastAccessed || 'Never'}
+- Last Accessed: ${document.lastAccessed || "Never"}
 
 ## Content Preview
-${document.summary ? document.summary : 'This document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.'}`;
+${
+  document.summary
+    ? document.summary
+    : "This document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content."
+}`;
   }
 };
 
-const getACLInfo = (acl: Document['acl']) => {
+const getACLInfo = (acl: Document["acl"]) => {
   const variants = {
-    private: { 
-      label: 'Private', 
+    private: {
+      label: "Private",
       icon: Lock,
-      description: 'Only you can access this document',
-      className: 'text-gray-600'
+      description: "Only you can access this document",
+      className: "text-gray-600",
     },
-    workspace: { 
-      label: 'Workspace', 
+    workspace: {
+      label: "Workspace",
       icon: Users,
-      description: 'Accessible to all workspace members',
-      className: 'text-blue-600'
+      description: "Accessible to all workspace members",
+      className: "text-blue-600",
     },
-    organization: { 
-      label: 'Organization', 
+    organization: {
+      label: "Organization",
       icon: Globe,
-      description: 'Accessible to all organization members',
-      className: 'text-green-600'
-    }
+      description: "Accessible to all organization members",
+      className: "text-green-600",
+    },
   };
-  
+
   return variants[acl];
 };
 
@@ -129,11 +139,11 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const Icon = aclInfo.icon;
 
   const handleDownload = () => {
-    console.log('Downloading document:', document.title);
+    console.log("Downloading document:", document.title);
   };
 
   const handleShare = () => {
-    console.log('Sharing document:', document.title);
+    console.log("Sharing document:", document.title);
   };
 
   return (
@@ -142,9 +152,9 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
       <div className="border-b bg-card/50 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 gap-4">
           <div className="flex items-start space-x-4 min-w-0 flex-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onBack}
               className="text-muted-foreground hover:text-foreground flex-shrink-0"
             >
@@ -152,17 +162,25 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
               <span className="hidden sm:inline">Back to Library</span>
               <span className="sm:hidden">Back</span>
             </Button>
-            
+
             <Separator orientation="vertical" className="h-6 hidden sm:block" />
-            
+
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">{document.title}</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">
+                  {document.title}
+                </h1>
                 <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                  <span>{document.summary ? document.summary.split('\n')[0] : document.size}</span>
+                  <span>
+                    {document.summary
+                      ? document.summary.split("\n")[0]
+                      : document.size}
+                  </span>
                   <span className="hidden sm:inline">•</span>
-                  <span className="hidden sm:inline">Uploaded {document.uploadedAt}</span>
+                  <span className="hidden sm:inline">
+                    Uploaded {document.uploadedAt}
+                  </span>
                   <span className="hidden sm:inline">•</span>
                   <div className="flex items-center gap-1">
                     <User className="h-3 w-3" />
@@ -172,19 +190,29 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center flex-wrap gap-2">
             <Badge variant="outline" className={`${aclInfo.className} text-xs`}>
               <Icon className="h-3 w-3 mr-1" />
               {aclInfo.label}
             </Badge>
-            
-            <Button variant="outline" size="sm" onClick={handleShare} className="h-8 px-2 sm:px-3">
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="h-8 px-2 sm:px-3"
+            >
               <Share className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">Share</span>
             </Button>
-            
-            <Button variant="outline" size="sm" onClick={handleDownload} className="h-8 px-2 sm:px-3">
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="h-8 px-2 sm:px-3"
+            >
               <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">Download</span>
             </Button>
@@ -195,84 +223,146 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
       {/* Content */}
       <div className="flex-1 p-3 sm:p-6 overflow-hidden">
         <div className="max-w-4xl mx-auto h-full">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="h-full flex flex-col"
+          >
             <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6">
               <TabsTrigger value="content" className="text-xs sm:text-sm">
                 <span className="hidden sm:inline">Document Content</span>
                 <span className="sm:hidden">Content</span>
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
-              <TabsTrigger value="metadata" className="text-xs sm:text-sm">Details</TabsTrigger>
+              <TabsTrigger value="analytics" className="text-xs sm:text-sm">
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="metadata" className="text-xs sm:text-sm">
+                Details
+              </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="content" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[70vh] w-full rounded-md">
                   <div className="p-4 sm:p-8 max-w-none">
-                    {getMockContent(document).split('\n').map((line, index) => {
-                      // Helper function to parse markdown bold syntax
-                      const parseMarkdown = (text: string) => {
-                        return text
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/<strong>(.*?)<\/strong>/g, '<strong>$1</strong>');
-                      };
+                    {getMockContent(document)
+                      .split("\n")
+                      .map((line, index) => {
+                        // Helper function to parse markdown bold syntax
+                        const parseMarkdown = (text: string) => {
+                          return text
+                            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                            .replace(
+                              /<strong>(.*?)<\/strong>/g,
+                              "<strong>$1</strong>"
+                            );
+                        };
 
-                      if (line.startsWith('# ')) {
-                        return (
-                          <h1 key={index} className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3">
-                            <span dangerouslySetInnerHTML={{ __html: parseMarkdown(line.slice(2)) }}></span>
-                          </h1>
-                        );
-                      } else if (line.startsWith('## ')) {
-                        return (
-                          <h2 key={index} className="text-2xl font-semibold mb-4 mt-8 text-foreground relative">
-                            <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
-                            <span dangerouslySetInnerHTML={{ __html: parseMarkdown(line.slice(3)) }}></span>
-                          </h2>
-                        );
-                      } else if (line.startsWith('### ')) {
-                        return (
-                          <h3 key={index} className="text-xl font-medium mb-3 mt-6 text-foreground/90">
-                            <span dangerouslySetInnerHTML={{ __html: parseMarkdown(line.slice(4)) }}></span>
-                          </h3>
-                        );
-                      } else if (line.startsWith('- ')) {
-                        return (
-                          <div key={index} className="flex items-start mb-2 ml-6">
-                            <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
-                            <p className="text-foreground/80 leading-relaxed" dangerouslySetInnerHTML={{ __html: parseMarkdown(line.slice(2)) }}></p>
-                          </div>
-                        );
-                      } else if (line.match(/^\d+\. /)) {
-                        const number = line.match(/^(\d+)\. /)?.[1];
-                        const text = line.replace(/^\d+\. /, '');
-                        return (
-                          <div key={index} className="flex items-start mb-3 ml-6">
-                            <div className="flex items-center justify-center w-6 h-6 bg-primary/10 text-primary text-sm font-semibold rounded-full mr-3 flex-shrink-0 mt-0.5">
-                              {number}
+                        if (line.startsWith("# ")) {
+                          return (
+                            <h1
+                              key={index}
+                              className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
+                            >
+                              <span
+                                dangerouslySetInnerHTML={{
+                                  __html: parseMarkdown(line.slice(2)),
+                                }}
+                              ></span>
+                            </h1>
+                          );
+                        } else if (line.startsWith("## ")) {
+                          return (
+                            <h2
+                              key={index}
+                              className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
+                            >
+                              <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
+                              <span
+                                dangerouslySetInnerHTML={{
+                                  __html: parseMarkdown(line.slice(3)),
+                                }}
+                              ></span>
+                            </h2>
+                          );
+                        } else if (line.startsWith("### ")) {
+                          return (
+                            <h3
+                              key={index}
+                              className="text-xl font-medium mb-3 mt-6 text-foreground/90"
+                            >
+                              <span
+                                dangerouslySetInnerHTML={{
+                                  __html: parseMarkdown(line.slice(4)),
+                                }}
+                              ></span>
+                            </h3>
+                          );
+                        } else if (line.startsWith("- ")) {
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-start mb-2 ml-6"
+                            >
+                              <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
+                              <p
+                                className="text-foreground/80 leading-relaxed"
+                                dangerouslySetInnerHTML={{
+                                  __html: parseMarkdown(line.slice(2)),
+                                }}
+                              ></p>
                             </div>
-                            <p className="text-foreground/80 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(text) }}></p>
-                          </div>
-                        );
-                      } else if (line.trim() === '') {
-                        return <div key={index} className="mb-5"></div>;
-                      } else if (line.startsWith('**') && line.endsWith('**')) {
-                        return (
-                          <p key={index} className="mb-4 text-foreground font-semibold leading-relaxed bg-muted/30 p-3 rounded-lg border-l-4 border-primary/40">
-                            {line.slice(2, -2)}
-                          </p>
-                        );
-                      } else {
-                        return (
-                           <p key={index} className="mb-4 text-foreground/70 leading-relaxed text-[15px] tracking-wide" dangerouslySetInnerHTML={{ __html: parseMarkdown(line) }}></p>
-                        );
-                      }
-                    })}
+                          );
+                        } else if (line.match(/^\d+\. /)) {
+                          const number = line.match(/^(\d+)\. /)?.[1];
+                          const text = line.replace(/^\d+\. /, "");
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-start mb-3 ml-6"
+                            >
+                              <div className="flex items-center justify-center w-6 h-6 bg-primary/10 text-primary text-sm font-semibold rounded-full mr-3 flex-shrink-0 mt-0.5">
+                                {number}
+                              </div>
+                              <p
+                                className="text-foreground/80 leading-relaxed font-medium"
+                                dangerouslySetInnerHTML={{
+                                  __html: parseMarkdown(text),
+                                }}
+                              ></p>
+                            </div>
+                          );
+                        } else if (line.trim() === "") {
+                          return <div key={index} className="mb-5"></div>;
+                        } else if (
+                          line.startsWith("**") &&
+                          line.endsWith("**")
+                        ) {
+                          return (
+                            <p
+                              key={index}
+                              className="mb-4 text-foreground font-semibold leading-relaxed bg-muted/30 p-3 rounded-lg border-l-4 border-primary/40"
+                            >
+                              {line.slice(2, -2)}
+                            </p>
+                          );
+                        } else {
+                          return (
+                            <p
+                              key={index}
+                              className="mb-4 text-foreground/70 leading-relaxed text-[15px] tracking-wide"
+                              dangerouslySetInnerHTML={{
+                                __html: parseMarkdown(line),
+                              }}
+                            ></p>
+                          );
+                        }
+                      })}
                   </div>
                 </ScrollArea>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="analytics" className="flex-1 mt-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 <Card className="p-4">
@@ -280,21 +370,25 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                     <TrendingUp className="h-4 w-5 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium">Queries Answered</p>
-                      <p className="text-xl sm:text-2xl font-bold">{document.queryCount || 0}</p>
+                      <p className="text-xl sm:text-2xl font-bold">
+                        {document.queryCount || 0}
+                      </p>
                     </div>
                   </div>
                 </Card>
-                
+
                 <Card className="p-4">
                   <div className="flex items-center space-x-2">
                     <Eye className="h-5 w-5 text-blue-500" />
                     <div>
                       <p className="text-sm font-medium">Last Accessed</p>
-                      <p className="text-sm text-muted-foreground">{document.lastAccessed || 'Never'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {document.lastAccessed || "Never"}
+                      </p>
                     </div>
                   </div>
                 </Card>
-                
+
                 <Card className="p-4">
                   <div className="flex items-center space-x-2">
                     <MessageCircle className="h-5 w-5 text-green-500" />
@@ -305,7 +399,7 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                   </div>
                 </Card>
               </div>
-              
+
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Usage Over Time</h3>
                 <div className="h-32 flex items-end space-x-2">
@@ -323,57 +417,84 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                 </div>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="metadata" className="mt-6 space-y-4">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Document Information</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  Document Information
+                </h3>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">File Name</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        File Name
+                      </label>
                       <p className="text-sm">{document.title}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">File Type</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        File Type
+                      </label>
                       <p className="text-sm uppercase">{document.type}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Summary</label>
-                      <p className="text-sm">{document.summary ? document.summary.split('\n')[0] : 'No summary available yet'}</p>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Summary
+                      </label>
+                      <p className="text-sm">
+                        {document.summary
+                          ? document.summary.split("\n")[0]
+                          : "No summary available yet"}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Upload Date</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Upload Date
+                      </label>
                       <p className="text-sm">{document.uploadedAt}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Owner</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Owner
+                      </label>
                       <p className="text-sm">{document.owner}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Status</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Status
+                      </label>
                       <Badge className="mt-1">
-                        {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
+                        {document.status.charAt(0).toUpperCase() +
+                          document.status.slice(1)}
                       </Badge>
                     </div>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Access Control</label>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Access Control
+                    </label>
                     <div className="flex items-center space-x-2 mt-1">
                       <Icon className="h-4 w-4" />
                       <span className="text-sm">{aclInfo.label}</span>
-                      <span className="text-xs text-muted-foreground">- {aclInfo.description}</span>
+                      <span className="text-xs text-muted-foreground">
+                        - {aclInfo.description}
+                      </span>
                     </div>
                   </div>
-                  
+
                   {document.preview && (
                     <>
                       <Separator />
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Document Preview</label>
-                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{document.preview}</p>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Document Preview
+                        </label>
+                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                          {document.preview}
+                        </p>
                       </div>
                     </>
                   )}
