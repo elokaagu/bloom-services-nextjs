@@ -40,10 +40,14 @@ interface ShareModalProps {
 }
 
 export const ShareModal = ({ document, isOpen, onClose }: ShareModalProps) => {
-  const [shareType, setShareType] = useState<"link" | "email" | "workspace">("link");
+  const [shareType, setShareType] = useState<"link" | "email" | "workspace">(
+    "link"
+  );
   const [emailAddresses, setEmailAddresses] = useState("");
   const [message, setMessage] = useState("");
-  const [permissions, setPermissions] = useState<"read" | "comment" | "edit">("read");
+  const [permissions, setPermissions] = useState<"read" | "comment" | "edit">(
+    "read"
+  );
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -53,11 +57,11 @@ export const ShareModal = ({ document, isOpen, onClose }: ShareModalProps) => {
     try {
       if (shareType === "link") {
         setIsGeneratingLink(true);
-        
+
         // Generate a shareable link (mock implementation)
         const link = `${window.location.origin}/shared/${document.id}`;
         setGeneratedLink(link);
-        
+
         toast({
           title: "Share link generated",
           description: "Link copied to clipboard",
@@ -75,7 +79,7 @@ export const ShareModal = ({ document, isOpen, onClose }: ShareModalProps) => {
           description: `Shared with workspace members`,
         });
       }
-      
+
       onClose();
     } catch (error) {
       toast({
@@ -125,7 +129,7 @@ export const ShareModal = ({ document, isOpen, onClose }: ShareModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Share className="h-5 w-5" />
-            <span>Share "{document.title}"</span>
+            <span>Share &quot;{document.title}&quot;</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -133,7 +137,10 @@ export const ShareModal = ({ document, isOpen, onClose }: ShareModalProps) => {
           {/* Share Type Selection */}
           <div className="space-y-3">
             <Label>Share with</Label>
-            <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
+            <Select
+              value={shareType}
+              onValueChange={(value: any) => setShareType(value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select sharing method" />
               </SelectTrigger>
@@ -191,7 +198,10 @@ export const ShareModal = ({ document, isOpen, onClose }: ShareModalProps) => {
           {/* Permissions */}
           <div className="space-y-3">
             <Label>Permissions</Label>
-            <Select value={permissions} onValueChange={(value: any) => setPermissions(value)}>
+            <Select
+              value={permissions}
+              onValueChange={(value: any) => setPermissions(value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select permissions" />
               </SelectTrigger>

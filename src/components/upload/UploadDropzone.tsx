@@ -110,7 +110,7 @@ export const UploadDropzone = ({
     setIsDragOver(false);
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
-  }, []);
+  }, [handleFiles]);
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,7 +119,7 @@ export const UploadDropzone = ({
         handleFiles(files);
       }
     },
-    []
+    [handleFiles]
   );
 
   const handleFiles = useCallback(
