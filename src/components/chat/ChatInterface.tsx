@@ -155,14 +155,14 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-6rem)] lg:h-[calc(100vh-8rem)] space-y-4 lg:space-y-0 lg:space-x-6 px-2 sm:px-4 lg:px-8 pt-[var(--header-offset)]">
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 h-full">
         {/* Title Section */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-foreground">Chat</h1>
           <p className="text-sm text-muted-foreground mt-1">Ask questions about your documents</p>
         </div>
         
-        <Card className="flex-1 flex flex-col overflow-hidden">
+        <Card className="flex-1 flex flex-col overflow-hidden h-full">
           {/* Messages */}
           <ScrollArea className="flex-1 p-3 sm:p-4" ref={scrollAreaRef}>
             <div className="space-y-4 sm:space-y-6">
@@ -292,13 +292,13 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
       </div>
 
       {/* Sources Panel */}
-      <div className="w-80 flex flex-col">
+      <div className="w-80 flex flex-col h-full">
         {/* Title Section */}
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-foreground">Recent Sources</h3>
         </div>
         
-        <Card className="h-full flex flex-col overflow-hidden">
+        <Card className="flex-1 flex flex-col overflow-hidden h-full">
           {messages.length > 1 ? (
             <div className="flex-1 p-4">
               <ScrollArea className="h-full">
