@@ -209,10 +209,12 @@ export const DocumentCard = ({
             <h3 className="text-sm font-medium text-foreground truncate">
               {document.title}
             </h3>
-            
+
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-xs text-muted-foreground">
-                {document.summary ? document.summary.split('\n')[0] : document.size}
+                {document.summary
+                  ? document.summary.split("\n")[0]
+                  : document.size}
               </span>
               <span className="text-xs text-muted-foreground">•</span>
               <span className="text-xs text-muted-foreground">
@@ -242,7 +244,7 @@ export const DocumentCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
                   onView(document);
@@ -251,7 +253,7 @@ export const DocumentCard = ({
                 <Download className="mr-2 h-4 w-4" />
                 View
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
                   onShare(document);
@@ -260,19 +262,21 @@ export const DocumentCard = ({
                 <Share className="mr-2 h-4 w-4" />
                 Share
               </DropdownMenuItem>
-              {!document.summary && document.status === "ready" && onGenerateSummary && (
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onGenerateSummary(document);
-                  }}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generate Summary
-                </DropdownMenuItem>
-              )}
+              {!document.summary &&
+                document.status === "ready" &&
+                onGenerateSummary && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGenerateSummary(document);
+                    }}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate Summary
+                  </DropdownMenuItem>
+                )}
               {document.status === "failed" && (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRetry(e);

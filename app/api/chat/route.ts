@@ -14,13 +14,21 @@ async function questionEmbedding(q: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("=== RAG CHAT API START ===");
+    
     const { workspaceId, userId, question } = await req.json();
-    if (!workspaceId || !userId || !question)
+    
+    if (!workspaceId || !userId || !question) {
+      console.error("Missing required fields:", { workspaceId, userId, question });
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
+    }
+
+    console.log("Processing question:", question);
+    console.log("Workspace:", workspaceId, "User:", userId);
 
     const supabase = supabaseService();
 
-    // log query
+    // Log query
     const { data: qrow } = await supabase
       .from("queries")
       .insert({
@@ -32,59 +40,139 @@ export async function POST(req: NextRequest) {
       .select("*")
       .single();
 
+    console.log("Query logged with ID:", qrow?.id);
+
+    // Generate question embedding
+    console.log("Generating question embedding");
     const qvec = await questionEmbedding(question);
+    console.log("Question embedding generated, dimension:", qvec.length);
+
     const topK = Number(process.env.RAG_TOP_K || 6);
+    console.log("Retrieving top", topK, "chunks");
 
-    // Retrieve chunks only from docs user can access (RLS enforces this)
-    const { data: retrieved, error } = await supabase.rpc("match_chunks", {
-      p_workspace_id: workspaceId,
-      p_query_embedding: qvec,
-      p_match_count: topK,
-    });
+    // Retrieve relevant chunks using vector similarity
+    let chunks: any[] = [];
+    
+    try {
+      // Try to use the RPC function first
+      const { data: retrieved, error: rpcError } = await supabase.rpc(
+        "match_chunks",
+        {
+          p_workspace_id: workspaceId,
+          p_query_embedding: qvec,
+          p_match_count: topK,
+        }
+      );
 
-    // Fallback if RPC not created yet: simple vector search join
-    let chunks = retrieved as any[] | null;
-    if (!chunks) {
-      const { data } = await supabase
-        .from("document_chunks")
-        .select("id, text, document_id")
-        .limit(topK);
-      chunks = data || [];
+      if (rpcError) {
+        console.log("RPC function not available, using fallback:", rpcError.message);
+        
+        // Fallback: simple vector search
+        const { data: fallbackChunks, error: fallbackError } = await supabase
+          .from("document_chunks")
+          .select(`
+            id, 
+            text, 
+            document_id,
+            documents!inner (
+              id,
+              title,
+              workspace_id
+            )
+          `)
+          .eq("documents.workspace_id", workspaceId)
+          .limit(topK);
+
+        if (fallbackError) {
+          console.error("Fallback query error:", fallbackError);
+          throw fallbackError;
+        }
+
+        chunks = fallbackChunks || [];
+      } else {
+        chunks = retrieved || [];
+      }
+
+      console.log("Retrieved", chunks.length, "chunks");
+
+    } catch (retrievalError) {
+      console.error("Chunk retrieval error:", retrievalError);
+      throw retrievalError;
     }
 
-    const context = (chunks || [])
-      .map((c, i) => `# Source ${i + 1}\n${c.text}`)
+    if (chunks.length === 0) {
+      console.log("No relevant chunks found");
+      return NextResponse.json({
+        answer: "I don't have any relevant information in the uploaded documents to answer this question. Please make sure you have uploaded documents and they have been processed.",
+        citations: [],
+        queryId: qrow?.id,
+      });
+    }
+
+    // Build context from retrieved chunks
+    const context = chunks
+      .map((c, i) => `# Source ${i + 1} (${c.documents?.title || 'Unknown Document'})\n${c.text}`)
       .join("\n\n");
 
+    console.log("Context built, length:", context.length);
+
+    // Generate answer using OpenAI
+    console.log("Generating answer with OpenAI");
     const prompt = [
       {
         role: "system",
-        content: `You are Bloom's internal knowledge assistant. Only answer from the provided CONTEXT. If the answer is not in context, say you don't have enough information.`,
+        content: `You are Bloom's intelligent knowledge assistant. You help users find information from their uploaded documents. 
+
+IMPORTANT RULES:
+- Only answer based on the provided CONTEXT from the documents
+- If the answer is not in the context, say "I don't have enough information in the uploaded documents to answer this question"
+- Be concise but comprehensive
+- Include [Source n] citations where n refers to the numbered sources
+- If you reference specific information, always cite the source`,
       },
       {
         role: "user",
-        content: `QUESTION: ${question}\n\nCONTEXT:\n${context}\n\nReturn a concise answer with bullet points and include [Source n] markers where n refers to the numbered sources.`,
+        content: `QUESTION: ${question}
+
+CONTEXT FROM DOCUMENTS:
+${context}
+
+Please provide a helpful answer based on the context above. Include [Source n] citations for any information you reference.`,
       },
     ] as any;
 
     const completion = await openai.chat.completions.create({
-      model: process.env.GENERATION_MODEL!,
+      model: process.env.GENERATION_MODEL || "gpt-4o-mini",
       messages: prompt,
       temperature: 0.2,
+      max_tokens: 1000,
     });
 
-    const answer = completion.choices[0]?.message?.content || "";
+    const answer = completion.choices[0]?.message?.content || "I couldn't generate an answer.";
 
-    // map simple citations
-    const citations = (chunks || []).map((c, i) => ({
+    console.log("Answer generated, length:", answer.length);
+
+    // Create citations
+    const citations = chunks.map((c, i) => ({
       index: i + 1,
       chunkId: c.id,
       documentId: c.document_id,
+      documentTitle: c.documents?.title || 'Unknown Document',
+      text: c.text.substring(0, 200) + (c.text.length > 200 ? '...' : ''),
     }));
 
-    return NextResponse.json({ answer, citations, queryId: qrow?.id });
+    console.log("Citations created:", citations.length);
+    console.log("=== RAG CHAT API SUCCESS ===");
+
+    return NextResponse.json({ 
+      answer, 
+      citations, 
+      queryId: qrow?.id,
+      chunksFound: chunks.length 
+    });
+
   } catch (e: any) {
-    console.error(e);
+    console.error("=== RAG CHAT API ERROR ===", e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

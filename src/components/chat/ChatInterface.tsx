@@ -44,8 +44,8 @@ interface ChatInterfaceProps {
 
 export const ChatInterface = ({
   onSourceView,
-  workspaceId = "default-workspace",
-  userId = "default-user",
+  workspaceId = "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
+  userId = "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID
 }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -158,8 +158,8 @@ export const ChatInterface = ({
         content: answer,
         citations: citations?.map((c: any) => ({
           id: c.chunkId.toString(),
-          documentTitle: `Document ${c.documentId}`,
-          snippet: "Retrieved from document",
+          documentTitle: c.documentTitle || `Document ${c.documentId}`,
+          snippet: c.text || "Retrieved from document",
           relevanceScore: 0.9,
         })),
         timestamp: new Date(),
