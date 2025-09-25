@@ -41,65 +41,69 @@ export const UploadDropzone = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
 
-  const uploadFile = useCallback(async (fileId: string, file: File) => {
-    console.log("=== STARTING UPLOAD ===", file.name);
-
-    setUploadFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
-      )
-    );
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("workspaceId", workspaceId);
-      formData.append("ownerId", ownerId);
-      formData.append("title", file.name);
+  const uploadFile = useCallback(
+    async (fileId: string, file: File) => {
+      console.log("=== STARTING UPLOAD ===", file.name);
 
       setUploadFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
+        prev.map((f) =>
+          f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
+        )
       );
 
-      console.log("=== SENDING REQUEST ===");
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("workspaceId", workspaceId);
+        formData.append("ownerId", ownerId);
+        formData.append("title", file.name);
 
-      console.log("=== RESPONSE RECEIVED ===", response.status);
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
+        );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Upload failed:", errorData);
-        throw new Error(errorData.error || "Upload failed");
+        console.log("=== SENDING REQUEST ===");
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        console.log("=== RESPONSE RECEIVED ===", response.status);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Upload failed:", errorData);
+          throw new Error(errorData.error || "Upload failed");
+        }
+
+        const result = await response.json();
+        console.log("=== UPLOAD SUCCESS ===", result);
+
+        setUploadFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId ? { ...f, progress: 100, status: "success" } : f
+          )
+        );
+
+        onUploadComplete?.([file]);
+      } catch (error) {
+        console.error("=== UPLOAD ERROR ===", error);
+        setUploadFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  status: "error",
+                  error:
+                    error instanceof Error ? error.message : "Upload failed",
+                }
+              : f
+          )
+        );
       }
-
-      const result = await response.json();
-      console.log("=== UPLOAD SUCCESS ===", result);
-
-      setUploadFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId ? { ...f, progress: 100, status: "success" } : f
-        )
-      );
-
-      onUploadComplete?.([file]);
-    } catch (error) {
-      console.error("=== UPLOAD ERROR ===", error);
-      setUploadFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId
-            ? {
-                ...f,
-                status: "error",
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : f
-        )
-      );
-    }
-  }, [workspaceId, ownerId, onUploadComplete]);
+    },
+    [workspaceId, ownerId, onUploadComplete]
+  );
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -108,57 +112,63 @@ export const UploadDropzone = ({
     handleFiles(files);
   }, []);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      handleFiles(files);
-    }
-  }, []);
-
-  const handleFiles = useCallback((files: File[]) => {
-    console.log("=== HANDLING FILES ===", files.length);
-    
-    const newUploadFiles: UploadFile[] = files.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      progress: 0,
-      status: "pending",
-    }));
-
-    // Validate files
-    const validatedFiles = newUploadFiles.map((uploadFile) => {
-      const file = uploadFile.file;
-      const sizeInMB = file.size / (1024 * 1024);
-      const extension = "." + file.name.split(".").pop()?.toLowerCase();
-
-      if (sizeInMB > maxSize) {
-        return {
-          ...uploadFile,
-          status: "error" as const,
-          error: `File size exceeds ${maxSize}MB`,
-        };
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
       }
+    },
+    []
+  );
 
-      if (!acceptedTypes.includes(extension)) {
-        return {
-          ...uploadFile,
-          status: "error" as const,
-          error: "File type not supported",
-        };
-      }
+  const handleFiles = useCallback(
+    (files: File[]) => {
+      console.log("=== HANDLING FILES ===", files.length);
 
-      return uploadFile;
-    });
+      const newUploadFiles: UploadFile[] = files.map((file) => ({
+        id: Math.random().toString(36).substr(2, 9),
+        file,
+        progress: 0,
+        status: "pending",
+      }));
 
-    setUploadFiles((prev) => [...prev, ...validatedFiles]);
+      // Validate files
+      const validatedFiles = newUploadFiles.map((uploadFile) => {
+        const file = uploadFile.file;
+        const sizeInMB = file.size / (1024 * 1024);
+        const extension = "." + file.name.split(".").pop()?.toLowerCase();
 
-    // Start upload for valid files immediately
-    validatedFiles.forEach((uploadFileItem) => {
-      if (uploadFileItem.status === "pending") {
-        uploadFile(uploadFileItem.id, uploadFileItem.file);
-      }
-    });
-  }, [maxSize, acceptedTypes, uploadFile]);
+        if (sizeInMB > maxSize) {
+          return {
+            ...uploadFile,
+            status: "error" as const,
+            error: `File size exceeds ${maxSize}MB`,
+          };
+        }
+
+        if (!acceptedTypes.includes(extension)) {
+          return {
+            ...uploadFile,
+            status: "error" as const,
+            error: "File type not supported",
+          };
+        }
+
+        return uploadFile;
+      });
+
+      setUploadFiles((prev) => [...prev, ...validatedFiles]);
+
+      // Start upload for valid files immediately
+      validatedFiles.forEach((uploadFileItem) => {
+        if (uploadFileItem.status === "pending") {
+          uploadFile(uploadFileItem.id, uploadFileItem.file);
+        }
+      });
+    },
+    [maxSize, acceptedTypes, uploadFile]
+  );
 
   const removeFile = (fileId: string) => {
     setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
@@ -271,9 +281,7 @@ export const UploadDropzone = ({
                   )}
 
                   {uploadFile.status === "error" && uploadFile.error && (
-                    <p className="text-xs text-red-500">
-                      {uploadFile.error}
-                    </p>
+                    <p className="text-xs text-red-500">{uploadFile.error}</p>
                   )}
 
                   {uploadFile.status === "success" && (
