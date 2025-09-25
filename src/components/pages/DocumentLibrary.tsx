@@ -625,7 +625,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             </Button>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
