@@ -237,22 +237,40 @@ export const DocumentCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onView(document)}>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView(document);
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 View
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onShare(document)}>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(document);
+                }}
+              >
                 <Share className="mr-2 h-4 w-4" />
                 Share
               </DropdownMenuItem>
               {document.status === "failed" && (
-                <DropdownMenuItem onClick={handleRetry}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRetry(e);
+                  }}
+                >
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Retry Upload
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
-                onClick={() => onDelete(document)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(document);
+                }}
                 className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />

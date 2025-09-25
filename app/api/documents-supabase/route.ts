@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
             });
 
           const fileSize = fileData?.[0]?.metadata?.size;
-          const formattedSize = fileSize 
+          const formattedSize = fileSize
             ? `${(fileSize / 1024 / 1024).toFixed(1)} MB`
             : "Size not available";
 
