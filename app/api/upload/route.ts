@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
       acl: "workspace",
     };
 
-    // Add to documents store
-    const addResponse = await fetch(`${req.nextUrl.origin}/api/documents`, {
+    // Add to Supabase database
+    const addResponse = await fetch(`${req.nextUrl.origin}/api/documents-supabase`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(documentData),

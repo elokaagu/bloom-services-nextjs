@@ -160,7 +160,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         ...(searchTerm && { search: searchTerm }),
       });
 
-      const response = await fetch(`/api/documents?${params}`);
+        const response = await fetch(`/api/documents-supabase?${params}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch documents: ${response.status}`);
@@ -190,14 +190,14 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       } else {
         throw new Error(data.error || "Failed to fetch documents");
       }
-    } catch (err) {
-      console.error("Error fetching documents:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch documents"
-      );
-      // Fallback to mock data if database fails
-      setDocuments(mockDocuments);
-    } finally {
+      } catch (err) {
+        console.error("Error fetching documents:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch documents"
+        );
+        // No fallback - show error state instead of mock data
+        setDocuments([]);
+      } finally {
       setIsLoading(false);
     }
   };
@@ -577,7 +577,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             {error}
           </p>
           <p className="text-muted-foreground mb-4 text-sm sm:text-base max-w-md mx-auto">
-            Showing mock data for now. Please check your Supabase configuration.
+            Please check your Supabase configuration and ensure the database schema is set up correctly.
           </p>
           <Button onClick={fetchDocuments} size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
