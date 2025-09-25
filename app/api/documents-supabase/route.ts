@@ -122,8 +122,8 @@ export async function POST(req: NextRequest) {
 
     const newDocument = {
       title,
-      workspace_id: workspaceId || "default-workspace",
-      owner_id: ownerId || "default-user",
+      workspace_id: workspaceId || "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
+      owner_id: ownerId || "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID
       storage_path: `documents/${title}`,
       status,
       acl,
