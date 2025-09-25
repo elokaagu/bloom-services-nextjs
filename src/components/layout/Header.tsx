@@ -12,9 +12,7 @@ export const Header = () => {
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">Bloom</h1>
-          <p className="text-xs text-muted-foreground">
-            AI Knowledge Platform
-          </p>
+          <p className="text-xs text-muted-foreground">AI Knowledge Platform</p>
         </div>
       </div>
 

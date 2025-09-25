@@ -210,23 +210,9 @@ export const DocumentCard = ({
               {document.title}
             </h3>
             
-            {/* Document Summary */}
-            {document.summary && (
-              <div className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                {document.summary.split('\n').slice(0, 2).map((line, index) => (
-                  <div key={index} className="line-clamp-2">
-                    {line}
-                  </div>
-                ))}
-                {document.summary.split('\n').length > 2 && (
-                  <div className="text-primary/70 mt-1">...</div>
-                )}
-              </div>
-            )}
-            
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-xs text-muted-foreground">
-                {document.size}
+                {document.summary ? document.summary.split('\n')[0] : document.size}
               </span>
               <span className="text-xs text-muted-foreground">•</span>
               <span className="text-xs text-muted-foreground">
