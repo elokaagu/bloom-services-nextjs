@@ -148,7 +148,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(new Set());
+  const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(
+    new Set()
+  );
   const { toast } = useToast();
 
   // Fetch documents from database
@@ -184,7 +186,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             uploadedAt: new Date(doc.created_at).toLocaleDateString(),
             status: doc.status,
             acl: doc.acl || "workspace",
-            owner: "Unknown", // We'll need to join with users table
+            owner: doc.users?.name || doc.users?.email || "Unknown User",
             error: doc.error,
           })
         );
@@ -229,9 +231,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const handleDocumentDelete = async (doc: Document) => {
     try {
       console.log("Deleting document:", doc.id);
-      
+
       // Mark document as being deleted
-      setDeletingDocuments(prev => new Set(prev).add(doc.id));
+      setDeletingDocuments((prev) => new Set(prev).add(doc.id));
 
       const response = await fetch(`/api/documents/${doc.id}`, {
         method: "DELETE",
@@ -270,7 +272,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       });
     } finally {
       // Remove from deleting set
-      setDeletingDocuments(prev => {
+      setDeletingDocuments((prev) => {
         const newSet = new Set(prev);
         newSet.delete(doc.id);
         return newSet;

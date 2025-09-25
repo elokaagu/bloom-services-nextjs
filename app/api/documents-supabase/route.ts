@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     console.log("Query parameters:", { workspaceId, status, search });
 
-    // Build query
+    // Build query with user join
     let query = supabase
       .from("documents")
       .select(
@@ -45,7 +45,11 @@ export async function GET(req: NextRequest) {
         acl,
         owner_id,
         storage_path,
-        error
+        error,
+        users!documents_owner_id_fkey (
+          name,
+          email
+        )
       `
       )
       .eq("workspace_id", workspaceId)

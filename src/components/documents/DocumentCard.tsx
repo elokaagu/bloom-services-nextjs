@@ -2,32 +2,32 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
+import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  FileText, 
-  FileImage, 
-  FileSpreadsheet, 
-  File, 
-  MoreHorizontal, 
-  Download, 
-  Share, 
+import {
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  File,
+  MoreHorizontal,
+  Download,
+  Share,
   Trash2,
   Clock,
   CheckCircle,
@@ -38,18 +38,18 @@ import {
   Users,
   Lock,
   Globe,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Document {
   id: string;
   title: string;
-  type: 'pdf' | 'docx' | 'pptx' | 'txt' | 'xlsx';
+  type: "pdf" | "docx" | "pptx" | "txt" | "xlsx";
   size: string;
   uploadedAt: string;
-  status: 'uploading' | 'processing' | 'ready' | 'failed';
-  acl: 'private' | 'workspace' | 'organization';
+  status: "uploading" | "processing" | "ready" | "failed";
+  acl: "private" | "workspace" | "organization";
   owner: string;
   progress?: number;
   preview?: string;
@@ -63,7 +63,7 @@ interface DocumentCardProps {
   onView: (doc: Document) => void;
   onDelete: (doc: Document) => void;
   onShare: (doc: Document) => void;
-  onACLChange?: (doc: Document, newACL: Document['acl']) => void;
+  onACLChange?: (doc: Document, newACL: Document["acl"]) => void;
   isSelected?: boolean;
   onSelect?: (doc: Document, selected: boolean) => void;
   showSelection?: boolean;
@@ -74,29 +74,29 @@ const getFileIcon = (type: string, className = "h-5 w-5") => {
   return null;
 };
 
-const getStatusBadge = (status: Document['status'], progress?: number) => {
+const getStatusBadge = (status: Document["status"], progress?: number) => {
   switch (status) {
-    case 'uploading':
+    case "uploading":
       return (
         <Badge variant="secondary" className="flex items-center space-x-1">
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>Uploading {progress}%</span>
         </Badge>
       );
-    case 'processing':
+    case "processing":
       return (
         <Badge variant="secondary" className="flex items-center space-x-1">
           <Clock className="h-3 w-3" />
           <span>Processing</span>
         </Badge>
       );
-    case 'ready':
+    case "ready":
       return (
         <Badge className="flex items-center space-x-1 bg-primary text-primary-foreground">
           <span>Ready</span>
         </Badge>
       );
-    case 'failed':
+    case "failed":
       return (
         <Badge variant="destructive" className="flex items-center space-x-1">
           <AlertCircle className="h-3 w-3" />
@@ -106,31 +106,31 @@ const getStatusBadge = (status: Document['status'], progress?: number) => {
   }
 };
 
-const getACLBadge = (acl: Document['acl'], onClick?: () => void) => {
+const getACLBadge = (acl: Document["acl"], onClick?: () => void) => {
   const variants = {
-    private: { 
-      label: 'Private', 
+    private: {
+      label: "Private",
       icon: Lock,
-      className: 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+      className: "bg-gray-100 text-gray-800 hover:bg-gray-200",
     },
-    workspace: { 
-      label: 'Workspace', 
+    workspace: {
+      label: "Workspace",
       icon: Users,
-      className: 'bg-blue-100 text-blue-800 hover:bg-blue-200' 
+      className: "bg-blue-100 text-blue-800 hover:bg-blue-200",
     },
-    organization: { 
-      label: 'Organization', 
+    organization: {
+      label: "Organization",
       icon: Globe,
-      className: 'bg-green-100 text-green-800 hover:bg-green-200' 
-    }
+      className: "bg-green-100 text-green-800 hover:bg-green-200",
+    },
   };
-  
+
   const variant = variants[acl];
   const Icon = variant.icon;
-  
+
   return (
-    <Badge 
-      variant="secondary" 
+    <Badge
+      variant="secondary"
       className={cn(
         "text-xs flex items-center space-x-1 transition-colors",
         variant.className,
@@ -144,45 +144,44 @@ const getACLBadge = (acl: Document['acl'], onClick?: () => void) => {
   );
 };
 
-export const DocumentCard = ({ 
-  document, 
-  onView, 
-  onDelete, 
-  onShare, 
+export const DocumentCard = ({
+  document,
+  onView,
+  onDelete,
+  onShare,
   onACLChange,
   isSelected,
   onSelect,
-  showSelection
+  showSelection,
 }: DocumentCardProps) => {
-  const isClickable = document.status === 'ready';
-  
+  const isClickable = document.status === "ready";
+
   const handleCardClick = () => {
     if (isClickable) {
       onView(document);
     }
   };
-  
-  const handleACLChange = (newACL: Document['acl']) => {
+
+  const handleACLChange = (newACL: Document["acl"]) => {
     onACLChange?.(document, newACL);
   };
 
   const handleRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Mock retry logic
-    console.log('Retrying upload for:', document.title);
+    console.log("Retrying upload for:", document.title);
   };
 
   const cardContent = (
-    <Card className={cn(
-      "group relative overflow-hidden transition-all duration-200",
-      "hover:shadow-md border-border/50",
-      isClickable && "cursor-pointer hover:shadow-lg",
-      isSelected && "ring-2 ring-primary"
-    )}>
-      <div 
-        className="p-4"
-        onClick={handleCardClick}
-      >
+    <Card
+      className={cn(
+        "group relative overflow-hidden transition-all duration-200",
+        "hover:shadow-md border-border/50",
+        isClickable && "cursor-pointer hover:shadow-lg",
+        isSelected && "ring-2 ring-primary"
+      )}
+    >
+      <div className="p-4" onClick={handleCardClick}>
         {/* Selection checkbox */}
         {showSelection && (
           <div className="absolute top-3 left-3 z-10">
@@ -196,15 +195,24 @@ export const DocumentCard = ({
         )}
 
         {/* Header with actions */}
-        <div className={cn("flex items-start justify-between", showSelection && "ml-8")}>
+        <div
+          className={cn(
+            "flex items-start justify-between",
+            showSelection && "ml-8"
+          )}
+        >
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium text-foreground truncate">
               {document.title}
             </h3>
             <div className="flex items-center space-x-2 mt-1">
-              <span className="text-xs text-muted-foreground">{document.size}</span>
+              <span className="text-xs text-muted-foreground">
+                {document.size}
+              </span>
               <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">{document.uploadedAt}</span>
+              <span className="text-xs text-muted-foreground">
+                {document.uploadedAt}
+              </span>
               {document.lastAccessed && (
                 <>
                   <span className="text-xs text-muted-foreground">•</span>
@@ -216,12 +224,12 @@ export const DocumentCard = ({
               )}
             </div>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -237,13 +245,13 @@ export const DocumentCard = ({
                 <Share className="mr-2 h-4 w-4" />
                 Share
               </DropdownMenuItem>
-              {document.status === 'failed' && (
+              {document.status === "failed" && (
                 <DropdownMenuItem onClick={handleRetry}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Retry Upload
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => onDelete(document)}
                 className="text-destructive"
               >
@@ -258,11 +266,11 @@ export const DocumentCard = ({
         <div className="flex items-center justify-between mt-3">
           <div className="flex items-center space-x-2">
             {getStatusBadge(document.status, document.progress)}
-            
+
             {/* Quick ACL editor */}
             {onACLChange ? (
               <Select value={document.acl} onValueChange={handleACLChange}>
-                <SelectTrigger 
+                <SelectTrigger
                   className="w-auto h-auto p-0 border-0 bg-transparent hover:bg-muted/50 rounded-md"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -293,12 +301,14 @@ export const DocumentCard = ({
               getACLBadge(document.acl)
             )}
           </div>
-          
-          <span className="text-xs text-muted-foreground">by {document.owner}</span>
+
+          <span className="text-xs text-muted-foreground">
+            by {document.owner}
+          </span>
         </div>
 
         {/* Analytics teaser */}
-        {document.queryCount !== undefined && document.status === 'ready' && (
+        {document.queryCount !== undefined && document.status === "ready" && (
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3" />
@@ -318,10 +328,10 @@ export const DocumentCard = ({
         )}
 
         {/* Progress bar for uploading documents */}
-        {document.status === 'uploading' && document.progress && (
+        {document.status === "uploading" && document.progress && (
           <div className="mt-3">
             <div className="w-full bg-muted rounded-full h-1.5">
-              <div 
+              <div
                 className="bg-primary h-1.5 rounded-full transition-all duration-300"
                 style={{ width: `${document.progress}%` }}
               />
@@ -330,13 +340,13 @@ export const DocumentCard = ({
         )}
 
         {/* Failed state with retry button */}
-        {document.status === 'failed' && (
+        {document.status === "failed" && (
           <div className="mt-3 p-2 bg-destructive/10 rounded-md border border-destructive/20">
             <div className="flex items-center justify-between">
               <span className="text-xs text-destructive">Upload failed</span>
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={handleRetry}
                 className="h-6 text-xs"
               >
@@ -351,12 +361,10 @@ export const DocumentCard = ({
   );
 
   // Wrap with hover card for preview
-  if (document.preview && document.status === 'ready') {
+  if (document.preview && document.status === "ready") {
     return (
       <HoverCard>
-        <HoverCardTrigger asChild>
-          {cardContent}
-        </HoverCardTrigger>
+        <HoverCardTrigger asChild>{cardContent}</HoverCardTrigger>
         <HoverCardContent className="w-80" side="right">
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">{document.title}</h4>
@@ -365,7 +373,11 @@ export const DocumentCard = ({
             </p>
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-muted-foreground">Preview</span>
-              <Button size="sm" variant="outline" onClick={() => onView(document)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onView(document)}
+              >
                 Open Document
               </Button>
             </div>
