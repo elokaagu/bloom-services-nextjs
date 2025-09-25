@@ -186,6 +186,10 @@ export const UploadDropzone = ({
         return <CheckCircle className="h-4 w-4 text-success" />;
       case "error":
         return <AlertCircle className="h-4 w-4 text-destructive" />;
+      case "uploading":
+        return <File className="h-4 w-4 text-primary animate-pulse" />;
+      case "pending":
+        return <File className="h-4 w-4 text-muted-foreground" />;
       default:
         return <File className="h-4 w-4 text-muted-foreground" />;
     }
@@ -261,6 +265,14 @@ export const UploadDropzone = ({
                       </Button>
                     </div>
                   </div>
+
+                  {uploadFile.status === "pending" && (
+                    <div className="flex items-center space-x-1">
+                      <Badge variant="outline" className="text-xs">
+                        Ready to upload
+                      </Badge>
+                    </div>
+                  )}
 
                   {uploadFile.status === "uploading" && (
                     <div className="space-y-1">
