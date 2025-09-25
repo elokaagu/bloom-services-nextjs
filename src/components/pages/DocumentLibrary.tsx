@@ -20,7 +20,7 @@ import {
   DocumentCard,
   type Document,
 } from "@/components/documents/DocumentCard";
-import { UploadDropzone } from "@/components/upload/UploadDropzone";
+import { UploadDropzone } from "@/components/upload/UploadDropzoneNew";
 import {
   Upload,
   Search,

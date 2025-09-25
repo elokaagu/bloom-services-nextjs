@@ -10,11 +10,13 @@ export default function UploadTest() {
   const testUpload = async () => {
     setIsLoading(true);
     setResult("Testing upload...");
-    
+
     try {
       // Create a test file
-      const testFile = new File(["test content"], "test.txt", { type: "text/plain" });
-      
+      const testFile = new File(["test content"], "test.txt", {
+        type: "text/plain",
+      });
+
       const formData = new FormData();
       formData.append("file", testFile);
       formData.append("workspaceId", "550e8400-e29b-41d4-a716-446655440001");
@@ -38,7 +40,11 @@ export default function UploadTest() {
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setResult(`❌ Upload error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setResult(
+        `❌ Upload error: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
