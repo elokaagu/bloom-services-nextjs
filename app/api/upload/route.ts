@@ -16,14 +16,16 @@ export async function POST(req: NextRequest) {
     const filename = `${crypto.randomUUID()}-${file.name}`;
     const bucket = process.env.STORAGE_BUCKET!;
 
+    const supabase = supabaseService();
+
     // 1) upload raw file
-    const { data: uploadRes, error: uploadErr } = await supabaseService.storage
+    const { data: uploadRes, error: uploadErr } = await supabase.storage
       .from(bucket)
       .upload(filename, await file.arrayBuffer(), { contentType: file.type });
     if (uploadErr) throw uploadErr;
 
     // 2) create document row (status=uploading)
-    const { data: doc, error: docErr } = await supabaseService
+    const { data: doc, error: docErr } = await supabase
       .from("documents")
       .insert({
         workspace_id: workspaceId,

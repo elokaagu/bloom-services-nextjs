@@ -8,7 +8,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const VECTOR_DIM = Number(process.env.VECTOR_DIM || 1536);
 
 async function fetchFileBuffer(path: string) {
-  const { data, error } = await supabaseService.storage
+  const supabase = supabaseService();
+  const { data, error } = await supabase.storage
     .from(process.env.STORAGE_BUCKET!)
     .download(path);
   if (error) throw error;
@@ -40,8 +41,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
 
+    const supabase = supabaseService();
+
     // load doc
-    const { data: doc, error: docErr } = await supabaseService
+    const { data: doc, error: docErr } = await supabase
       .from("documents")
       .select("*")
       .eq("id", documentId)
@@ -49,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (docErr) throw docErr;
 
     // update status
-    await supabaseService
+    await supabase
       .from("documents")
       .update({ status: "processing" })
       .eq("id", documentId);
@@ -80,12 +83,12 @@ export async function POST(req: NextRequest) {
       embedding: embeddings[i] as any,
     }));
 
-    const { error: insErr } = await supabaseService
+    const { error: insErr } = await supabase
       .from("document_chunks")
       .insert(rows);
     if (insErr) throw insErr;
 
-    await supabaseService
+    await supabase
       .from("documents")
       .update({ status: "ready" })
       .eq("id", documentId);
@@ -96,11 +99,13 @@ export async function POST(req: NextRequest) {
       // mark failed if possible
       try {
         const { documentId } = await req.json();
-        if (documentId)
-          await supabaseService
+        if (documentId) {
+          const supabase = supabaseService();
+          await supabase
             .from("documents")
             .update({ status: "failed", error: e.message })
             .eq("id", documentId);
+        }
       } catch {}
     }
     return NextResponse.json({ error: e.message }, { status: 500 });

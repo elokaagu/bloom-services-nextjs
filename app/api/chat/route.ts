@@ -18,8 +18,10 @@ export async function POST(req: NextRequest) {
     if (!workspaceId || !userId || !question)
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
 
+    const supabase = supabaseService();
+
     // log query
-    const { data: qrow } = await supabaseService
+    const { data: qrow } = await supabase
       .from("queries")
       .insert({
         workspace_id: workspaceId,
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
     const topK = Number(process.env.RAG_TOP_K || 6);
 
     // Retrieve chunks only from docs user can access (RLS enforces this)
-    const { data: retrieved, error } = await supabaseService.rpc(
+    const { data: retrieved, error } = await supabase.rpc(
       "match_chunks",
       {
         p_workspace_id: workspaceId,
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     // Fallback if RPC not created yet: simple vector search join
     let chunks = retrieved as any[] | null;
     if (!chunks) {
-      const { data } = await supabaseService
+      const { data } = await supabase
         .from("document_chunks")
         .select("id, text, document_id")
         .limit(topK);
