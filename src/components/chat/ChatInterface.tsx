@@ -1,19 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Send, 
-  Bot, 
-  User, 
-  FileText, 
+import {
+  Send,
+  Bot,
+  User,
+  FileText,
   ExternalLink,
   ChevronDown,
   ChevronUp,
   AlertCircle,
-  Shield
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,12 +28,12 @@ export interface Citation {
 
 interface Message {
   id: string;
-  type: 'user' | 'assistant';
+  type: "user" | "assistant";
   content: string;
   citations?: Citation[];
   timestamp: Date;
   isError?: boolean;
-  errorType?: 'permission' | 'system';
+  errorType?: "permission" | "system";
 }
 
 interface ChatInterfaceProps {
@@ -43,67 +43,75 @@ interface ChatInterfaceProps {
 export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      type: 'assistant',
-      content: 'Hello! I\'m your Bloom AI assistant. I can help you find information from your organization\'s documents. What would you like to know?',
-      timestamp: new Date(Date.now() - 60000)
-    }
+      id: "1",
+      type: "assistant",
+      content:
+        "Hello! I'm your Bloom AI assistant. I can help you find information from your organization's documents. What would you like to know?",
+      timestamp: new Date(Date.now() - 60000),
+    },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedSources, setExpandedSources] = useState<string>('');
+  const [expandedSources, setExpandedSources] = useState<string>("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Mock responses with citations and permission scenarios
   const mockResponses = [
     {
-      content: "Based on the documents in your workspace, the data retention policy requires all customer data to be retained for a minimum of 7 years for compliance purposes. However, personal data can be deleted upon request under GDPR Article 17 (Right to Erasure), with some exceptions for legal obligations.",
+      content:
+        "Based on the documents in your workspace, the data retention policy requires all customer data to be retained for a minimum of 7 years for compliance purposes. However, personal data can be deleted upon request under GDPR Article 17 (Right to Erasure), with some exceptions for legal obligations.",
       citations: [
         {
-          id: 'c1',
-          documentTitle: 'Data Retention Policy 2024.pdf',
+          id: "c1",
+          documentTitle: "Data Retention Policy 2024.pdf",
           pageNumber: 3,
-          section: 'Section 2.1 - Customer Data',
-          snippet: 'All customer transactional data must be retained for a period of seven (7) years from the date of last customer interaction...',
-          relevanceScore: 0.95
+          section: "Section 2.1 - Customer Data",
+          snippet:
+            "All customer transactional data must be retained for a period of seven (7) years from the date of last customer interaction...",
+          relevanceScore: 0.95,
         },
         {
-          id: 'c2',
-          documentTitle: 'GDPR Compliance Guide.docx',
+          id: "c2",
+          documentTitle: "GDPR Compliance Guide.docx",
           pageNumber: 12,
-          section: 'Right to Erasure',
-          snippet: 'Under Article 17 of GDPR, individuals have the right to have their personal data erased in specific circumstances...',
-          relevanceScore: 0.88
-        }
-      ]
+          section: "Right to Erasure",
+          snippet:
+            "Under Article 17 of GDPR, individuals have the right to have their personal data erased in specific circumstances...",
+          relevanceScore: 0.88,
+        },
+      ],
     },
     {
-      content: "🚫 **Access Denied**\n\nI don't have access to the Q3 2024 Financial Report. This document is marked as **Private** and is only accessible to its owner (Emily Watson).\n\n**Why this happened:**\n• Document has private access control level\n• You don't have explicit permission to view this content\n\n**What you can do:**\n1. Contact Emily Watson directly for access\n2. Request workspace admin to change document permissions\n3. Look for similar information in workspace-level documents",
+      content:
+        "🚫 **Access Denied**\n\nI don't have access to the Q3 2024 Financial Report. This document is marked as **Private** and is only accessible to its owner (Emily Watson).\n\n**Why this happened:**\n• Document has private access control level\n• You don't have explicit permission to view this content\n\n**What you can do:**\n1. Contact Emily Watson directly for access\n2. Request workspace admin to change document permissions\n3. Look for similar information in workspace-level documents",
       isError: true,
-      errorType: 'permission' as const,
-      citations: []
+      errorType: "permission" as const,
+      citations: [],
     },
     {
-      content: "Here are the key security recommendations from your organization's security documentation:\n\n**Access Control:**\n• Implement multi-factor authentication for all systems\n• Use role-based access control (RBAC)\n• Regular access reviews every 90 days\n\n**Network Security:**\n• Deploy network segmentation\n• Monitor all network traffic\n• Use VPN for remote access\n\n**Data Protection:**\n• Encrypt data at rest and in transit\n• Regular backup verification\n• Implement data loss prevention (DLP)",
+      content:
+        "Here are the key security recommendations from your organization's security documentation:\n\n**Access Control:**\n• Implement multi-factor authentication for all systems\n• Use role-based access control (RBAC)\n• Regular access reviews every 90 days\n\n**Network Security:**\n• Deploy network segmentation\n• Monitor all network traffic\n• Use VPN for remote access\n\n**Data Protection:**\n• Encrypt data at rest and in transit\n• Regular backup verification\n• Implement data loss prevention (DLP)",
       citations: [
         {
-          id: 'c3',
-          documentTitle: 'Security Best Practices.pdf',
+          id: "c3",
+          documentTitle: "Security Best Practices.pdf",
           pageNumber: 5,
-          section: 'Access Control Framework',
-          snippet: 'Multi-factor authentication should be enabled for all user accounts accessing corporate systems, with special attention to privileged accounts...',
-          relevanceScore: 0.94
+          section: "Access Control Framework",
+          snippet:
+            "Multi-factor authentication should be enabled for all user accounts accessing corporate systems, with special attention to privileged accounts...",
+          relevanceScore: 0.94,
         },
         {
-          id: 'c4',
-          documentTitle: 'Security Best Practices.pdf',
+          id: "c4",
+          documentTitle: "Security Best Practices.pdf",
           pageNumber: 12,
-          section: 'Data Protection Standards',
-          snippet: 'All sensitive data must be encrypted using AES-256 encryption both at rest and during transmission across all corporate networks...',
-          relevanceScore: 0.91
-        }
-      ]
-    }
+          section: "Data Protection Standards",
+          snippet:
+            "All sensitive data must be encrypted using AES-256 encryption both at rest and during transmission across all corporate networks...",
+          relevanceScore: 0.91,
+        },
+      ],
+    },
   ];
 
   const handleSendMessage = async () => {
@@ -111,36 +119,37 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       content: input,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setIsLoading(true);
 
     // Simulate API delay
     setTimeout(() => {
-      const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-      
+      const randomResponse =
+        mockResponses[Math.floor(Math.random() * mockResponses.length)];
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        type: 'assistant',
+        type: "assistant",
         content: randomResponse.content,
         citations: randomResponse.citations,
         timestamp: new Date(),
         isError: randomResponse.isError,
-        errorType: randomResponse.errorType
+        errorType: randomResponse.errorType,
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsLoading(false);
     }, 1500);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -155,14 +164,16 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-6rem)] lg:h-[calc(100vh-8rem)] space-y-4 lg:space-y-0 lg:space-x-6 px-2 sm:px-4 lg:px-8 pt-[var(--header-offset)]">
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0 h-full">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Title Section */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-foreground">Chat</h1>
-          <p className="text-sm text-muted-foreground mt-1">Ask questions about your documents</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Ask questions about your documents
+          </p>
         </div>
-        
-        <Card className="flex-1 flex flex-col overflow-hidden h-full">
+
+        <Card className="flex-1 flex flex-col overflow-hidden">
           {/* Messages */}
           <ScrollArea className="flex-1 p-3 sm:p-4" ref={scrollAreaRef}>
             <div className="space-y-4 sm:space-y-6">
@@ -171,19 +182,21 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                   key={message.id}
                   className={cn(
                     "flex space-x-2 sm:space-x-3",
-                    message.type === 'user' ? "justify-end" : "justify-start"
+                    message.type === "user" ? "justify-end" : "justify-start"
                   )}
                 >
-                  {message.type === 'assistant' && (
+                  {message.type === "assistant" && (
                     <div className="flex-shrink-0">
-                      <div className={cn(
-                        "h-8 w-8 rounded-full flex items-center justify-center",
-                        message.isError 
-                          ? "bg-destructive text-destructive-foreground"
-                          : "bg-primary text-primary-foreground"
-                      )}>
+                      <div
+                        className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center",
+                          message.isError
+                            ? "bg-destructive text-destructive-foreground"
+                            : "bg-primary text-primary-foreground"
+                        )}
+                      >
                         {message.isError ? (
-                          message.errorType === 'permission' ? (
+                          message.errorType === "permission" ? (
                             <Shield className="h-4 w-4" />
                           ) : (
                             <AlertCircle className="h-4 w-4" />
@@ -194,24 +207,28 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                       </div>
                     </div>
                   )}
-                  
-                  <div className={cn(
-                    "max-w-[80%] space-y-2",
-                    message.type === 'user' ? "items-end" : "items-start"
-                  )}>
-                    <div className={cn(
-                      "rounded-lg px-4 py-3",
-                      message.type === 'user'
-                        ? "bg-primary text-primary-foreground"
-                        : message.isError
+
+                  <div
+                    className={cn(
+                      "max-w-[80%] space-y-2",
+                      message.type === "user" ? "items-end" : "items-start"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "rounded-lg px-4 py-3",
+                        message.type === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : message.isError
                           ? "bg-destructive/10 border border-destructive/20 text-foreground"
                           : "bg-muted"
-                    )}>
+                      )}
+                    >
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
                         {message.content}
                       </p>
                     </div>
-                    
+
                     {/* Citations */}
                     {message.citations && message.citations.length > 0 && (
                       <div className="space-y-2">
@@ -225,20 +242,21 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                             >
                               <FileText className="h-3 w-3 mr-1" />
                               {citation.documentTitle}
-                              {citation.pageNumber && ` (p.${citation.pageNumber})`}
+                              {citation.pageNumber &&
+                                ` (p.${citation.pageNumber})`}
                               <ExternalLink className="h-3 w-3 ml-1" />
                             </Badge>
                           ))}
                         </div>
                       </div>
                     )}
-                    
+
                     <span className="text-xs text-muted-foreground">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
-                  
-                  {message.type === 'user' && (
+
+                  {message.type === "user" && (
                     <div className="flex-shrink-0">
                       <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
                         <User className="h-4 w-4 text-secondary-foreground" />
@@ -247,7 +265,7 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                   )}
                 </div>
               ))}
-              
+
               {isLoading && (
                 <div className="flex space-x-3">
                   <div className="flex-shrink-0">
@@ -258,15 +276,21 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                   <div className="bg-muted rounded-lg px-4 py-3">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </ScrollArea>
-          
+
           {/* Input Area */}
           <div className="border-t p-4">
             <div className="flex space-x-2">
@@ -278,7 +302,7 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                 className="min-h-[44px] max-h-32 resize-none"
                 disabled={isLoading}
               />
-              <Button 
+              <Button
                 onClick={handleSendMessage}
                 disabled={!input.trim() || isLoading}
                 size="sm"
@@ -292,27 +316,43 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
       </div>
 
       {/* Sources Panel */}
-      <div className="w-80 flex flex-col h-full">
+      <div className="w-80 flex flex-col">
         {/* Title Section */}
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-foreground">Recent Sources</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            Recent Sources
+          </h3>
         </div>
-        
-        <Card className="flex-1 flex flex-col overflow-hidden h-full">
+
+        <Card className="flex-1 flex flex-col overflow-hidden">
           {messages.length > 1 ? (
             <div className="flex-1 p-4">
               <ScrollArea className="h-full">
                 <div className="space-y-4">
                   {messages
-                    .filter(m => m.type === 'assistant' && m.citations && m.citations.length > 0)
+                    .filter(
+                      (m) =>
+                        m.type === "assistant" &&
+                        m.citations &&
+                        m.citations.length > 0
+                    )
                     .slice(-2) // Show last 2 assistant messages with citations
                     .map((message) => (
                       <div key={message.id} className="space-y-2">
                         {message.citations?.map((citation) => (
-                          <Card key={citation.id} className="p-3 cursor-pointer hover:shadow-sm transition-shadow">
-                            <div 
+                          <Card
+                            key={citation.id}
+                            className="p-3 cursor-pointer hover:shadow-sm transition-shadow"
+                          >
+                            <div
                               className="flex items-start justify-between"
-                              onClick={() => setExpandedSources(expandedSources === citation.id ? '' : citation.id)}
+                              onClick={() =>
+                                setExpandedSources(
+                                  expandedSources === citation.id
+                                    ? ""
+                                    : citation.id
+                                )
+                              }
                             >
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-sm font-medium text-foreground truncate">
@@ -321,11 +361,16 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                                 {citation.section && (
                                   <p className="text-xs text-muted-foreground mt-1">
                                     {citation.section}
-                                    {citation.pageNumber && ` • Page ${citation.pageNumber}`}
+                                    {citation.pageNumber &&
+                                      ` • Page ${citation.pageNumber}`}
                                   </p>
                                 )}
                               </div>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 ml-2"
+                              >
                                 {expandedSources === citation.id ? (
                                   <ChevronUp className="h-3 w-3" />
                                 ) : (
@@ -333,7 +378,7 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                                 )}
                               </Button>
                             </div>
-                            
+
                             {expandedSources === citation.id && (
                               <div className="mt-3 pt-3 border-t">
                                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -341,7 +386,8 @@ export const ChatInterface = ({ onSourceView }: ChatInterfaceProps) => {
                                 </p>
                                 <div className="flex items-center justify-between mt-2">
                                   <Badge variant="outline" className="text-xs">
-                                    {Math.round(citation.relevanceScore * 100)}% match
+                                    {Math.round(citation.relevanceScore * 100)}%
+                                    match
                                   </Badge>
                                   <Button
                                     variant="ghost"
