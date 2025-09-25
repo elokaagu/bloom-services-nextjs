@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== MOCK UPLOAD API START ===");
-
+    console.log("=== UPLOAD API START (LOCAL STORE) ===");
+    
     // Parse form data
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -27,27 +27,38 @@ export async function POST(req: NextRequest) {
     // Simulate upload delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Generate mock document data
-    const mockDocument = {
-      id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      workspace_id: workspaceId,
-      owner_id: ownerId,
+    // Create document and add to local storage via documents API
+    const documentData = {
       title: title,
-      storage_path: `mock-storage/${file.name}`,
+      workspaceId: workspaceId,
+      ownerId: ownerId,
       status: "ready",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      acl: "workspace"
     };
 
-    console.log("Mock document created:", mockDocument.id);
-    console.log("=== MOCK UPLOAD API SUCCESS ===");
+    // Add to documents store
+    const addResponse = await fetch(`${req.nextUrl.origin}/api/documents`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(documentData)
+    });
+
+    if (!addResponse.ok) {
+      throw new Error("Failed to add document to store");
+    }
+
+    const { document } = await addResponse.json();
+
+    console.log("Document uploaded and stored:", document.id);
+    console.log("=== UPLOAD API SUCCESS (LOCAL STORE) ===");
 
     return NextResponse.json({
       success: true,
-      document: mockDocument,
+      document: document,
     });
+
   } catch (error) {
-    console.error("=== MOCK UPLOAD API ERROR ===", error);
+    console.error("=== UPLOAD API ERROR ===", error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Unknown error",
