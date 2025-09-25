@@ -89,12 +89,12 @@ This is a preview of the document content. The full document contains detailed i
 
 ## Document Summary
 - File Type: ${document.type.toUpperCase()}
-- Size: ${document.size}
+- Summary: ${document.summary ? document.summary.split('\n')[0] : 'No summary available yet'}
 - Owner: ${document.owner}
 - Last Accessed: ${document.lastAccessed || 'Never'}
 
 ## Content Preview
-This document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`;
+${document.summary ? document.summary : 'This document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.'}`;
   }
 };
 
@@ -160,7 +160,7 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">{document.title}</h1>
                 <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                  <span>{document.size}</span>
+                  <span>{document.summary ? document.summary.split('\n')[0] : document.size}</span>
                   <span className="hidden sm:inline">•</span>
                   <span className="hidden sm:inline">Uploaded {document.uploadedAt}</span>
                   <span className="hidden sm:inline">•</span>
@@ -338,8 +338,8 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                       <p className="text-sm uppercase">{document.type}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">File Size</label>
-                      <p className="text-sm">{document.size}</p>
+                      <label className="text-sm font-medium text-muted-foreground">Summary</label>
+                      <p className="text-sm">{document.summary ? document.summary.split('\n')[0] : 'No summary available yet'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Upload Date</label>

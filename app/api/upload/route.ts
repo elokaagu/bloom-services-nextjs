@@ -53,38 +53,38 @@ export async function POST(req: NextRequest) {
       throw new Error("Failed to add document to store");
     }
 
-          const { document } = await addResponse.json();
+    const { document } = await addResponse.json();
 
-          console.log("Document uploaded and stored:", document.id);
+    console.log("Document uploaded and stored:", document.id);
 
-          // Trigger document ingestion for RAG
-          try {
-            console.log("Starting document ingestion for RAG...");
-            const ingestResponse = await fetch(
-              `${req.nextUrl.origin}/api/ingest`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ documentId: document.id }),
-              }
-            );
+    // Trigger document ingestion for RAG
+    try {
+      console.log("Starting document ingestion for RAG...");
+      const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: document.id }),
+      });
 
-            if (ingestResponse.ok) {
-              console.log("Document ingestion completed successfully");
-            } else {
-              console.error("Document ingestion failed:", await ingestResponse.text());
-            }
-          } catch (ingestError) {
-            console.error("Error triggering document ingestion:", ingestError);
-            // Don't fail the upload if ingestion fails
-          }
+      if (ingestResponse.ok) {
+        console.log("Document ingestion completed successfully");
+      } else {
+        console.error(
+          "Document ingestion failed:",
+          await ingestResponse.text()
+        );
+      }
+    } catch (ingestError) {
+      console.error("Error triggering document ingestion:", ingestError);
+      // Don't fail the upload if ingestion fails
+    }
 
-          console.log("=== UPLOAD API SUCCESS (LOCAL STORE) ===");
+    console.log("=== UPLOAD API SUCCESS (LOCAL STORE) ===");
 
-          return NextResponse.json({
-            success: true,
-            document: document,
-          });
+    return NextResponse.json({
+      success: true,
+      document: document,
+    });
   } catch (error) {
     console.error("=== UPLOAD API ERROR ===", error);
     return NextResponse.json(

@@ -15,11 +15,15 @@ async function questionEmbedding(q: string) {
 export async function POST(req: NextRequest) {
   try {
     console.log("=== RAG CHAT API START ===");
-    
+
     const { workspaceId, userId, question } = await req.json();
-    
+
     if (!workspaceId || !userId || !question) {
-      console.error("Missing required fields:", { workspaceId, userId, question });
+      console.error("Missing required fields:", {
+        workspaceId,
+        userId,
+        question,
+      });
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
     }
 
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     // Retrieve relevant chunks using vector similarity
     let chunks: any[] = [];
-    
+
     try {
       // Try to use the RPC function first
       const { data: retrieved, error: rpcError } = await supabase.rpc(
@@ -65,12 +69,16 @@ export async function POST(req: NextRequest) {
       );
 
       if (rpcError) {
-        console.log("RPC function not available, using fallback:", rpcError.message);
-        
+        console.log(
+          "RPC function not available, using fallback:",
+          rpcError.message
+        );
+
         // Fallback: simple vector search
         const { data: fallbackChunks, error: fallbackError } = await supabase
           .from("document_chunks")
-          .select(`
+          .select(
+            `
             id, 
             text, 
             document_id,
@@ -79,7 +87,8 @@ export async function POST(req: NextRequest) {
               title,
               workspace_id
             )
-          `)
+          `
+          )
           .eq("documents.workspace_id", workspaceId)
           .limit(topK);
 
@@ -94,7 +103,6 @@ export async function POST(req: NextRequest) {
       }
 
       console.log("Retrieved", chunks.length, "chunks");
-
     } catch (retrievalError) {
       console.error("Chunk retrieval error:", retrievalError);
       throw retrievalError;
@@ -103,7 +111,8 @@ export async function POST(req: NextRequest) {
     if (chunks.length === 0) {
       console.log("No relevant chunks found");
       return NextResponse.json({
-        answer: "I don't have any relevant information in the uploaded documents to answer this question. Please make sure you have uploaded documents and they have been processed.",
+        answer:
+          "I don't have any relevant information in the uploaded documents to answer this question. Please make sure you have uploaded documents and they have been processed.",
         citations: [],
         queryId: qrow?.id,
       });
@@ -111,7 +120,12 @@ export async function POST(req: NextRequest) {
 
     // Build context from retrieved chunks
     const context = chunks
-      .map((c, i) => `# Source ${i + 1} (${c.documents?.title || 'Unknown Document'})\n${c.text}`)
+      .map(
+        (c, i) =>
+          `# Source ${i + 1} (${c.documents?.title || "Unknown Document"})\n${
+            c.text
+          }`
+      )
       .join("\n\n");
 
     console.log("Context built, length:", context.length);
@@ -148,7 +162,9 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       max_tokens: 1000,
     });
 
-    const answer = completion.choices[0]?.message?.content || "I couldn't generate an answer.";
+    const answer =
+      completion.choices[0]?.message?.content ||
+      "I couldn't generate an answer.";
 
     console.log("Answer generated, length:", answer.length);
 
@@ -157,20 +173,19 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       index: i + 1,
       chunkId: c.id,
       documentId: c.document_id,
-      documentTitle: c.documents?.title || 'Unknown Document',
-      text: c.text.substring(0, 200) + (c.text.length > 200 ? '...' : ''),
+      documentTitle: c.documents?.title || "Unknown Document",
+      text: c.text.substring(0, 200) + (c.text.length > 200 ? "..." : ""),
     }));
 
     console.log("Citations created:", citations.length);
     console.log("=== RAG CHAT API SUCCESS ===");
 
-    return NextResponse.json({ 
-      answer, 
-      citations, 
+    return NextResponse.json({
+      answer,
+      citations,
       queryId: qrow?.id,
-      chunksFound: chunks.length 
+      chunksFound: chunks.length,
     });
-
   } catch (e: any) {
     console.error("=== RAG CHAT API ERROR ===", e);
     return NextResponse.json({ error: e.message }, { status: 500 });
