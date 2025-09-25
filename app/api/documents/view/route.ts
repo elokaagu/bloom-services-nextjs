@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       .from("documents")
       .select("*")
       .eq("id", documentId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Database fetch error:", error);

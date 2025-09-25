@@ -245,6 +245,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       });
 
       console.log("Document deleted successfully:", doc.id);
+      
+      // Refresh the document list to ensure consistency
+      fetchDocuments();
     } catch (error) {
       console.error("Error deleting document:", error);
       // You could show a toast notification here

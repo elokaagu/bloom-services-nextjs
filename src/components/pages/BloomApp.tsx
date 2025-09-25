@@ -57,6 +57,17 @@ export const BloomApp = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Handle specific error cases
+        if (response.status === 404) {
+          toast({
+            title: "Document not found",
+            description: "This document may have been deleted or moved",
+            variant: "destructive",
+          });
+          return; // Don't proceed to view
+        }
+        
         throw new Error(errorData.error || "Failed to fetch document");
       }
 
