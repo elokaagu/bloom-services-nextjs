@@ -76,12 +76,43 @@ export async function GET(req: NextRequest) {
     }
 
     console.log(`Found ${documents?.length || 0} documents`);
+
+    // Get file sizes from storage for each document
+    const documentsWithSizes = await Promise.all(
+      (documents || []).map(async (doc) => {
+        try {
+          // Get file metadata from storage
+          const { data: fileData } = await supabase.storage
+            .from(process.env.STORAGE_BUCKET || "documents")
+            .list("", {
+              search: doc.storage_path.split("/").pop(),
+            });
+
+          const fileSize = fileData?.[0]?.metadata?.size;
+          const formattedSize = fileSize 
+            ? `${(fileSize / 1024 / 1024).toFixed(1)} MB`
+            : "Size not available";
+
+          return {
+            ...doc,
+            fileSize: formattedSize,
+          };
+        } catch (error) {
+          console.error(`Error getting size for ${doc.title}:`, error);
+          return {
+            ...doc,
+            fileSize: "Size not available",
+          };
+        }
+      })
+    );
+
     console.log("=== FETCH DOCUMENTS API SUCCESS (SUPABASE) ===");
 
     return NextResponse.json({
       success: true,
-      documents: documents || [],
-      count: documents?.length || 0,
+      documents: documentsWithSizes,
+      count: documentsWithSizes.length,
     });
   } catch (error) {
     console.error("=== FETCH DOCUMENTS API ERROR ===", error);

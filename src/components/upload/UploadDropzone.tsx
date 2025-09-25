@@ -105,12 +105,15 @@ export const UploadDropzone = ({
     [workspaceId, ownerId, onUploadComplete]
   );
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    handleFiles(files);
-  }, [handleFiles]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const files = Array.from(e.dataTransfer.files);
+      handleFiles(files);
+    },
+    [handleFiles]
+  );
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -185,7 +185,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             type:
               (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
               "pdf",
-            size: "Unknown", // We'll need to get this from storage metadata
+            size: doc.fileSize || "Size not available",
             uploadedAt: new Date(doc.created_at).toLocaleDateString(),
             status: doc.status,
             acl: doc.acl || "workspace",
