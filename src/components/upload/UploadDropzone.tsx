@@ -41,6 +41,66 @@ export const UploadDropzone = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
 
+  const uploadFile = useCallback(async (fileId: string, file: File) => {
+    console.log("=== STARTING UPLOAD ===", file.name);
+
+    setUploadFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
+      )
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("workspaceId", workspaceId);
+      formData.append("ownerId", ownerId);
+      formData.append("title", file.name);
+
+      setUploadFiles((prev) =>
+        prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
+      );
+
+      console.log("=== SENDING REQUEST ===");
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("=== RESPONSE RECEIVED ===", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Upload failed:", errorData);
+        throw new Error(errorData.error || "Upload failed");
+      }
+
+      const result = await response.json();
+      console.log("=== UPLOAD SUCCESS ===", result);
+
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId ? { ...f, progress: 100, status: "success" } : f
+        )
+      );
+
+      onUploadComplete?.([file]);
+    } catch (error) {
+      console.error("=== UPLOAD ERROR ===", error);
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: "error",
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
+            : f
+        )
+      );
+    }
+  }, [workspaceId, ownerId, onUploadComplete]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -92,76 +152,13 @@ export const UploadDropzone = ({
 
     setUploadFiles((prev) => [...prev, ...validatedFiles]);
 
-    // Start upload for valid files
+    // Start upload for valid files immediately
     validatedFiles.forEach((uploadFileItem) => {
       if (uploadFileItem.status === "pending") {
-        uploadFile(uploadFileItem.id);
+        uploadFile(uploadFileItem.id, uploadFileItem.file);
       }
     });
-  }, [maxSize, acceptedTypes]);
-
-  const uploadFile = useCallback(async (fileId: string) => {
-    const uploadFile = uploadFiles.find((f) => f.id === fileId);
-    if (!uploadFile) return;
-
-    console.log("=== STARTING UPLOAD ===", uploadFile.file.name);
-
-    setUploadFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
-      )
-    );
-
-    try {
-      const formData = new FormData();
-      formData.append("file", uploadFile.file);
-      formData.append("workspaceId", workspaceId);
-      formData.append("ownerId", ownerId);
-      formData.append("title", uploadFile.file.name);
-
-      setUploadFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
-      );
-
-      console.log("=== SENDING REQUEST ===");
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      console.log("=== RESPONSE RECEIVED ===", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Upload failed:", errorData);
-        throw new Error(errorData.error || "Upload failed");
-      }
-
-      const result = await response.json();
-      console.log("=== UPLOAD SUCCESS ===", result);
-
-      setUploadFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId ? { ...f, progress: 100, status: "success" } : f
-        )
-      );
-
-      onUploadComplete?.([uploadFile.file]);
-    } catch (error) {
-      console.error("=== UPLOAD ERROR ===", error);
-      setUploadFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId
-            ? {
-                ...f,
-                status: "error",
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : f
-        )
-      );
-    }
-  }, [uploadFiles, workspaceId, ownerId, onUploadComplete]);
+  }, [maxSize, acceptedTypes, uploadFile]);
 
   const removeFile = (fileId: string) => {
     setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
