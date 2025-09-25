@@ -16,15 +16,23 @@ export async function POST(req: NextRequest) {
     const filename = `${crypto.randomUUID()}-${file.name}`;
     const bucket = process.env.STORAGE_BUCKET!;
 
+    console.log("Upload attempt:", { filename, bucket, workspaceId, ownerId });
+
     const supabase = supabaseService();
 
     // 1) upload raw file
+    console.log("Uploading to storage bucket:", bucket);
     const { data: uploadRes, error: uploadErr } = await supabase.storage
       .from(bucket)
       .upload(filename, await file.arrayBuffer(), { contentType: file.type });
-    if (uploadErr) throw uploadErr;
+    if (uploadErr) {
+      console.error("Storage upload error:", uploadErr);
+      throw uploadErr;
+    }
+    console.log("Storage upload successful:", uploadRes.path);
 
     // 2) create document row (status=uploading)
+    console.log("Creating document record...");
     const { data: doc, error: docErr } = await supabase
       .from("documents")
       .insert({
@@ -36,7 +44,11 @@ export async function POST(req: NextRequest) {
       })
       .select("*")
       .single();
-    if (docErr) throw docErr;
+    if (docErr) {
+      console.error("Database insert error:", docErr);
+      throw docErr;
+    }
+    console.log("Document record created:", doc.id);
 
     return NextResponse.json({ document: doc });
   } catch (e: any) {
