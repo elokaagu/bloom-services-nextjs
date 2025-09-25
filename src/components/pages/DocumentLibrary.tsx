@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,8 @@ import {
   Lock,
   Users,
   Globe,
-  FileX
+  FileX,
+  RefreshCw
 } from "lucide-react";
 
 // Enhanced mock documents data with preview and analytics
@@ -126,7 +127,7 @@ interface DocumentLibraryProps {
 }
 
 export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
-  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [aclFilter, setAclFilter] = useState('all');
@@ -135,6 +136,61 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch documents from database
+  const fetchDocuments = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const params = new URLSearchParams({
+        workspaceId: 'default-workspace',
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(searchTerm && { search: searchTerm })
+      });
+      
+      const response = await fetch(`/api/documents?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch documents: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform database documents to match Document interface
+        const transformedDocuments: Document[] = data.documents.map((doc: any) => ({
+          id: doc.id,
+          title: doc.title,
+          type: doc.title.split('.').pop()?.toLowerCase() as Document['type'] || 'pdf',
+          size: 'Unknown', // We'll need to get this from storage metadata
+          uploadedAt: new Date(doc.created_at).toLocaleDateString(),
+          status: doc.status,
+          acl: doc.acl || 'workspace',
+          owner: 'Unknown', // We'll need to join with users table
+          error: doc.error
+        }));
+        
+        setDocuments(transformedDocuments);
+      } else {
+        throw new Error(data.error || 'Failed to fetch documents');
+      }
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch documents');
+      // Fallback to mock data if database fails
+      setDocuments(mockDocuments);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch documents on component mount and when filters change
+  useEffect(() => {
+    fetchDocuments();
+  }, [statusFilter, searchTerm]);
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,20 +202,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   });
 
   const handleUploadComplete = (files: File[]) => {
-    // Mock upload logic - add new documents with uploading status
-    const newDocuments = files.map(file => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      title: file.name,
-      type: file.name.split('.').pop()?.toLowerCase() as Document['type'] || 'pdf',
-      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      uploadedAt: 'just now',
-      status: 'uploading' as const,
-      acl: 'workspace' as const,
-      owner: 'John Doe',
-      progress: 0
-    }));
-    
-    setDocuments(prev => [...newDocuments, ...prev]);
+    // Refresh documents list after successful upload
+    fetchDocuments();
     setIsUploadOpen(false);
   };
 
@@ -235,6 +279,17 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           </div>
           
           <div className="flex items-center justify-end space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchDocuments}
+              disabled={isLoading}
+              className="text-xs sm:text-sm"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline ml-2">Refresh</span>
+            </Button>
+            
             {selectedDocuments.size > 0 && (
               <div className="flex items-center space-x-2">
                 <Button
@@ -470,8 +525,41 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         ))}
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-center py-8 sm:py-12 px-4">
+          <RefreshCw className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto animate-spin mb-4" />
+          <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
+            Loading documents...
+          </h3>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Fetching your documents from the database
+          </p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !isLoading && (
+        <div className="text-center py-8 sm:py-12 px-4">
+          <div className="text-4xl sm:text-6xl mb-4">⚠️</div>
+          <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
+            Database Connection Error
+          </h3>
+          <p className="text-muted-foreground mb-4 text-sm sm:text-base max-w-md mx-auto">
+            {error}
+          </p>
+          <p className="text-muted-foreground mb-4 text-sm sm:text-base max-w-md mx-auto">
+            Showing mock data for now. Please check your Supabase configuration.
+          </p>
+          <Button onClick={fetchDocuments} size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      )}
+
       {/* Documents Grid/List */}
-      {filteredDocuments.length > 0 ? (
+      {!isLoading && !error && filteredDocuments.length > 0 ? (
         <div className={
           viewMode === 'grid' 
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
@@ -491,7 +579,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             />
           ))}
         </div>
-      ) : (
+      ) : !isLoading && !error ? (
         <div className="text-center py-8 sm:py-12 px-4">
           {/* Status-specific empty states */}
           {statusFilter === 'failed' && getStatusCount('failed') === 0 ? (
