@@ -1,15 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Upload, 
-  FileText, 
-  X, 
-  CheckCircle, 
+import {
+  Upload,
+  FileText,
+  X,
+  CheckCircle,
   AlertCircle,
-  File
+  File,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ interface UploadFile {
   id: string;
   file: File;
   progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: "pending" | "uploading" | "success" | "error";
   error?: string;
 }
 
@@ -29,12 +29,12 @@ interface UploadDropzoneProps {
   ownerId?: string;
 }
 
-export const UploadDropzone = ({ 
-  onUploadComplete, 
-  maxSize = 50, 
-  acceptedTypes = ['.pdf', '.docx', '.pptx', '.txt', '.xlsx'],
-  workspaceId = 'default-workspace',
-  ownerId = 'default-user'
+export const UploadDropzone = ({
+  onUploadComplete,
+  maxSize = 50,
+  acceptedTypes = [".pdf", ".docx", ".pptx", ".txt", ".xlsx"],
+  workspaceId = "default-workspace",
+  ownerId = "default-user",
 }: UploadDropzoneProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
@@ -42,130 +42,149 @@ export const UploadDropzone = ({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   }, []);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      handleFiles(files);
-    }
-  }, []);
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+      }
+    },
+    []
+  );
 
   const handleFiles = (files: File[]) => {
-    const newUploadFiles: UploadFile[] = files.map(file => ({
+    const newUploadFiles: UploadFile[] = files.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
       progress: 0,
-      status: 'pending'
+      status: "pending",
     }));
 
     // Validate files
-    const validatedFiles = newUploadFiles.map(uploadFile => {
+    const validatedFiles = newUploadFiles.map((uploadFile) => {
       const file = uploadFile.file;
       const sizeInMB = file.size / (1024 * 1024);
-      const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-      
+      const extension = "." + file.name.split(".").pop()?.toLowerCase();
+
       if (sizeInMB > maxSize) {
-        return { ...uploadFile, status: 'error' as const, error: `File size exceeds ${maxSize}MB` };
+        return {
+          ...uploadFile,
+          status: "error" as const,
+          error: `File size exceeds ${maxSize}MB`,
+        };
       }
-      
+
       if (!acceptedTypes.includes(extension)) {
-        return { ...uploadFile, status: 'error' as const, error: 'File type not supported' };
+        return {
+          ...uploadFile,
+          status: "error" as const,
+          error: "File type not supported",
+        };
       }
-      
+
       return uploadFile;
     });
 
-    setUploadFiles(prev => [...prev, ...validatedFiles]);
+    setUploadFiles((prev) => [...prev, ...validatedFiles]);
 
     // Start upload for valid files
-    validatedFiles.forEach(uploadFileItem => {
-      if (uploadFileItem.status === 'pending') {
+    validatedFiles.forEach((uploadFileItem) => {
+      if (uploadFileItem.status === "pending") {
         uploadFile(uploadFileItem.id);
       }
     });
   };
 
   const uploadFile = async (fileId: string) => {
-    const uploadFile = uploadFiles.find(f => f.id === fileId);
+    const uploadFile = uploadFiles.find((f) => f.id === fileId);
     if (!uploadFile) return;
 
-    setUploadFiles(prev => prev.map(f => 
-      f.id === fileId ? { ...f, status: 'uploading', progress: 10 } : f
-    ));
+    setUploadFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileId ? { ...f, status: "uploading", progress: 10 } : f
+      )
+    );
 
     try {
       // Upload file to Supabase
       const formData = new FormData();
-      formData.append('file', uploadFile.file);
-      formData.append('workspaceId', workspaceId);
-      formData.append('ownerId', ownerId);
-      formData.append('title', uploadFile.file.name);
+      formData.append("file", uploadFile.file);
+      formData.append("workspaceId", workspaceId);
+      formData.append("ownerId", ownerId);
+      formData.append("title", uploadFile.file.name);
 
-      setUploadFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, progress: 50 } : f
-      ));
+      setUploadFiles((prev) =>
+        prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f))
+      );
 
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
 
       const { document } = await uploadResponse.json();
 
-      setUploadFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, progress: 75 } : f
-      ));
+      setUploadFiles((prev) =>
+        prev.map((f) => (f.id === fileId ? { ...f, progress: 75 } : f))
+      );
 
       // Trigger ingestion
-      const ingestResponse = await fetch('/api/ingest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const ingestResponse = await fetch("/api/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentId: document.id }),
       });
 
       if (!ingestResponse.ok) {
-        throw new Error('Ingestion failed');
+        throw new Error("Ingestion failed");
       }
 
-      setUploadFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, progress: 100, status: 'success' } : f
-      ));
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId ? { ...f, progress: 100, status: "success" } : f
+        )
+      );
 
       // Notify parent component
       onUploadComplete([uploadFile.file]);
     } catch (error) {
-      setUploadFiles(prev => prev.map(f => 
-        f.id === fileId ? { 
-          ...f, 
-          status: 'error', 
-          error: error instanceof Error ? error.message : 'Upload failed' 
-        } : f
-      ));
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: "error",
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
+            : f
+        )
+      );
     }
   };
 
   const removeFile = (fileId: string) => {
-    setUploadFiles(prev => prev.filter(f => f.id !== fileId));
+    setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
   const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
+    const extension = fileName.split(".").pop()?.toLowerCase();
     return <FileText className="h-4 w-4" />;
   };
 
-  const getStatusIcon = (status: UploadFile['status']) => {
+  const getStatusIcon = (status: UploadFile["status"]) => {
     switch (status) {
-      case 'success':
+      case "success":
         return <CheckCircle className="h-4 w-4 text-success" />;
-      case 'error':
+      case "error":
         return <AlertCircle className="h-4 w-4 text-destructive" />;
       default:
         return <File className="h-4 w-4 text-muted-foreground" />;
@@ -199,7 +218,7 @@ export const UploadDropzone = ({
           <input
             type="file"
             multiple
-            accept={acceptedTypes.join(',')}
+            accept={acceptedTypes.join(",")}
             onChange={handleFileInput}
             className="hidden"
             id="file-upload"
@@ -224,7 +243,7 @@ export const UploadDropzone = ({
                 <div className="flex-shrink-0">
                   {getFileIcon(uploadFile.file.name)}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-foreground truncate">
@@ -242,8 +261,8 @@ export const UploadDropzone = ({
                       </Button>
                     </div>
                   </div>
-                  
-                  {uploadFile.status === 'uploading' && (
+
+                  {uploadFile.status === "uploading" && (
                     <div className="space-y-1">
                       <Progress value={uploadFile.progress} className="h-2" />
                       <div className="flex items-center justify-between">
@@ -256,12 +275,14 @@ export const UploadDropzone = ({
                       </div>
                     </div>
                   )}
-                  
-                  {uploadFile.status === 'error' && uploadFile.error && (
-                    <p className="text-xs text-destructive">{uploadFile.error}</p>
+
+                  {uploadFile.status === "error" && uploadFile.error && (
+                    <p className="text-xs text-destructive">
+                      {uploadFile.error}
+                    </p>
                   )}
-                  
-                  {uploadFile.status === 'success' && (
+
+                  {uploadFile.status === "success" && (
                     <div className="flex items-center space-x-1">
                       <Badge className="text-xs bg-primary text-primary-foreground">
                         Upload complete

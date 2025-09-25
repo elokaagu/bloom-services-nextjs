@@ -28,15 +28,18 @@ STORAGE_BUCKET=documents
 ## 2. Supabase Setup
 
 ### Create a Supabase Project
+
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. Note down your project URL and API keys from the project settings
 
 ### Run the SQL Schema
+
 1. Go to the SQL Editor in your Supabase dashboard
 2. Run the SQL schema provided in the main guide (replace `%VECTOR_DIM%` with `1536`)
 3. Create a Storage bucket named `documents`
 
 ### Optional: Create the RPC Function
+
 Run this SQL in the Supabase SQL Editor for better performance:
 
 ```sql

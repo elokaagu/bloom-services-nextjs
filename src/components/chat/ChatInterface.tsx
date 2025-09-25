@@ -42,7 +42,11 @@ interface ChatInterfaceProps {
   userId?: string;
 }
 
-export const ChatInterface = ({ onSourceView, workspaceId = 'default-workspace', userId = 'default-user' }: ChatInterfaceProps) => {
+export const ChatInterface = ({
+  onSourceView,
+  workspaceId = "default-workspace",
+  userId = "default-user",
+}: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -132,18 +136,18 @@ export const ChatInterface = ({ onSourceView, workspaceId = 'default-workspace',
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          workspaceId, 
-          userId, 
-          question 
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId,
+          userId,
+          question,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Chat request failed');
+        throw new Error("Chat request failed");
       }
 
       const { answer, citations } = await response.json();
@@ -155,7 +159,7 @@ export const ChatInterface = ({ onSourceView, workspaceId = 'default-workspace',
         citations: citations?.map((c: any) => ({
           id: c.chunkId.toString(),
           documentTitle: `Document ${c.documentId}`,
-          snippet: 'Retrieved from document',
+          snippet: "Retrieved from document",
           relevanceScore: 0.9,
         })),
         timestamp: new Date(),
@@ -167,7 +171,8 @@ export const ChatInterface = ({ onSourceView, workspaceId = 'default-workspace',
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: "Sorry, I encountered an error while processing your question. Please try again.",
+        content:
+          "Sorry, I encountered an error while processing your question. Please try again.",
         timestamp: new Date(),
         isError: true,
         errorType: "system",
