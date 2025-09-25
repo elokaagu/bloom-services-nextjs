@@ -148,6 +148,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Fetch documents from database
@@ -229,6 +230,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     try {
       console.log("Deleting document:", doc.id);
       
+      // Mark document as being deleted
+      setDeletingDocuments(prev => new Set(prev).add(doc.id));
+
       const response = await fetch(`/api/documents/${doc.id}`, {
         method: "DELETE",
       });
@@ -247,21 +251,29 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       });
 
       console.log("Document deleted successfully:", doc.id);
-      
+
       // Show success toast
       toast({
         title: "Document deleted",
         description: `${doc.title} has been deleted successfully`,
       });
-      
+
       // Refresh the document list to ensure consistency
       fetchDocuments();
     } catch (error) {
       console.error("Error deleting document:", error);
       toast({
         title: "Error deleting document",
-        description: error instanceof Error ? error.message : "Failed to delete document",
+        description:
+          error instanceof Error ? error.message : "Failed to delete document",
         variant: "destructive",
+      });
+    } finally {
+      // Remove from deleting set
+      setDeletingDocuments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(doc.id);
+        return newSet;
       });
     }
   };

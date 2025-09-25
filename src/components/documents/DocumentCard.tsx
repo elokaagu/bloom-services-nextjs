@@ -156,6 +156,12 @@ export const DocumentCard = ({
 }: DocumentCardProps) => {
   const isClickable = document.status === 'ready';
   
+  const handleCardClick = () => {
+    if (isClickable) {
+      onView(document);
+    }
+  };
+  
   const handleACLChange = (newACL: Document['acl']) => {
     onACLChange?.(document, newACL);
   };
@@ -175,7 +181,7 @@ export const DocumentCard = ({
     )}>
       <div 
         className="p-4"
-        onClick={() => isClickable && onView(document)}
+        onClick={handleCardClick}
       >
         {/* Selection checkbox */}
         {showSelection && (
