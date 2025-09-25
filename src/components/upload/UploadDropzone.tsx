@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -91,16 +91,9 @@ export const UploadDropzone = ({
     });
 
     setUploadFiles((prev) => [...prev, ...validatedFiles]);
-
-    // Start upload for valid files
-    validatedFiles.forEach((uploadFileItem) => {
-      if (uploadFileItem.status === "pending") {
-        uploadFile(uploadFileItem.id);
-      }
-    });
   };
 
-  const uploadFile = async (fileId: string) => {
+  const uploadFile = useCallback(async (fileId: string) => {
     const uploadFile = uploadFiles.find((f) => f.id === fileId);
     if (!uploadFile) return;
 
@@ -169,7 +162,15 @@ export const UploadDropzone = ({
         )
       );
     }
-  };
+  }, [uploadFiles, workspaceId, ownerId, onUploadComplete]);
+
+  // Auto-start upload for pending files
+  useEffect(() => {
+    const pendingFiles = uploadFiles.filter(file => file.status === "pending");
+    pendingFiles.forEach((file) => {
+      uploadFile(file.id);
+    });
+  }, [uploadFiles.length, uploadFile]);
 
   const removeFile = (fileId: string) => {
     setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
