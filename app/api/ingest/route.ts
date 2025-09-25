@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase";
 import OpenAI from "openai";
-import pdf from "pdf-parse";
 import mammoth from "mammoth";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -62,6 +61,7 @@ export async function POST(req: NextRequest) {
     // parse by filetype
     let text = "";
     if (doc.title.endsWith(".pdf")) {
+      const pdf = (await import("pdf-parse")).default;
       const parsed = await pdf(buf);
       text = parsed.text;
     } else if (doc.title.endsWith(".docx")) {
