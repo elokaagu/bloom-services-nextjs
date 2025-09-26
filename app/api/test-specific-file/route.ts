@@ -70,7 +70,9 @@ export async function GET(req: NextRequest) {
         path: testPath,
         success: !altFileError && !!altFileData,
         error: altFileError?.message,
-        fileSize: altFileData ? (await altFileData.arrayBuffer()).byteLength : 0,
+        fileSize: altFileData
+          ? (await altFileData.arrayBuffer()).byteLength
+          : 0,
       });
     }
 
@@ -90,11 +92,12 @@ export async function GET(req: NextRequest) {
       },
       bucket: bucketName,
       testResults: results,
-      availableFiles: files?.map(f => ({
-        name: f.name,
-        size: f.metadata?.size,
-        lastModified: f.updated_at,
-      })) || [],
+      availableFiles:
+        files?.map((f) => ({
+          name: f.name,
+          size: f.metadata?.size,
+          lastModified: f.updated_at,
+        })) || [],
       listError: listError?.message,
     });
   } catch (error: any) {

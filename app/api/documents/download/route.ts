@@ -91,16 +91,16 @@ export async function GET(req: NextRequest) {
       document.storage_path?.replace("documents/", ""),
       `documents/${document.storage_path}`,
       // Handle case where storage_path already includes documents/
-      document.storage_path?.startsWith("documents/") 
-        ? document.storage_path 
+      document.storage_path?.startsWith("documents/")
+        ? document.storage_path
         : `documents/${document.storage_path}`,
       // Try just the filename
       document.storage_path?.split("/").pop(),
     ].filter(Boolean); // Remove any undefined/null paths
 
     console.log("Will try these combinations:");
-    buckets.forEach(bucket => {
-      paths.forEach(path => {
+    buckets.forEach((bucket) => {
+      paths.forEach((path) => {
         console.log(`  - Bucket: ${bucket}, Path: ${path}`);
       });
     });

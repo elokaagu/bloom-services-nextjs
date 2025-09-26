@@ -59,6 +59,12 @@ export async function POST(req: NextRequest) {
     console.log("Uploading file to storage:", filePath);
 
     // Upload file to Supabase Storage
+    console.log("Attempting to upload file to storage...");
+    console.log("Bucket:", process.env.STORAGE_BUCKET || "documents");
+    console.log("Path:", filePath);
+    console.log("File size:", file.size);
+    console.log("File type:", file.type);
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(process.env.STORAGE_BUCKET || "documents")
       .upload(filePath, file, {
@@ -68,8 +74,26 @@ export async function POST(req: NextRequest) {
 
     if (uploadError) {
       console.error("Storage upload error:", uploadError);
+      console.error("Upload error details:", {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error,
+      });
+      
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === (process.env.STORAGE_BUCKET || "documents"));
+      
       return NextResponse.json(
-        { error: `Storage upload failed: ${uploadError.message}` },
+        { 
+          error: `Storage upload failed: ${uploadError.message}`,
+          details: {
+            bucket: process.env.STORAGE_BUCKET || "documents",
+            path: filePath,
+            bucketExists,
+            availableBuckets: buckets?.map(b => b.name) || [],
+          }
+        },
         { status: 500 }
       );
     }
