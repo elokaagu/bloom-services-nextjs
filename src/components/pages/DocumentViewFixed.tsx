@@ -6,24 +6,10 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { 
-  ArrowLeft, 
-  Download, 
-  Share, 
-  FileText, 
+  ArrowLeft,
+  Download,
+  Share,
+  FileText,
   Eye,
   Users,
   Lock,
@@ -36,11 +22,8 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  Copy,
-  ExternalLink,
 } from "lucide-react";
 import { Document } from "@/components/documents/DocumentCard";
-import { useToast } from "@/hooks/use-toast";
 
 interface DocumentViewProps {
   document: Document;
@@ -49,26 +32,26 @@ interface DocumentViewProps {
 
 const getACLInfo = (acl: Document["acl"]) => {
   const variants = {
-    private: { 
+    private: {
       label: "Private",
       icon: Lock,
       description: "Only you can access this document",
       className: "text-gray-600",
     },
-    workspace: { 
+    workspace: {
       label: "Workspace",
       icon: Users,
       description: "Accessible to all workspace members",
       className: "text-blue-600",
     },
-    organization: { 
+    organization: {
       label: "Organization",
       icon: Globe,
       description: "Accessible to all organization members",
       className: "text-green-600",
     },
   };
-  
+
   return variants[acl];
 };
 
@@ -79,10 +62,6 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const [contentError, setContentError] = useState<string | null>(null);
   const [contentSource, setContentSource] = useState<string>("");
   const [retryCount, setRetryCount] = useState(0);
-  const [isUpdatingACL, setIsUpdatingACL] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
-  const { toast } = useToast();
 
   const aclInfo = getACLInfo(document.acl);
   const Icon = aclInfo.icon;
@@ -91,32 +70,38 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
     try {
       setIsLoadingContent(true);
       setContentError(null);
-      
+
       console.log("Fetching document content for:", document.id);
-      
-      const response = await fetch(`/api/documents/content?documentId=${document.id}`);
-      
+
+      const response = await fetch(
+        `/api/documents/content?documentId=${document.id}`
+      );
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch document content: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch document content: ${response.statusText}`
+        );
       }
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setDocumentContent(data.content);
         setContentSource(data.contentSource);
         console.log("Document content loaded successfully:", {
           contentLength: data.contentLength,
           contentSource: data.contentSource,
-          hasChunks: data.hasChunks
+          hasChunks: data.hasChunks,
         });
       } else {
         throw new Error(data.error || "Failed to load document content");
       }
     } catch (error) {
       console.error("Error fetching document content:", error);
-      setContentError(error instanceof Error ? error.message : "Failed to load content");
-      
+      setContentError(
+        error instanceof Error ? error.message : "Failed to load content"
+      );
+
       // Set fallback content
       setDocumentContent(`# ${document.title}
 
@@ -144,105 +129,12 @@ This document is ready but there's an issue accessing its content. This might be
     fetchDocumentContent();
   };
 
-  const handleACLChange = async (newACL: Document["acl"]) => {
-    try {
-      setIsUpdatingACL(true);
-      console.log("Updating ACL for document:", document.id, "to:", newACL);
-
-      const response = await fetch(`/api/documents/${document.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          updates: { acl: newACL },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update document ACL");
-      }
-
-      toast({
-        title: "Access level updated",
-        description: `Document access changed to ${newACL}`,
-      });
-
-      console.log("Document ACL updated successfully:", document.id);
-    } catch (error) {
-      console.error("Error updating document ACL:", error);
-      toast({
-        title: "Error updating access level",
-        description: error instanceof Error ? error.message : "Failed to update access level",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingACL(false);
-    }
-  };
-
-  const handleDownload = async () => {
-    try {
-      setIsDownloading(true);
-      console.log("Downloading document:", document.title);
-
-      // Try to get the file from storage
-      const response = await fetch(`/api/documents/download?documentId=${document.id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to download document: ${response.statusText}`);
-      }
-
-      // Get the file blob
-      const blob = await response.blob();
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = document.title;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download started",
-        description: `${document.title} is being downloaded`,
-      });
-    } catch (error) {
-      console.error("Error downloading document:", error);
-      toast({
-        title: "Download failed",
-        description: error instanceof Error ? error.message : "Failed to download document",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
+  const handleDownload = () => {
+    console.log("Downloading document:", document.title);
   };
 
   const handleShare = () => {
-    console.log("Opening share modal for:", document.id);
-    setShareModalOpen(true);
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      const shareUrl = `${window.location.origin}/app?document=${document.id}`;
-      await navigator.clipboard.writeText(shareUrl);
-      
-      toast({
-        title: "Link copied",
-        description: "Document link copied to clipboard",
-      });
-    } catch (error) {
-      console.error("Error copying link:", error);
-      toast({
-        title: "Copy failed",
-        description: "Failed to copy link to clipboard",
-        variant: "destructive",
-      });
-    }
+    console.log("Sharing document:", document.title);
   };
 
   const renderContent = () => {
@@ -264,9 +156,7 @@ This document is ready but there's an issue accessing its content. This might be
           <p className="text-destructive mb-2 text-lg font-semibold">
             Error loading content
           </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            {contentError}
-          </p>
+          <p className="text-sm text-muted-foreground mb-4">{contentError}</p>
           <Button onClick={handleRetry} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Again ({retryCount}/3)
@@ -309,10 +199,7 @@ This document is ready but there's an issue accessing its content. This might be
             );
           } else if (line.startsWith("- ")) {
             return (
-              <div
-                key={index}
-                className="flex items-start mb-2 ml-6"
-              >
+              <div key={index} className="flex items-start mb-2 ml-6">
                 <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
                 <p className="text-foreground/80 leading-relaxed">
                   {line.slice(2)}
@@ -323,16 +210,11 @@ This document is ready but there's an issue accessing its content. This might be
             const number = line.match(/^(\d+)\. /)?.[1];
             const text = line.replace(/^\d+\. /, "");
             return (
-              <div
-                key={index}
-                className="flex items-start mb-2 ml-6"
-              >
+              <div key={index} className="flex items-start mb-2 ml-6">
                 <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
                   {number}
                 </span>
-                <p className="text-foreground/80 leading-relaxed">
-                  {text}
-                </p>
+                <p className="text-foreground/80 leading-relaxed">{text}</p>
               </div>
             );
           } else if (line.trim() === "") {
@@ -358,9 +240,9 @@ This document is ready but there's an issue accessing its content. This might be
       <div className="border-b bg-card/50 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 gap-4">
           <div className="flex items-start space-x-4 min-w-0 flex-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onBack}
               className="text-muted-foreground hover:text-foreground flex-shrink-0"
             >
@@ -368,9 +250,9 @@ This document is ready but there's an issue accessing its content. This might be
               <span className="hidden sm:inline">Back to Library</span>
               <span className="sm:hidden">Back</span>
             </Button>
-            
+
             <Separator orientation="vertical" className="h-6 hidden sm:block" />
-            
+
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
               <div className="min-w-0 flex-1">
@@ -396,95 +278,31 @@ This document is ready but there's an issue accessing its content. This might be
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center flex-wrap gap-2">
-            <Select value={document.acl} onValueChange={handleACLChange} disabled={isUpdatingACL}>
-              <SelectTrigger className="h-8 px-2 sm:px-3 w-auto">
-                <div className="flex items-center space-x-1">
-                  <Icon className="h-3 w-3" />
-                  <span className="text-xs sm:text-sm">{aclInfo.label}</span>
-                  {isUpdatingACL && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="private">
-                  <div className="flex items-center space-x-2">
-                    <Lock className="h-4 w-4" />
-                    <span>Private</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="workspace">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4" />
-                    <span>Workspace</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="organization">
-                  <div className="flex items-center space-x-2">
-                    <Globe className="h-4 w-4" />
-                    <span>Organization</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
 
-            <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2 sm:px-3"
-                >
+          <div className="flex items-center flex-wrap gap-2">
+            <Badge variant="outline" className={`${aclInfo.className} text-xs`}>
+              <Icon className="h-3 w-3 mr-1" />
+              {aclInfo.label}
+            </Badge>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="h-8 px-2 sm:px-3"
+            >
               <Share className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">Share</span>
             </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Share Document</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Document Link</label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <input
-                        type="text"
-                        value={`${window.location.origin}/app?document=${document.id}`}
-                        readOnly
-                        className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyLink}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    <p>Access level: <span className="font-medium">{aclInfo.label}</span></p>
-                    <p className="mt-1">{aclInfo.description}</p>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
 
             <Button
               variant="outline"
               size="sm"
               onClick={handleDownload}
-              disabled={isDownloading}
               className="h-8 px-2 sm:px-3"
             >
-              {isDownloading ? (
-                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 animate-spin" />
-              ) : (
               <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              )}
-              <span className="hidden sm:inline">
-                {isDownloading ? "Downloading..." : "Download"}
-              </span>
+              <span className="hidden sm:inline">Download</span>
             </Button>
           </div>
         </div>
@@ -510,17 +328,15 @@ This document is ready but there's an issue accessing its content. This might be
                 Details
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="content" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[70vh] w-full rounded-md">
-                  <div className="p-4 sm:p-8 max-w-none">
-                    {renderContent()}
-                  </div>
+                  <div className="p-4 sm:p-8 max-w-none">{renderContent()}</div>
                 </ScrollArea>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="analytics" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <div className="p-4 sm:p-8">
@@ -536,61 +352,93 @@ This document is ready but there's an issue accessing its content. This might be
                 </div>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="metadata" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <div className="p-4 sm:p-8">
-                <div className="space-y-4">
+                  <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <FileIcon className="h-5 w-5 text-muted-foreground" />
                       <span className="font-medium">Document Details</span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Title</label>
-                        <p className="text-sm text-foreground">{document.title}</p>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Title
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {document.title}
+                        </p>
                       </div>
-                      
-                    <div>
-                        <label className="text-sm font-medium text-muted-foreground">Status</label>
-                        <p className="text-sm text-foreground capitalize">{document.status}</p>
-                    </div>
-                      
-                    <div>
-                        <label className="text-sm font-medium text-muted-foreground">Size</label>
-                        <p className="text-sm text-foreground">{document.size}</p>
-                    </div>
-                      
-                    <div>
-                        <label className="text-sm font-medium text-muted-foreground">Uploaded</label>
-                        <p className="text-sm text-foreground">{document.uploadedAt}</p>
-                    </div>
-                      
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Owner</label>
-                        <p className="text-sm text-foreground">{document.owner}</p>
-                  </div>
-                  
-                  <div>
-                        <label className="text-sm font-medium text-muted-foreground">Access Level</label>
-                        <p className="text-sm text-foreground capitalize">{document.acl}</p>
+
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Status
+                        </label>
+                        <p className="text-sm text-foreground capitalize">
+                          {document.status}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Size
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {document.size}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Uploaded
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {document.uploadedAt}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Owner
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {document.owner}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Access Level
+                        </label>
+                        <p className="text-sm text-foreground capitalize">
+                          {document.acl}
+                        </p>
                       </div>
                     </div>
 
                     {contentSource && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Content Source</label>
-                        <p className="text-sm text-foreground capitalize">{contentSource}</p>
-                  </div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Content Source
+                        </label>
+                        <p className="text-sm text-foreground capitalize">
+                          {contentSource}
+                        </p>
+                      </div>
                     )}
-                  
+
                     {document.summary && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Summary</label>
-                        <p className="text-sm text-foreground">{document.summary}</p>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Summary
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {document.summary}
+                        </p>
                       </div>
-                  )}
+                    )}
                   </div>
                 </div>
               </Card>

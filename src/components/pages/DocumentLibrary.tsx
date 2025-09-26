@@ -119,14 +119,20 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [sortBy, setSortBy] = useState("uploadedAt");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
+    new Set()
+  );
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(new Set());
+  const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(
+    new Set()
+  );
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [documentToShare, setDocumentToShare] = useState<Document | null>(null);
-  const [loadingPreviews, setLoadingPreviews] = useState<Set<string>>(new Set());
+  const [loadingPreviews, setLoadingPreviews] = useState<Set<string>>(
+    new Set()
+  );
   const { toast } = useToast();
 
   // Fetch documents from database
@@ -150,19 +156,23 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       const data = await response.json();
 
       if (data.success) {
-        const transformedDocuments: Document[] = data.documents.map((doc: any) => ({
-          id: doc.id,
-          title: doc.title,
-          type: (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) || "pdf",
-          size: doc.fileSize || "Size not available",
-          uploadedAt: new Date(doc.created_at).toLocaleDateString(),
-          status: doc.status,
-          acl: doc.acl || "workspace",
-          owner: doc.users?.name || doc.users?.email || "Unknown User",
-          error: doc.error,
-          summary: doc.summary,
-          summaryUpdatedAt: doc.summary_updated_at,
-        }));
+        const transformedDocuments: Document[] = data.documents.map(
+          (doc: any) => ({
+            id: doc.id,
+            title: doc.title,
+            type:
+              (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
+              "pdf",
+            size: doc.fileSize || "Size not available",
+            uploadedAt: new Date(doc.created_at).toLocaleDateString(),
+            status: doc.status,
+            acl: doc.acl || "workspace",
+            owner: doc.users?.name || doc.users?.email || "Unknown User",
+            error: doc.error,
+            summary: doc.summary,
+            summaryUpdatedAt: doc.summary_updated_at,
+          })
+        );
 
         setDocuments(transformedDocuments);
       } else {
@@ -170,7 +180,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       }
     } catch (err) {
       console.error("Error fetching documents:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch documents");
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch documents"
+      );
       setDocuments([]);
     } finally {
       setIsLoading(false);
@@ -180,10 +192,12 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   // Fetch document preview
   const fetchDocumentPreview = useCallback(async (documentId: string) => {
     try {
-      setLoadingPreviews(prev => new Set(prev).add(documentId));
+      setLoadingPreviews((prev) => new Set(prev).add(documentId));
 
-      const response = await fetch(`/api/documents/preview?documentId=${documentId}`);
-      
+      const response = await fetch(
+        `/api/documents/preview?documentId=${documentId}`
+      );
+
       if (!response.ok) {
         throw new Error(`Failed to fetch preview: ${response.status}`);
       }
@@ -191,13 +205,13 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       const data = await response.json();
 
       if (data.success) {
-        setDocuments(prev => 
-          prev.map(doc => 
-            doc.id === documentId 
-              ? { 
-                  ...doc, 
+        setDocuments((prev) =>
+          prev.map((doc) =>
+            doc.id === documentId
+              ? {
+                  ...doc,
                   size: data.document.fileSize,
-                  preview: data.preview 
+                  preview: data.preview,
                 }
               : doc
           )
@@ -206,7 +220,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     } catch (error) {
       console.error("Error fetching document preview:", error);
     } finally {
-      setLoadingPreviews(prev => {
+      setLoadingPreviews((prev) => {
         const newSet = new Set(prev);
         newSet.delete(documentId);
         return newSet;
@@ -221,8 +235,12 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
   // Auto-fetch previews for ready documents
   useEffect(() => {
-    documents.forEach(doc => {
-      if (doc.status === "ready" && !doc.preview && !loadingPreviews.has(doc.id)) {
+    documents.forEach((doc) => {
+      if (
+        doc.status === "ready" &&
+        !doc.preview &&
+        !loadingPreviews.has(doc.id)
+      ) {
         fetchDocumentPreview(doc.id);
       }
     });
@@ -232,7 +250,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (doc.preview?.content && doc.preview.content.toLowerCase().includes(searchTerm.toLowerCase()));
+      (doc.preview?.content &&
+        doc.preview.content.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
     const matchesACL = aclFilter === "all" || doc.acl === aclFilter;
 
@@ -246,7 +265,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
   const handleDocumentDelete = async (doc: Document) => {
     try {
-      setDeletingDocuments(prev => new Set(prev).add(doc.id));
+      setDeletingDocuments((prev) => new Set(prev).add(doc.id));
 
       const response = await fetch(`/api/documents/${doc.id}`, {
         method: "DELETE",
@@ -257,8 +276,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         throw new Error(errorData.error || "Failed to delete document");
       }
 
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
-      setSelectedDocuments(prev => {
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      setSelectedDocuments((prev) => {
         const newSet = new Set(prev);
         newSet.delete(doc.id);
         return newSet;
@@ -274,11 +293,12 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       console.error("Error deleting document:", error);
       toast({
         title: "Error deleting document",
-        description: error instanceof Error ? error.message : "Failed to delete document",
+        description:
+          error instanceof Error ? error.message : "Failed to delete document",
         variant: "destructive",
       });
     } finally {
-      setDeletingDocuments(prev => {
+      setDeletingDocuments((prev) => {
         const newSet = new Set(prev);
         newSet.delete(doc.id);
         return newSet;
@@ -306,10 +326,14 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
       const result = await response.json();
 
-      setDocuments(prev =>
-        prev.map(d => 
-          d.id === doc.id 
-            ? { ...d, summary: result.summary, summaryUpdatedAt: new Date().toISOString() }
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id
+            ? {
+                ...d,
+                summary: result.summary,
+                summaryUpdatedAt: new Date().toISOString(),
+              }
             : d
         )
       );
@@ -322,7 +346,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       console.error("Error generating summary:", error);
       toast({
         title: "Error generating summary",
-        description: error instanceof Error ? error.message : "Failed to generate summary",
+        description:
+          error instanceof Error ? error.message : "Failed to generate summary",
         variant: "destructive",
       });
     }
@@ -341,8 +366,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         throw new Error(errorData.error || "Failed to update document ACL");
       }
 
-      setDocuments(prev =>
-        prev.map(d => (d.id === doc.id ? { ...d, acl: newACL } : d))
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === doc.id ? { ...d, acl: newACL } : d))
       );
     } catch (error) {
       console.error("Error updating document ACL:", error);
@@ -350,7 +375,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   };
 
   const handleDocumentSelect = (doc: Document, selected: boolean) => {
-    setSelectedDocuments(prev => {
+    setSelectedDocuments((prev) => {
       const newSet = new Set(prev);
       if (selected) {
         newSet.add(doc.id);
@@ -365,19 +390,19 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     if (selectedDocuments.size === filteredDocuments.length) {
       setSelectedDocuments(new Set());
     } else {
-      setSelectedDocuments(new Set(filteredDocuments.map(d => d.id)));
+      setSelectedDocuments(new Set(filteredDocuments.map((d) => d.id)));
     }
   };
 
   const handleBulkDelete = () => {
-    setDocuments(prev => prev.filter(d => !selectedDocuments.has(d.id)));
+    setDocuments((prev) => prev.filter((d) => !selectedDocuments.has(d.id)));
     setSelectedDocuments(new Set());
     setShowBulkActions(false);
   };
 
   const handleBulkACLChange = (newACL: Document["acl"]) => {
-    setDocuments(prev =>
-      prev.map(d => (selectedDocuments.has(d.id) ? { ...d, acl: newACL } : d))
+    setDocuments((prev) =>
+      prev.map((d) => (selectedDocuments.has(d.id) ? { ...d, acl: newACL } : d))
     );
     setSelectedDocuments(new Set());
     setShowBulkActions(false);
@@ -385,7 +410,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
   const getStatusCount = (status: string) => {
     if (status === "all") return documents.length;
-    return documents.filter(doc => doc.status === status).length;
+    return documents.filter((doc) => doc.status === status).length;
   };
 
   const renderDocumentCard = (document: Document) => {
@@ -394,7 +419,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     const isLoadingPreview = loadingPreviews.has(document.id);
 
     return (
-      <Card 
+      <Card
         key={document.id}
         className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg ${
           isSelected ? "ring-2 ring-primary bg-primary/5" : ""
@@ -429,7 +454,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-2 min-w-0 flex-1">
               <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-              <h3 className="font-semibold text-sm truncate">{document.title}</h3>
+              <h3 className="font-semibold text-sm truncate">
+                {document.title}
+              </h3>
             </div>
           </div>
 
@@ -453,7 +480,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               </div>
             ) : (
               <div className="text-xs text-muted-foreground">
-                {document.status === "ready" ? "Content preview loading..." : "Preview not available"}
+                {document.status === "ready"
+                  ? "Content preview loading..."
+                  : "Preview not available"}
               </div>
             )}
           </div>
@@ -477,8 +506,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           {/* Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`text-xs ${getACLColor(document.acl)}`}
               >
                 {getACLIcon(document.acl)}
@@ -498,7 +527,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               >
                 <Share className="h-3 w-3" />
               </Button>
-              
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -546,7 +575,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             <p className="text-muted-foreground text-xs sm:text-sm">
               {filteredDocuments.length} of {documents.length} documents
               {selectedDocuments.size > 0 && (
-                <span className="ml-2">• {selectedDocuments.size} selected</span>
+                <span className="ml-2">
+                  • {selectedDocuments.size} selected
+                </span>
               )}
             </p>
           </div>
@@ -559,7 +590,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               disabled={isLoading}
               className="text-xs sm:text-sm"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
 
@@ -591,7 +624,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           onClick={handleSelectAll}
           className="h-9 w-9 p-0 flex-shrink-0"
         >
-          {selectedDocuments.size === filteredDocuments.length && filteredDocuments.length > 0 ? (
+          {selectedDocuments.size === filteredDocuments.length &&
+          filteredDocuments.length > 0 ? (
             <CheckSquare className="h-4 w-4" />
           ) : (
             <Square className="h-4 w-4" />
@@ -656,11 +690,36 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       {/* Status Filter Tabs */}
       <div className="flex items-center space-x-0 border-b overflow-x-auto pb-0">
         {[
-          { key: "all", label: "All", count: getStatusCount("all"), color: "text-foreground" },
-          { key: "ready", label: "Ready", count: getStatusCount("ready"), color: "text-success" },
-          { key: "processing", label: "Processing", count: getStatusCount("processing"), color: "text-warning" },
-          { key: "uploading", label: "Uploading", count: getStatusCount("uploading"), color: "text-blue-600" },
-          { key: "failed", label: "Failed", count: getStatusCount("failed"), color: "text-destructive" },
+          {
+            key: "all",
+            label: "All",
+            count: getStatusCount("all"),
+            color: "text-foreground",
+          },
+          {
+            key: "ready",
+            label: "Ready",
+            count: getStatusCount("ready"),
+            color: "text-success",
+          },
+          {
+            key: "processing",
+            label: "Processing",
+            count: getStatusCount("processing"),
+            color: "text-warning",
+          },
+          {
+            key: "uploading",
+            label: "Uploading",
+            count: getStatusCount("uploading"),
+            color: "text-blue-600",
+          },
+          {
+            key: "failed",
+            label: "Failed",
+            count: getStatusCount("failed"),
+            color: "text-destructive",
+          },
         ].map((status) => (
           <Button
             key={status.key}
@@ -674,7 +733,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             }`}
           >
             <span className="flex items-center space-x-1 sm:space-x-2">
-              <span className={statusFilter === status.key ? "font-medium" : ""}>
+              <span
+                className={statusFilter === status.key ? "font-medium" : ""}
+              >
                 {status.label}
               </span>
               <span className="text-xs font-medium text-muted-foreground ml-1">
