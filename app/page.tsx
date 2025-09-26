@@ -6,10 +6,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles,
-  FileText,
-  Search,
-  Users,
-  Shield,
   Zap,
   ArrowRight,
 } from "lucide-react";
@@ -26,33 +22,6 @@ export default function HomePage() {
       router.push("/app");
     }, 1500);
   };
-
-  const features = [
-    {
-      icon: Search,
-      title: "Intelligent Search",
-      description:
-        "Find information across all your documents instantly with AI-powered semantic search",
-    },
-    {
-      icon: FileText,
-      title: "Document Management",
-      description:
-        "Upload, organize, and manage all your organizational documents in one secure place",
-    },
-    {
-      icon: Users,
-      title: "Team Collaboration",
-      description:
-        "Share knowledge and insights across your organization with granular access controls",
-    },
-    {
-      icon: Shield,
-      title: "Enterprise Security",
-      description:
-        "Bank-grade security with role-based access control and audit trails",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/20">
@@ -135,34 +104,10 @@ export default function HomePage() {
                   )}
                 </Button>
                      </div>
-
-                   {/* Features List */}
-                   <div className="space-y-6 mb-16">
-                     {features.map((feature, index) => (
-                       <Card
-                         key={index}
-                         className="p-6 hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm"
-                       >
-                         <div className="flex items-start space-x-4">
-                           <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                             <feature.icon className="h-6 w-6 text-primary" />
-                           </div>
-                           <div className="flex-1">
-                             <h3 className="text-lg font-semibold text-foreground mb-2">
-                               {feature.title}
-                             </h3>
-                             <p className="text-sm text-muted-foreground leading-relaxed">
-                               {feature.description}
-                             </p>
-                           </div>
-                         </div>
-                       </Card>
-                     ))}
-                   </div>
                  </div>
-               </div>
-             </div>
-         </main>
+          </div>
+        </div>
+      </main>
 
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
