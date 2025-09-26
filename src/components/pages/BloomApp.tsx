@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { Header } from "@/components/layout/Header";
 import { DocumentLibrary } from "./DocumentLibrary";
 import { DocumentView } from "./DocumentView";
 import { ChatInterface } from "@/components/chat/ChatInterface";
@@ -161,8 +160,7 @@ export const BloomApp = () => {
         />
 
         <SidebarInset className="flex-1 min-w-0 ml-3">
-          <Header />
-          <main className="flex-1 py-4 sm:py-8 px-2 sm:px-0 pt-20">
+          <main className="flex-1 py-4 sm:py-8 px-2 sm:px-0">
             {renderCurrentPage()}
           </main>
         </SidebarInset>

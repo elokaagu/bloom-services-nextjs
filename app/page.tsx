@@ -65,8 +65,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/20">
       {/* Header */}
-      <header className="relative z-10 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 shadow-sm">
+        <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg">
               <Sparkles className="h-6 w-6 text-primary-foreground" />
@@ -90,7 +90,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <main className="relative z-10 px-4 sm:px-6 lg:px-8 pt-8 pb-16">
+      <main className="relative z-10 px-4 sm:px-6 lg:px-8 pt-24 pb-16">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             {/* Hero Content */}
@@ -179,7 +179,6 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-
           </div>
         </div>
       </main>
