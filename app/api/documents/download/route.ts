@@ -8,24 +8,56 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const documentId = searchParams.get("documentId");
 
+    console.log("Document ID:", documentId);
+
     if (!documentId) {
+      console.error("No document ID provided");
       return NextResponse.json(
         { error: "Document ID is required" },
         { status: 400 }
       );
     }
 
+    // Check environment variables
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Missing Supabase environment variables");
+      return NextResponse.json(
+        { error: "Server configuration error - missing Supabase credentials" },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.STORAGE_BUCKET) {
+      console.error("Missing STORAGE_BUCKET environment variable");
+      return NextResponse.json(
+        { error: "Server configuration error - missing storage bucket" },
+        { status: 500 }
+      );
+    }
+
+    console.log("Environment variables check passed");
+    console.log("Storage bucket:", process.env.STORAGE_BUCKET);
+
     const supabase = supabaseService();
 
     // Get document details
+    console.log("Fetching document from database...");
     const { data: document, error: docError } = await supabase
       .from("documents")
       .select("*")
       .eq("id", documentId)
       .single();
 
-    if (docError || !document) {
-      console.error("Document not found:", docError);
+    if (docError) {
+      console.error("Database error:", docError);
+      return NextResponse.json(
+        { error: `Database error: ${docError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!document) {
+      console.error("Document not found in database");
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
@@ -33,9 +65,11 @@ export async function GET(req: NextRequest) {
     }
 
     console.log("Document found:", document.title);
+    console.log("Document status:", document.status);
     console.log("Storage path:", document.storage_path);
 
     if (!document.storage_path) {
+      console.error("No storage path for document");
       return NextResponse.json(
         { error: "Document file not available for download" },
         { status: 404 }
@@ -43,18 +77,42 @@ export async function GET(req: NextRequest) {
     }
 
     // Download file from storage
+    console.log("Attempting to download from storage...");
+    console.log("Bucket:", process.env.STORAGE_BUCKET);
+    console.log("Path:", document.storage_path);
+
     const { data: fileData, error: fileError } = await supabase.storage
-      .from(process.env.STORAGE_BUCKET || "documents")
+      .from(process.env.STORAGE_BUCKET)
       .download(document.storage_path);
 
-    if (fileError || !fileData) {
+    if (fileError) {
       console.error("Storage download error:", fileError);
+      console.error("Error details:", {
+        message: fileError.message,
+        statusCode: fileError.statusCode,
+        error: fileError.error,
+      });
       return NextResponse.json(
-        { error: "Failed to download file from storage" },
+        { 
+          error: "Failed to download file from storage",
+          details: fileError.message,
+          storagePath: document.storage_path,
+          bucket: process.env.STORAGE_BUCKET
+        },
         { status: 500 }
       );
     }
 
+    if (!fileData) {
+      console.error("No file data returned from storage");
+      return NextResponse.json(
+        { error: "No file data available" },
+        { status: 500 }
+      );
+    }
+
+    console.log("File data received, converting to buffer...");
+    
     // Convert to buffer
     const buffer = Buffer.from(await fileData.arrayBuffer());
 
@@ -71,9 +129,11 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("=== DOCUMENT DOWNLOAD API ERROR ===", error);
+    console.error("Error stack:", error.stack);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );
