@@ -7,9 +7,9 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export async function POST(req: NextRequest) {
   try {
     console.log("=== DOCUMENT SUMMARIZE API START ===");
-    
+
     const { documentId } = await req.json();
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     // Try to get file content from storage first, fallback to chunks
     let fileContent = "";
     let contentSource = "";
-    
+
     try {
       // First try to get content from storage if available
       if (document.storage_path) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
           console.log("Successfully fetched file from storage");
           // Parse file content based on file type
           const buffer = Buffer.from(await fileData.arrayBuffer());
-          
+
           if (document.title.endsWith(".pdf")) {
             const pdf = (await import("pdf-parse")).default;
             const parsed = await pdf(buffer);
@@ -91,10 +91,13 @@ export async function POST(req: NextRequest) {
           }
           contentSource = "storage";
         } else {
-          console.log("Storage fetch failed, trying chunks:", fileError?.message);
+          console.log(
+            "Storage fetch failed, trying chunks:",
+            fileError?.message
+          );
         }
       }
-      
+
       // If storage failed or no storage_path, try to get content from chunks
       if (!fileContent) {
         console.log("Fetching content from document chunks");
@@ -105,24 +108,28 @@ export async function POST(req: NextRequest) {
           .order("chunk_no");
 
         if (!chunksError && chunks && chunks.length > 0) {
-          fileContent = chunks.map(chunk => chunk.text).join(" ");
+          fileContent = chunks.map((chunk) => chunk.text).join(" ");
           contentSource = "chunks";
           console.log(`Retrieved content from ${chunks.length} chunks`);
         } else {
           console.log("No chunks found:", chunksError?.message);
         }
       }
-      
+
       // If still no content, create a basic summary based on document metadata
       if (!fileContent) {
         console.log("No content available, creating metadata-based summary");
-        fileContent = `This document titled "${document.title}" was uploaded to the workspace. The document appears to be a ${document.title.split('.').pop()?.toUpperCase() || 'file'} file.`;
+        fileContent = `This document titled "${
+          document.title
+        }" was uploaded to the workspace. The document appears to be a ${
+          document.title.split(".").pop()?.toUpperCase() || "file"
+        } file.`;
         contentSource = "metadata";
       }
 
       // Clean up the text
       fileContent = fileContent.replace(/\s+/g, " ").trim();
-      
+
       if (fileContent.length === 0) {
         return NextResponse.json(
           { error: "No text content found in document" },
@@ -130,8 +137,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      console.log(`Content retrieved from ${contentSource}, length: ${fileContent.length}`);
-
+      console.log(
+        `Content retrieved from ${contentSource}, length: ${fileContent.length}`
+      );
     } catch (parseError) {
       console.error("Content retrieval error:", parseError);
       return NextResponse.json(
@@ -147,25 +155,30 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: "You are a helpful assistant that creates concise summaries of documents. Create a clear, informative summary in 2-3 sentences that captures the main points of the document."
+            content:
+              "You are a helpful assistant that creates concise summaries of documents. Create a clear, informative summary in 2-3 sentences that captures the main points of the document.",
           },
           {
             role: "user",
-            content: `Please summarize this document:\n\n${fileContent.substring(0, 4000)}` // Limit to first 4000 chars to stay within token limits
-          }
+            content: `Please summarize this document:\n\n${fileContent.substring(
+              0,
+              4000
+            )}`, // Limit to first 4000 chars to stay within token limits
+          },
         ],
         temperature: 0.3,
         max_tokens: 200,
       });
 
-      const summary = completion.choices[0]?.message?.content || "Unable to generate summary";
+      const summary =
+        completion.choices[0]?.message?.content || "Unable to generate summary";
 
       // Update document with summary
       const { error: updateError } = await supabase
         .from("documents")
-        .update({ 
+        .update({
           summary: summary,
-          summary_updated_at: new Date().toISOString()
+          summary_updated_at: new Date().toISOString(),
         })
         .eq("id", documentId);
 
@@ -183,7 +196,6 @@ export async function POST(req: NextRequest) {
         documentId: documentId,
         contentSource: contentSource,
       });
-
     } catch (openaiError) {
       console.error("OpenAI API error:", openaiError);
       return NextResponse.json(
@@ -191,7 +203,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
   } catch (error) {
     console.error("=== DOCUMENT SUMMARIZE API ERROR ===", error);
     return NextResponse.json(
