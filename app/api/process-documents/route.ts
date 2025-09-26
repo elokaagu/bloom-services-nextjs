@@ -6,7 +6,8 @@ export async function POST(req: NextRequest) {
     console.log("=== MANUAL DOCUMENT PROCESSING START ===");
 
     const { workspaceId } = await req.json();
-    const targetWorkspaceId = workspaceId || "550e8400-e29b-41d4-a716-446655440001";
+    const targetWorkspaceId =
+      workspaceId || "550e8400-e29b-41d4-a716-446655440001";
 
     const supabase = supabaseService();
 
@@ -87,7 +88,9 @@ export async function POST(req: NextRequest) {
     const successful = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
-    console.log(`Processing complete: ${successful} successful, ${failed} failed`);
+    console.log(
+      `Processing complete: ${successful} successful, ${failed} failed`
+    );
 
     return NextResponse.json({
       success: true,

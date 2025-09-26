@@ -69,7 +69,7 @@ export const ChatInterface = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspaceId }),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         console.log("Document processing result:", result);
@@ -114,7 +114,7 @@ export const ChatInterface = ({
         // Try to process documents automatically
         console.log("No chunks found, attempting to process documents...");
         await processDocumentsIfNeeded();
-        
+
         // Try the chat request again
         const retryResponse = await fetch("/api/chat", {
           method: "POST",
@@ -125,9 +125,9 @@ export const ChatInterface = ({
             question,
           }),
         });
-        
+
         const retryData = await retryResponse.json();
-        
+
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: "assistant",

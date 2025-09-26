@@ -6,12 +6,18 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function questionEmbedding(q: string) {
   try {
-    console.log("Generating question embedding for:", q.substring(0, 50) + "...");
+    console.log(
+      "Generating question embedding for:",
+      q.substring(0, 50) + "..."
+    );
     const r = await openai.embeddings.create({
       model: process.env.EMBEDDING_MODEL || "text-embedding-3-small",
       input: q,
     });
-    console.log("Question embedding generated successfully, dimension:", r.data[0].embedding.length);
+    console.log(
+      "Question embedding generated successfully, dimension:",
+      r.data[0].embedding.length
+    );
     return r.data[0].embedding;
   } catch (error) {
     console.error("Error generating question embedding:", error);
@@ -66,7 +72,8 @@ export async function POST(req: NextRequest) {
       console.error("Database connection error:", testError);
       return NextResponse.json(
         {
-          answer: "I'm having trouble connecting to the database right now. Please check your database configuration and try again.",
+          answer:
+            "I'm having trouble connecting to the database right now. Please check your database configuration and try again.",
           citations: [],
           error: "Database connection failed",
           details: testError.message,
@@ -85,18 +92,23 @@ export async function POST(req: NextRequest) {
 
     if (docsError) {
       console.error("Error checking documents:", docsError);
+      console.error("Workspace ID used:", workspaceId);
       return NextResponse.json({
-        answer: "I'm having trouble accessing your documents. Please try again later.",
+        answer:
+          "I'm having trouble accessing your documents. Please try again later.",
         citations: [],
         error: "Document access failed",
+        details: docsError.message,
       });
     }
 
     console.log(`Found ${documents?.length || 0} documents in workspace`);
+    console.log("Documents:", documents?.map(d => ({ id: d.id, title: d.title, status: d.status })));
 
     if (!documents || documents.length === 0) {
       return NextResponse.json({
-        answer: "I don't see any documents in your workspace yet. Please upload some documents first, and then I'll be able to help answer questions about them.\n\nTo get started:\n1. Go to the Document Library\n2. Upload PDF or DOCX files\n3. Wait for them to be processed\n4. Then ask me questions about the content!",
+        answer:
+          "I don't see any documents in your workspace yet. Please upload some documents first, and then I'll be able to help answer questions about them.\n\nTo get started:\n1. Go to the Document Library\n2. Upload PDF or DOCX files\n3. Wait for them to be processed\n4. Then ask me questions about the content!",
         citations: [],
         documentsFound: 0,
       });
@@ -105,7 +117,14 @@ export async function POST(req: NextRequest) {
     // Check if any documents have chunks
     const { data: chunks, error: chunksError } = await supabase
       .from("document_chunks")
-      .select("id, document_id")
+      .select(`
+        id, 
+        document_id,
+        documents!inner (
+          id,
+          workspace_id
+        )
+      `)
       .eq("documents.workspace_id", workspaceId)
       .limit(1);
 
@@ -116,18 +135,20 @@ export async function POST(req: NextRequest) {
     console.log(`Found ${chunks?.length || 0} chunks in workspace`);
 
     if (!chunks || chunks.length === 0) {
-      const readyDocs = documents.filter(d => d.status === "ready");
-      const processingDocs = documents.filter(d => d.status === "processing");
-      const failedDocs = documents.filter(d => d.status === "failed");
+      const readyDocs = documents.filter((d) => d.status === "ready");
+      const processingDocs = documents.filter((d) => d.status === "processing");
+      const failedDocs = documents.filter((d) => d.status === "failed");
 
-      let message = "I can see your documents, but they haven't been processed yet for AI search. ";
-      
+      let message =
+        "I can see your documents, but they haven't been processed yet for AI search. ";
+
       if (processingDocs.length > 0) {
         message += `I'm currently processing ${processingDocs.length} document(s). Please wait a moment and try again.`;
       } else if (failedDocs.length > 0) {
         message += `Some documents failed to process. You may want to try re-uploading them.`;
       } else {
-        message += "The documents need to be processed before I can answer questions about them. This usually happens automatically after upload.";
+        message +=
+          "The documents need to be processed before I can answer questions about them. This usually happens automatically after upload.";
       }
 
       return NextResponse.json({
@@ -216,11 +237,15 @@ export async function POST(req: NextRequest) {
 
       // If chunk retrieval fails, provide a helpful error message
       return NextResponse.json({
-        answer: "I'm having trouble accessing the document information right now. This might be because the documents are still being processed or there's a temporary issue. Please try again in a moment, or upload a new document if the problem persists.",
+        answer:
+          "I'm having trouble accessing the document information right now. This might be because the documents are still being processed or there's a temporary issue. Please try again in a moment, or upload a new document if the problem persists.",
         citations: [],
         queryId: qrow?.id,
         error: "Chunk retrieval failed",
-        details: retrievalError instanceof Error ? retrievalError.message : "Unknown error",
+        details:
+          retrievalError instanceof Error
+            ? retrievalError.message
+            : "Unknown error",
       });
     }
 
@@ -228,7 +253,8 @@ export async function POST(req: NextRequest) {
       console.log("No relevant chunks found for this question");
 
       return NextResponse.json({
-        answer: "I couldn't find any relevant information in your documents to answer this question. Try asking about different topics or check if your documents contain the information you're looking for.",
+        answer:
+          "I couldn't find any relevant information in your documents to answer this question. Try asking about different topics or check if your documents contain the information you're looking for.",
         citations: [],
         queryId: qrow?.id,
         chunksFound: 0,
@@ -307,10 +333,14 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     });
   } catch (e: any) {
     console.error("=== RAG CHAT API ERROR ===", e);
-    return NextResponse.json({ 
-      answer: "I encountered an error while processing your question. Please try again.",
-      citations: [],
-      error: e.message 
-    }, { status: 200 }); // Return 200 to show error in chat
+    return NextResponse.json(
+      {
+        answer:
+          "I encountered an error while processing your question. Please try again.",
+        citations: [],
+        error: e.message,
+      },
+      { status: 200 }
+    ); // Return 200 to show error in chat
   }
 }

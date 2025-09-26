@@ -153,7 +153,7 @@ export function AppSidebar({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start p-3 h-auto rounded-xl hover:bg-accent/50 transition-colors">
                 <Avatar className="h-9 w-9 mr-3 flex-shrink-0 ring-2 ring-border/20">
-                  <AvatarImage src="/placeholder-avatar.jpg" alt="User" />
+                  <AvatarImage src="" alt="User" />
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start min-w-0 flex-1 text-left">
@@ -189,7 +189,7 @@ export function AppSidebar({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder-avatar.jpg" alt="User" />
+                  <AvatarImage src="" alt="User" />
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
               </Button>
