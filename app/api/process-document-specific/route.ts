@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     if (!ingestResponse.ok) {
       const errorData = await ingestResponse.json();
       console.error("Ingest API failed:", errorData);
-      
+
       await supabase
         .from("documents")
         .update({ status: "failed", error: errorData.error })
@@ -120,7 +120,9 @@ export async function POST(req: NextRequest) {
         .update({ status: "ready" })
         .eq("id", documentId);
 
-      console.log(`Document processed successfully with ${chunks.length} chunks`);
+      console.log(
+        `Document processed successfully with ${chunks.length} chunks`
+      );
 
       return NextResponse.json({
         success: true,

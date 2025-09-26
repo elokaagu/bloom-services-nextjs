@@ -43,6 +43,63 @@ export async function POST(req: NextRequest) {
     console.log("Processing question:", question);
     console.log("Workspace:", workspaceId, "User:", userId);
 
+    // Check if this is a general conversation question (not document-related)
+    const isGeneralQuestion =
+      !question.toLowerCase().includes("document") &&
+      !question.toLowerCase().includes("file") &&
+      !question.toLowerCase().includes("upload") &&
+      !question.toLowerCase().includes("pdf") &&
+      !question.toLowerCase().includes("content") &&
+      !question.toLowerCase().includes("search") &&
+      !question.toLowerCase().includes("find") &&
+      !question.toLowerCase().includes("what does") &&
+      !question.toLowerCase().includes("tell me about") &&
+      question.length < 50; // Short questions are likely general
+
+    console.log("Is general question:", isGeneralQuestion);
+
+    // For general questions, skip database checks and provide immediate response
+    if (isGeneralQuestion) {
+      console.log("Providing immediate general conversation response");
+      
+      const generalPrompt = [
+        {
+          role: "system",
+          content: `You are Bloom, an AI assistant for a knowledge management platform. You help users with their documents and can also have general conversations.
+
+IMPORTANT RULES:
+- Be helpful, friendly, and conversational
+- Keep responses concise but informative
+- Use a professional but approachable tone
+- Be enthusiastic and engaging`,
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ] as any;
+
+      const completion = await openai.chat.completions.create({
+        model: process.env.GENERATION_MODEL || "gpt-4o-mini",
+        messages: generalPrompt,
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      const answer =
+        completion.choices[0]?.message?.content ||
+        "I'm here to help! What would you like to know?";
+
+      console.log("General conversation response generated");
+
+      return NextResponse.json({
+        answer,
+        citations: [],
+        isGeneralConversation: true,
+        documentsFound: 0,
+      });
+    }
+
     // Check environment variables
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("Missing Supabase environment variables");
@@ -108,25 +165,10 @@ export async function POST(req: NextRequest) {
       documents?.map((d) => ({ id: d.id, title: d.title, status: d.status }))
     );
 
-    // Check if this is a general conversation question (not document-related)
-    const isGeneralQuestion =
-      !question.toLowerCase().includes("document") &&
-      !question.toLowerCase().includes("file") &&
-      !question.toLowerCase().includes("upload") &&
-      !question.toLowerCase().includes("pdf") &&
-      !question.toLowerCase().includes("content") &&
-      !question.toLowerCase().includes("search") &&
-      !question.toLowerCase().includes("find") &&
-      !question.toLowerCase().includes("what does") &&
-      !question.toLowerCase().includes("tell me about") &&
-      question.length < 50; // Short questions are likely general
-
-    console.log("Is general question:", isGeneralQuestion);
-
-    // If it's a general question or no documents exist, provide general conversation
-    if (isGeneralQuestion || !documents || documents.length === 0) {
-      console.log("Providing general conversation response");
-
+    // If no documents exist, provide general conversation
+    if (!documents || documents.length === 0) {
+      console.log("No documents found, providing general conversation response");
+      
       const generalPrompt = [
         {
           role: "system",
@@ -162,7 +204,7 @@ IMPORTANT RULES:
         answer,
         citations: [],
         isGeneralConversation: true,
-        documentsFound: documents?.length || 0,
+        documentsFound: 0,
       });
     }
 
