@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== MANUAL CENTRALIS PROCESSING START ===");
-    
+
     const supabase = supabaseService();
-    
+
     // Find the Centralis document
     const { data: documents, error: docsError } = await supabase
       .from("documents")
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // If no chunks, trigger ingestion
     if (!existingChunks || existingChunks.length === 0) {
       console.log("No chunks found, triggering ingestion...");
-      
+
       const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,15 +53,15 @@ export async function POST(req: NextRequest) {
         const errorData = await ingestResponse.json();
         console.error("Ingest API failed:", errorData);
         return NextResponse.json(
-          { 
-            success: false, 
-            error: "Ingest API failed", 
+          {
+            success: false,
+            error: "Ingest API failed",
             details: errorData,
             document: {
               id: document.id,
               title: document.title,
               status: document.status,
-            }
+            },
           },
           { status: 500 }
         );
@@ -90,10 +90,12 @@ export async function POST(req: NextRequest) {
         ingestResult,
         chunksCreated: newChunks?.length || 0,
         chunksError: newChunksError?.message,
-        chunkPreview: newChunks?.slice(0, 2).map(c => ({
-          chunkNo: c.chunk_no,
-          textPreview: c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
-        })) || [],
+        chunkPreview:
+          newChunks?.slice(0, 2).map((c) => ({
+            chunkNo: c.chunk_no,
+            textPreview:
+              c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
+          })) || [],
       });
     } else {
       console.log("Document already has chunks, no processing needed");
@@ -108,7 +110,6 @@ export async function POST(req: NextRequest) {
         existingChunks: existingChunks.length,
       });
     }
-
   } catch (error) {
     console.error("=== MANUAL CENTRALIS PROCESSING ERROR ===", error);
     return NextResponse.json(

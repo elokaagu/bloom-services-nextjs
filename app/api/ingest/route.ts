@@ -33,13 +33,13 @@ async function embed(texts: string[]) {
 
 export async function POST(req: NextRequest) {
   let documentId: string | null = null;
-  
+
   try {
     console.log("=== DOCUMENT INGESTION START ===");
 
     const body = await req.json();
     documentId = body.documentId;
-    
+
     if (!documentId) {
       console.error("No documentId provided");
       return NextResponse.json(
@@ -101,11 +101,29 @@ export async function POST(req: NextRequest) {
 
       // Parse by file type
       if (doc.title.endsWith(".pdf")) {
-        console.log("Parsing PDF file");
-        const pdf = (await import("pdf-parse")).default;
-        const parsed = await pdf(buf);
-        text = parsed.text;
-        console.log("PDF parsed, text length:", text.length);
+        console.log("Parsing PDF file:", doc.title);
+        console.log("PDF buffer size:", buf.length);
+        
+        try {
+          const pdf = (await import("pdf-parse")).default;
+          console.log("PDF-parse library loaded successfully");
+          
+          const parsed = await pdf(buf);
+          console.log("PDF parsing completed");
+          console.log("PDF pages:", parsed.numpages);
+          console.log("PDF info:", parsed.info);
+          console.log("Raw text length:", parsed.text.length);
+          
+          text = parsed.text;
+          console.log("PDF parsed successfully, text length:", text.length);
+          
+          if (text.length === 0) {
+            console.warn("PDF parsing returned empty text - this might be a scanned PDF or image-based PDF");
+          }
+        } catch (pdfError) {
+          console.error("PDF parsing error:", pdfError);
+          throw new Error(`PDF parsing failed: ${pdfError.message}`);
+        }
       } else if (doc.title.endsWith(".docx")) {
         console.log("Parsing DOCX file");
         const parsed = await mammoth.extractRawText({ buffer: buf });
