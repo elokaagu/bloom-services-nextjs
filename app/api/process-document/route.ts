@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== MANUAL DOCUMENT PROCESSING START ===");
-    
+
     const { documentId } = await req.json();
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
       const errorData = await ingestResponse.json();
       console.error("Ingest API failed:", errorData);
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Ingest API failed", 
-          details: errorData 
+        {
+          success: false,
+          error: "Ingest API failed",
+          details: errorData,
         },
         { status: 500 }
       );
@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
       chunksCreated: chunks?.length || 0,
       chunksError: chunksError?.message,
     });
-
   } catch (error) {
     console.error("=== MANUAL DOCUMENT PROCESSING ERROR ===", error);
     return NextResponse.json(

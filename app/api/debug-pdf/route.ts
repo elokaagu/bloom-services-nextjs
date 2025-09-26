@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== PDF DEBUG API START ===");
-    
+
     const { documentId } = await req.json();
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       } else if (fileData) {
         const buf = Buffer.from(await fileData.arrayBuffer());
         console.log("File buffer created, size:", buf.length);
-        
+
         fileInfo = {
           success: true,
           bufferSize: buf.length,
@@ -64,13 +64,14 @@ export async function POST(req: NextRequest) {
             const pdf = (await import("pdf-parse")).default;
             const parsed = await pdf(buf);
             const text = parsed.text.replace(/\s+/g, " ").trim();
-            
+
             console.log("PDF parsing successful, text length:", text.length);
-            
+
             fileInfo.pdfParsing = {
               success: true,
               textLength: text.length,
-              preview: text.substring(0, 200) + (text.length > 200 ? "..." : ""),
+              preview:
+                text.substring(0, 200) + (text.length > 200 ? "..." : ""),
             };
           } catch (parseError) {
             console.error("PDF parsing error:", parseError);
@@ -108,13 +109,14 @@ export async function POST(req: NextRequest) {
       chunks: {
         count: chunks?.length || 0,
         error: chunksError?.message,
-        preview: chunks?.slice(0, 2).map(c => ({
-          chunkNo: c.chunk_no,
-          textPreview: c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
-        })) || [],
+        preview:
+          chunks?.slice(0, 2).map((c) => ({
+            chunkNo: c.chunk_no,
+            textPreview:
+              c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
+          })) || [],
       },
     });
-
   } catch (error) {
     console.error("=== PDF DEBUG API ERROR ===", error);
     return NextResponse.json(
