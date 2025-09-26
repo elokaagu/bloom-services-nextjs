@@ -47,32 +47,45 @@ export async function GET(req: NextRequest) {
         .limit(1);
 
       if (testError) {
-        validationResults.errors.push(`Database connection failed: ${testError.message}`);
+        validationResults.errors.push(
+          `Database connection failed: ${testError.message}`
+        );
       } else {
         validationResults.database.connection = true;
         console.log("Database connection successful");
       }
     } catch (error: any) {
-      validationResults.errors.push(`Database connection error: ${error.message}`);
+      validationResults.errors.push(
+        `Database connection error: ${error.message}`
+      );
     }
 
     // Check if tables exist
-    const tables = ["documents", "document_chunks", "queries", "workspaces", "users"];
+    const tables = [
+      "documents",
+      "document_chunks",
+      "queries",
+      "workspaces",
+      "users",
+    ];
     for (const table of tables) {
       try {
-        const { error } = await supabase
-          .from(table)
-          .select("id")
-          .limit(1);
+        const { error } = await supabase.from(table).select("id").limit(1);
 
         if (error) {
-          validationResults.errors.push(`Table '${table}' not accessible: ${error.message}`);
+          validationResults.errors.push(
+            `Table '${table}' not accessible: ${error.message}`
+          );
         } else {
-          validationResults.database.tables[table as keyof typeof validationResults.database.tables] = true;
+          validationResults.database.tables[
+            table as keyof typeof validationResults.database.tables
+          ] = true;
           console.log(`Table '${table}' exists and accessible`);
         }
       } catch (error: any) {
-        validationResults.errors.push(`Error checking table '${table}': ${error.message}`);
+        validationResults.errors.push(
+          `Error checking table '${table}': ${error.message}`
+        );
       }
     }
 
@@ -80,13 +93,17 @@ export async function GET(req: NextRequest) {
     try {
       const { data, error } = await supabase.rpc("check_pgvector");
       if (error) {
-        validationResults.errors.push(`pgvector extension check failed: ${error.message}`);
+        validationResults.errors.push(
+          `pgvector extension check failed: ${error.message}`
+        );
       } else {
         validationResults.database.extensions.pgvector = true;
         console.log("pgvector extension is available");
       }
     } catch (error: any) {
-      validationResults.errors.push(`pgvector extension error: ${error.message}`);
+      validationResults.errors.push(
+        `pgvector extension error: ${error.message}`
+      );
     }
 
     // Check match_chunks function
@@ -98,13 +115,17 @@ export async function GET(req: NextRequest) {
       });
 
       if (error) {
-        validationResults.errors.push(`match_chunks function failed: ${error.message}`);
+        validationResults.errors.push(
+          `match_chunks function failed: ${error.message}`
+        );
       } else {
         validationResults.database.functions.match_chunks = true;
         console.log("match_chunks function is available");
       }
     } catch (error: any) {
-      validationResults.errors.push(`match_chunks function error: ${error.message}`);
+      validationResults.errors.push(
+        `match_chunks function error: ${error.message}`
+      );
     }
 
     // Check storage bucket
@@ -114,7 +135,9 @@ export async function GET(req: NextRequest) {
         .list("", { limit: 1 });
 
       if (error) {
-        validationResults.errors.push(`Storage bucket access failed: ${error.message}`);
+        validationResults.errors.push(
+          `Storage bucket access failed: ${error.message}`
+        );
       } else {
         validationResults.database.storage.bucketExists = true;
         validationResults.database.storage.bucketAccessible = true;
@@ -134,7 +157,9 @@ export async function GET(req: NextRequest) {
         .select("id", { count: "exact" });
       documentCount = docCount || 0;
     } catch (error: any) {
-      validationResults.errors.push(`Error counting documents: ${error.message}`);
+      validationResults.errors.push(
+        `Error counting documents: ${error.message}`
+      );
     }
 
     try {
@@ -156,15 +181,24 @@ export async function GET(req: NextRequest) {
         chunks: chunkCount,
       },
       recommendations: [
-        !validationResults.environment.supabaseUrl && "Set SUPABASE_URL environment variable",
-        !validationResults.environment.supabaseServiceKey && "Set SUPABASE_SERVICE_ROLE_KEY environment variable",
-        !validationResults.environment.openaiApiKey && "Set OPENAI_API_KEY environment variable",
-        !validationResults.environment.embeddingModel && "Set EMBEDDING_MODEL environment variable",
-        !validationResults.environment.storageBucket && "Set STORAGE_BUCKET environment variable",
-        !validationResults.database.connection && "Check database connection and credentials",
-        !validationResults.database.extensions.pgvector && "Enable pgvector extension in database",
-        !validationResults.database.functions.match_chunks && "Create match_chunks RPC function",
-        !validationResults.database.storage.bucketAccessible && "Check storage bucket configuration",
+        !validationResults.environment.supabaseUrl &&
+          "Set SUPABASE_URL environment variable",
+        !validationResults.environment.supabaseServiceKey &&
+          "Set SUPABASE_SERVICE_ROLE_KEY environment variable",
+        !validationResults.environment.openaiApiKey &&
+          "Set OPENAI_API_KEY environment variable",
+        !validationResults.environment.embeddingModel &&
+          "Set EMBEDDING_MODEL environment variable",
+        !validationResults.environment.storageBucket &&
+          "Set STORAGE_BUCKET environment variable",
+        !validationResults.database.connection &&
+          "Check database connection and credentials",
+        !validationResults.database.extensions.pgvector &&
+          "Enable pgvector extension in database",
+        !validationResults.database.functions.match_chunks &&
+          "Create match_chunks RPC function",
+        !validationResults.database.storage.bucketAccessible &&
+          "Check storage bucket configuration",
         documentCount === 0 && "No documents found - upload some documents",
         chunkCount === 0 && "No document chunks found - process documents",
       ].filter(Boolean),

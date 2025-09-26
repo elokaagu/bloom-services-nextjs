@@ -3,34 +3,37 @@ import { supabaseService } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== PROCESS DOCUMENTS API START ===");
+    console.log("=== MANUAL DOCUMENT PROCESSING START ===");
+
+    const { workspaceId } = await req.json();
+    const targetWorkspaceId = workspaceId || "550e8400-e29b-41d4-a716-446655440001";
 
     const supabase = supabaseService();
 
-    // Get all documents that don't have chunks yet
+    // Get all documents in the workspace that need processing
     const { data: documents, error: docsError } = await supabase
       .from("documents")
-      .select("id, title, status")
-      .eq("workspace_id", "550e8400-e29b-41d4-a716-446655440001") // Policy Research workspace
-      .in("status", ["ready", "processing"]);
+      .select("id, title, status, storage_path")
+      .eq("workspace_id", targetWorkspaceId)
+      .in("status", ["uploading", "failed"]); // Only process documents that need it
 
     if (docsError) {
       console.error("Error fetching documents:", docsError);
       return NextResponse.json(
-        { error: "Failed to fetch documents", details: docsError.message },
+        { error: `Failed to fetch documents: ${docsError.message}` },
         { status: 500 }
       );
     }
 
-    console.log(`Found ${documents?.length || 0} documents to process`);
-
     if (!documents || documents.length === 0) {
       return NextResponse.json({
         success: true,
-        message: "No documents found to process",
+        message: "No documents need processing",
         processed: 0,
       });
     }
+
+    console.log(`Found ${documents.length} documents to process`);
 
     const results = [];
 
@@ -38,7 +41,13 @@ export async function POST(req: NextRequest) {
       try {
         console.log(`Processing document: ${doc.title} (${doc.id})`);
 
-        // Trigger ingestion for this document
+        // Update status to processing
+        await supabase
+          .from("documents")
+          .update({ status: "processing" })
+          .eq("id", doc.id);
+
+        // Trigger ingestion
         const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,30 +56,30 @@ export async function POST(req: NextRequest) {
 
         if (ingestResponse.ok) {
           const ingestResult = await ingestResponse.json();
-          console.log(`Document ${doc.title} processed successfully`);
           results.push({
             documentId: doc.id,
             title: doc.title,
             success: true,
             chunks: ingestResult.chunks || 0,
           });
+          console.log(`Successfully processed ${doc.title}`);
         } else {
           const errorData = await ingestResponse.json();
-          console.error(`Failed to process ${doc.title}:`, errorData);
           results.push({
             documentId: doc.id,
             title: doc.title,
             success: false,
             error: errorData.error,
           });
+          console.error(`Failed to process ${doc.title}:`, errorData.error);
         }
-      } catch (error) {
-        console.error(`Error processing ${doc.title}:`, error);
+      } catch (error: any) {
+        console.error(`Error processing document ${doc.id}:`, error);
         results.push({
           documentId: doc.id,
           title: doc.title,
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error.message,
         });
       }
     }
@@ -78,14 +87,11 @@ export async function POST(req: NextRequest) {
     const successful = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
-    console.log(
-      `Processing complete: ${successful} successful, ${failed} failed`
-    );
-    console.log("=== PROCESS DOCUMENTS API SUCCESS ===");
+    console.log(`Processing complete: ${successful} successful, ${failed} failed`);
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${successful} documents successfully, ${failed} failed`,
+      message: `Processing complete: ${successful} successful, ${failed} failed`,
       results,
       summary: {
         total: documents.length,
@@ -93,10 +99,13 @@ export async function POST(req: NextRequest) {
         failed,
       },
     });
-  } catch (e: any) {
-    console.error("=== PROCESS DOCUMENTS API ERROR ===", e);
+  } catch (error: any) {
+    console.error("=== MANUAL DOCUMENT PROCESSING ERROR ===", error);
     return NextResponse.json(
-      { error: e.message, stack: e.stack },
+      {
+        error: error.message,
+        stack: error.stack,
+      },
       { status: 500 }
     );
   }

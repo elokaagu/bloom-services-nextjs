@@ -61,64 +61,25 @@ export const ChatInterface = ({
   const [expandedSources, setExpandedSources] = useState<string>("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Mock responses with citations and permission scenarios
-  const mockResponses = [
-    {
-      content:
-        "Based on the documents in your workspace, the data retention policy requires all customer data to be retained for a minimum of 7 years for compliance purposes. However, personal data can be deleted upon request under GDPR Article 17 (Right to Erasure), with some exceptions for legal obligations.",
-      citations: [
-        {
-          id: "c1",
-          documentTitle: "Data Retention Policy 2024.pdf",
-          pageNumber: 3,
-          section: "Section 2.1 - Customer Data",
-          snippet:
-            "All customer transactional data must be retained for a period of seven (7) years from the date of last customer interaction...",
-          relevanceScore: 0.95,
-        },
-        {
-          id: "c2",
-          documentTitle: "GDPR Compliance Guide.docx",
-          pageNumber: 12,
-          section: "Right to Erasure",
-          snippet:
-            "Under Article 17 of GDPR, individuals have the right to have their personal data erased in specific circumstances...",
-          relevanceScore: 0.88,
-        },
-      ],
-    },
-    {
-      content:
-        "🚫 **Access Denied**\n\nI don't have access to the Q3 2024 Financial Report. This document is marked as **Private** and is only accessible to its owner (Emily Watson).\n\n**Why this happened:**\n• Document has private access control level\n• You don't have explicit permission to view this content\n\n**What you can do:**\n1. Contact Emily Watson directly for access\n2. Request workspace admin to change document permissions\n3. Look for similar information in workspace-level documents",
-      isError: true,
-      errorType: "permission" as const,
-      citations: [],
-    },
-    {
-      content:
-        "Here are the key security recommendations from your organization's security documentation:\n\n**Access Control:**\n• Implement multi-factor authentication for all systems\n• Use role-based access control (RBAC)\n• Regular access reviews every 90 days\n\n**Network Security:**\n• Deploy network segmentation\n• Monitor all network traffic\n• Use VPN for remote access\n\n**Data Protection:**\n• Encrypt data at rest and in transit\n• Regular backup verification\n• Implement data loss prevention (DLP)",
-      citations: [
-        {
-          id: "c3",
-          documentTitle: "Security Best Practices.pdf",
-          pageNumber: 5,
-          section: "Access Control Framework",
-          snippet:
-            "Multi-factor authentication should be enabled for all user accounts accessing corporate systems, with special attention to privileged accounts...",
-          relevanceScore: 0.94,
-        },
-        {
-          id: "c4",
-          documentTitle: "Security Best Practices.pdf",
-          pageNumber: 12,
-          section: "Data Protection Standards",
-          snippet:
-            "All sensitive data must be encrypted using AES-256 encryption both at rest and during transmission across all corporate networks...",
-          relevanceScore: 0.91,
-        },
-      ],
-    },
-  ];
+  // Helper function to process documents if needed
+  const processDocumentsIfNeeded = async () => {
+    try {
+      const response = await fetch("/api/process-documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Document processing result:", result);
+        return result;
+      }
+    } catch (error) {
+      console.error("Error processing documents:", error);
+    }
+    return null;
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -146,28 +107,63 @@ export const ChatInterface = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Chat request failed");
+      const data = await response.json();
+
+      // Check if we need to process documents
+      if (data.documentsFound > 0 && data.chunksFound === 0 && !data.error) {
+        // Try to process documents automatically
+        console.log("No chunks found, attempting to process documents...");
+        await processDocumentsIfNeeded();
+        
+        // Try the chat request again
+        const retryResponse = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workspaceId,
+            userId,
+            question,
+          }),
+        });
+        
+        const retryData = await retryResponse.json();
+        
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: "assistant",
+          content: retryData.answer,
+          citations: retryData.citations?.map((c: any) => ({
+            id: c.chunkId?.toString() || c.index?.toString(),
+            documentTitle: c.documentTitle || `Document ${c.documentId}`,
+            snippet: c.text || "Retrieved from document",
+            relevanceScore: 0.9,
+          })),
+          timestamp: new Date(),
+          isError: false,
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        // Normal response handling
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: "assistant",
+          content: data.answer,
+          citations: data.citations?.map((c: any) => ({
+            id: c.chunkId?.toString() || c.index?.toString(),
+            documentTitle: c.documentTitle || `Document ${c.documentId}`,
+            snippet: c.text || "Retrieved from document",
+            relevanceScore: 0.9,
+          })),
+          timestamp: new Date(),
+          isError: !!data.error,
+          errorType: data.error ? "system" : undefined,
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
       }
-
-      const { answer, citations } = await response.json();
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "assistant",
-        content: answer,
-        citations: citations?.map((c: any) => ({
-          id: c.chunkId.toString(),
-          documentTitle: c.documentTitle || `Document ${c.documentId}`,
-          snippet: c.text || "Retrieved from document",
-          relevanceScore: 0.9,
-        })),
-        timestamp: new Date(),
-        isError: false,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      console.error("Chat error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
