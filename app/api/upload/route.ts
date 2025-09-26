@@ -108,13 +108,13 @@ export async function POST(req: NextRequest) {
     // Trigger document ingestion for RAG
     try {
       console.log("Starting document ingestion for RAG...");
-      
+
       // Update status to processing
       await supabase
         .from("documents")
         .update({ status: "processing" })
         .eq("id", document.id);
-      
+
       const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

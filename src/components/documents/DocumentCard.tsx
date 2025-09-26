@@ -81,14 +81,20 @@ const getStatusBadge = (status: Document["status"], progress?: number) => {
   switch (status) {
     case "uploading":
       return (
-        <Badge variant="secondary" className="flex items-center space-x-1 bg-blue-100 text-blue-800">
+        <Badge
+          variant="secondary"
+          className="flex items-center space-x-1 bg-blue-100 text-blue-800"
+        >
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>Uploading {progress}%</span>
         </Badge>
       );
     case "processing":
       return (
-        <Badge variant="secondary" className="flex items-center space-x-1 bg-yellow-100 text-yellow-800 animate-pulse">
+        <Badge
+          variant="secondary"
+          className="flex items-center space-x-1 bg-yellow-100 text-yellow-800 animate-pulse"
+        >
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>Processing</span>
         </Badge>
@@ -377,9 +383,18 @@ export const DocumentCard = ({
                 </span>
               </div>
               <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div
+                  className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
               </div>
             </div>
           </div>
