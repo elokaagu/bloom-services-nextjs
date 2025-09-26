@@ -67,9 +67,14 @@ export async function GET(req: NextRequest) {
           throw new Error("No storage path available for this document");
         }
 
+        // Handle both old format (documents/filename) and new format (filename)
+        const storagePath = document.storage_path.startsWith("documents/") 
+          ? document.storage_path 
+          : document.storage_path;
+          
         console.log(
           "Attempting to download from storage:",
-          document.storage_path
+          storagePath
         );
         console.log(
           "Storage bucket:",
@@ -78,7 +83,7 @@ export async function GET(req: NextRequest) {
 
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
-          .download(document.storage_path);
+          .download(storagePath);
 
         if (!fileError && fileData) {
           const buf = Buffer.from(await fileData.arrayBuffer());

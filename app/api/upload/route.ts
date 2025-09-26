@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
       .substring(2)}.${fileExt}`;
-    const filePath = `documents/${fileName}`;
+    const filePath = fileName; // Don't add documents/ prefix here
 
     console.log("Uploading file to storage:", filePath);
 
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       title: title,
       workspace_id: workspaceId,
       owner_id: ownerId,
-      storage_path: filePath,
+      storage_path: filePath, // This will be just the filename now
       status: "uploading", // Start with uploading status
       acl: "workspace",
     };

@@ -101,11 +101,16 @@ export async function POST(req: NextRequest) {
     // Get file content from storage
     let text = "";
     try {
-      console.log("Fetching file from storage:", doc.storage_path);
+      // Handle both old format (documents/filename) and new format (filename)
+      const storagePath = doc.storage_path.startsWith("documents/") 
+        ? doc.storage_path 
+        : doc.storage_path;
+        
+      console.log("Fetching file from storage:", storagePath);
 
       const { data: fileData, error: fileError } = await supabase.storage
         .from(process.env.STORAGE_BUCKET || "documents")
-        .download(doc.storage_path);
+        .download(storagePath);
 
       if (fileError) {
         console.error("Storage error:", fileError);
