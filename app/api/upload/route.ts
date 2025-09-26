@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseService } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,11 +28,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Get Supabase credentials
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
+    // Validate environment variables
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("Missing Supabase environment variables");
       return NextResponse.json(
         { error: "Server configuration error - missing Supabase credentials" },
@@ -40,11 +37,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false },
-    });
+    if (!process.env.STORAGE_BUCKET) {
+      console.error("Missing STORAGE_BUCKET environment variable");
+      return NextResponse.json(
+        { error: "Server configuration error - missing storage bucket" },
+        { status: 500 }
+      );
+    }
 
+    // Use centralized Supabase client
+    const supabase = supabaseService();
     console.log("Supabase client initialized");
 
     // Generate unique file path

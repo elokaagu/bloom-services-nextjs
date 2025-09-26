@@ -2,33 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase";
 import OpenAI from "openai";
 import mammoth from "mammoth";
+import { simpleChunk } from "@/lib/utils";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const VECTOR_DIM = Number(process.env.VECTOR_DIM || 1536);
 
-async function fetchFileBuffer(path: string) {
-  const supabase = supabaseService();
-  const { data, error } = await supabase.storage
-    .from(process.env.STORAGE_BUCKET!)
-    .download(path);
-  if (error) throw error;
-  return Buffer.from(await data.arrayBuffer());
-}
-
-function simpleChunk(text: string, size = 1200, overlap = 200) {
-  const chunks: { text: string; chunk_no: number }[] = [];
-  for (let i = 0, c = 0; i < text.length; i += size - overlap) {
-    chunks.push({ text: text.slice(i, i + size), chunk_no: c++ });
-  }
-  return chunks;
-}
-
 async function embed(texts: string[]) {
-  const res = await openai.embeddings.create({
-    model: process.env.EMBEDDING_MODEL!,
-    input: texts,
-  });
-  return res.data.map((d) => d.embedding);
+  try {
+    console.log(`Generating embeddings for ${texts.length} texts`);
+    const res = await openai.embeddings.create({
+      model: process.env.EMBEDDING_MODEL || "text-embedding-3-small",
+      input: texts,
+    });
+    console.log(`Successfully generated ${res.data.length} embeddings`);
+    return res.data.map((d) => d.embedding);
+  } catch (error) {
+    console.error("Error generating embeddings:", error);
+    throw error;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -36,6 +27,31 @@ export async function POST(req: NextRequest) {
 
   try {
     console.log("=== DOCUMENT INGESTION START ===");
+
+    // Validate environment variables first
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("Missing OPENAI_API_KEY environment variable");
+      return NextResponse.json(
+        { error: "Server configuration error - missing OpenAI API key" },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.EMBEDDING_MODEL) {
+      console.error("Missing EMBEDDING_MODEL environment variable");
+      return NextResponse.json(
+        { error: "Server configuration error - missing embedding model" },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.STORAGE_BUCKET) {
+      console.error("Missing STORAGE_BUCKET environment variable");
+      return NextResponse.json(
+        { error: "Server configuration error - missing storage bucket" },
+        { status: 500 }
+      );
+    }
 
     const body = await req.json();
     documentId = body.documentId;
