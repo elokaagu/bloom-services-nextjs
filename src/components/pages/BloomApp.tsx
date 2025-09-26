@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { DocumentLibrary } from "./DocumentLibrary";
+import { DocumentLibrary } from "./DocumentLibraryNew";
 import { DocumentView } from "./DocumentView";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { MemberManagement } from "@/components/admin/MemberManagement";
