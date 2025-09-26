@@ -55,11 +55,11 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <main className="relative z-10 px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+      <main className="relative z-10 px-4 sm:px-6 lg:px-8 pt-24 pb-16 min-h-screen flex items-center justify-center">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center">
             {/* Hero Content */}
-            <div className="max-w-4xl mx-auto mb-12">
+            <div className="max-w-4xl mx-auto">
               <Badge variant="outline" className="mb-6 px-4 py-2">
                 <Zap className="h-4 w-4 mr-2" />
                 Powered by Advanced AI
@@ -80,7 +80,7 @@ export default function HomePage() {
                 knowledge base with unprecedented speed and accuracy.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
                 <Button
                   size="lg"
                   className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary-hover"
