@@ -82,12 +82,34 @@ export async function GET(req: NextRequest) {
           );
         } else {
           console.error("Storage fetch failed:", fileError);
-          content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`;
+          console.error("Document status:", document.status);
+          console.error("Storage path:", document.storage_path);
+          
+          if (document.status === "processing") {
+            content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.\n\n**Status:** Processing\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          } else if (document.status === "failed") {
+            content = `# ${document.title}\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${document.error || "Unknown error"}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          } else if (document.status === "uploading") {
+            content = `# ${document.title}\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          } else {
+            content = `# ${document.title}\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${document.status}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
+          }
           contentSource = "fallback";
         }
       } catch (storageError) {
         console.error("Storage error:", storageError);
-        content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`;
+        console.error("Document status:", document.status);
+        console.error("Storage path:", document.storage_path);
+        
+        if (document.status === "processing") {
+          content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.\n\n**Status:** Processing\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+        } else if (document.status === "failed") {
+          content = `# ${document.title}\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${document.error || "Unknown error"}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+        } else if (document.status === "uploading") {
+          content = `# ${document.title}\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+        } else {
+          content = `# ${document.title}\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${document.status}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
+        }
         contentSource = "fallback";
       }
     }
