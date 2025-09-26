@@ -32,10 +32,14 @@ async function embed(texts: string[]) {
 }
 
 export async function POST(req: NextRequest) {
+  let documentId: string | null = null;
+  
   try {
     console.log("=== DOCUMENT INGESTION START ===");
 
-    const { documentId } = await req.json();
+    const body = await req.json();
+    documentId = body.documentId;
+    
     if (!documentId) {
       console.error("No documentId provided");
       return NextResponse.json(
@@ -181,18 +185,18 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     console.error("=== DOCUMENT INGESTION ERROR ===", e);
 
-    // Mark document as failed if possible
-    try {
-      const { documentId } = await req.json();
-      if (documentId) {
+    // Mark document as failed if we have the documentId
+    if (documentId) {
+      try {
         const supabase = supabaseService();
         await supabase
           .from("documents")
           .update({ status: "failed", error: e.message })
           .eq("id", documentId);
+        console.log("Document marked as failed:", documentId);
+      } catch (updateError) {
+        console.error("Error updating document status:", updateError);
       }
-    } catch (updateError) {
-      console.error("Error updating document status:", updateError);
     }
 
     return NextResponse.json({ error: e.message }, { status: 500 });
