@@ -4,10 +4,10 @@ import { supabaseService } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   try {
     console.log("=== PDF DEBUG API START (GET) ===");
-    
+
     // For GET requests, we'll debug the most recent document
     const supabase = supabaseService();
-    
+
     const { data: documents, error: docsError } = await supabase
       .from("documents")
       .select("*")
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 async function debugDocument(documentId: string) {
   try {
     console.log("=== PDF DEBUG API START ===");
-    
+
     const supabase = supabaseService();
 
     // Get document details
@@ -79,7 +79,7 @@ async function debugDocument(documentId: string) {
       } else if (fileData) {
         const buf = Buffer.from(await fileData.arrayBuffer());
         console.log("File buffer created, size:", buf.length);
-        
+
         fileInfo = {
           success: true,
           bufferSize: buf.length,
@@ -94,9 +94,9 @@ async function debugDocument(documentId: string) {
             const pdf = (await import("pdf-parse")).default;
             const parsed = await pdf(buf);
             const text = parsed.text.replace(/\s+/g, " ").trim();
-            
+
             console.log("PDF parsing successful, text length:", text.length);
-            
+
             fileInfo.pdfParsing = {
               success: true,
               textLength: text.length,
