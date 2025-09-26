@@ -159,9 +159,11 @@ export default function HomePage() {
                        </Card>
                      ))}
                    </div>
-          </div>
-        </div>
-      </main>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </main>
 
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
