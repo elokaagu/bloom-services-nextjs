@@ -72,7 +72,7 @@ export default function HomePage() {
             KNOWLEDGE
           </div>
         </div>
-        
+
         {/* Header content */}
         <div className="relative z-10 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-3">
@@ -123,34 +123,26 @@ export default function HomePage() {
                 knowledge base with unprecedented speed and accuracy.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary-hover"
-                  onClick={handleGetStarted}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      <span>Connecting...</span>
-                    </div>
-                  ) : (
-                    <>
-                      Get Started
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto px-8 py-4 text-lg"
-                >
-                  Watch Demo
-                </Button>
-              </div>
+                     <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
+                       <Button
+                         size="lg"
+                         className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary-hover"
+                         onClick={handleGetStarted}
+                         disabled={isLoading}
+                       >
+                         {isLoading ? (
+                           <div className="flex items-center space-x-2">
+                             <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                             <span>Connecting...</span>
+                           </div>
+                         ) : (
+                           <>
+                             Get Started
+                             <ArrowRight className="ml-2 h-5 w-5" />
+                           </>
+                         )}
+                       </Button>
+                     </div>
 
               {/* Benefits */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
