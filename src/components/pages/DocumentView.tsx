@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   Calendar,
   User,
   FileIcon,
+  Loader2,
 } from "lucide-react";
 import { Document } from "@/components/documents/DocumentCard";
 
@@ -26,87 +27,6 @@ interface DocumentViewProps {
   document: Document;
   onBack: () => void;
 }
-
-// Mock document content for demonstration
-const getMockContent = (document: Document): string => {
-  switch (document.id) {
-    case "1":
-      return `# Data Retention Policy 2024
-
-## Overview
-This document outlines the company's comprehensive data retention policies for 2024, ensuring compliance with GDPR, CCPA, and other applicable data protection regulations.
-
-## Key Principles
-1. <strong>Data Minimization</strong>: We collect only the data necessary for specific business purposes
-2. <strong>Transparency</strong>: Clear communication about data collection and usage
-3. <strong>Security</strong>: Robust protection measures for all stored data
-4. <strong>Accountability</strong>: Regular audits and compliance monitoring
-
-## Retention Periods
-- **Personal Data**: 3 years after last interaction
-- **Financial Records**: 7 years as required by law
-- **Marketing Data**: 2 years or until consent withdrawal
-- **Employee Records**: 7 years after employment termination
-
-## Implementation Guidelines
-All departments must adhere to these retention schedules and implement appropriate technical and organizational measures to ensure compliance.
-
-## Contact Information
-For questions about this policy, contact the Data Protection Officer at dpo@company.com`;
-
-    case "2":
-      return `# GDPR Compliance Guide
-
-## Introduction
-The General Data Protection Regulation (GDPR) represents one of the most significant changes to data protection law in decades. This guide provides practical steps for ensuring compliance.
-
-## Key Requirements
-### Lawful Basis for Processing
-- Consent
-- Contract
-- Legal obligation
-- Vital interests
-- Public task
-- Legitimate interests
-
-### Individual Rights
-1. **Right to be informed**
-2. **Right of access**
-3. **Right to rectification**
-4. **Right to erasure**
-5. **Right to restrict processing**
-6. **Right to data portability**
-7. **Right to object**
-8. **Rights related to automated decision making**
-
-## Implementation Strategy
-Organizations must conduct privacy impact assessments, implement privacy by design principles, and maintain detailed records of processing activities.`;
-
-    default:
-      return `# ${document.title}
-
-This is a preview of the document content. The full document contains detailed information about ${document.title
-        .toLowerCase()
-        .replace(/\.[^/.]+$/, "")}.
-
-## Document Summary
-- File Type: ${document.type.toUpperCase()}
-- Summary: ${
-        document.summary
-          ? document.summary.split("\n")[0]
-          : "No summary available yet"
-      }
-- Owner: ${document.owner}
-- Last Accessed: ${document.lastAccessed || "Never"}
-
-## Content Preview
-${
-  document.summary
-    ? document.summary
-    : "This document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content."
-}`;
-  }
-};
 
 const getACLInfo = (acl: Document["acl"]) => {
   const variants = {
@@ -135,8 +55,45 @@ const getACLInfo = (acl: Document["acl"]) => {
 
 export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const [activeTab, setActiveTab] = useState("content");
+  const [documentContent, setDocumentContent] = useState<string>("");
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [contentError, setContentError] = useState<string | null>(null);
+  const [contentSource, setContentSource] = useState<string>("");
+  
   const aclInfo = getACLInfo(document.acl);
   const Icon = aclInfo.icon;
+
+  useEffect(() => {
+    const fetchDocumentContent = async () => {
+      try {
+        setIsLoadingContent(true);
+        setContentError(null);
+        
+        const response = await fetch(`/api/documents/content?documentId=${document.id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch document content: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setDocumentContent(data.content);
+          setContentSource(data.contentSource);
+        } else {
+          throw new Error(data.error || "Failed to load document content");
+        }
+      } catch (error) {
+        console.error("Error fetching document content:", error);
+        setContentError(error instanceof Error ? error.message : "Failed to load content");
+        setDocumentContent(`# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`);
+      } finally {
+        setIsLoadingContent(false);
+      }
+    };
+
+    fetchDocumentContent();
+  }, [document.id, document.title]);
 
   const handleDownload = () => {
     console.log("Downloading document:", document.title);
@@ -245,9 +202,20 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[70vh] w-full rounded-md">
                   <div className="p-4 sm:p-8 max-w-none">
-                    {getMockContent(document)
-                      .split("\n")
-                      .map((line, index) => {
+                    {isLoadingContent ? (
+                      <div className="flex items-center justify-center h-32">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="ml-2 text-muted-foreground">Loading document content...</span>
+                      </div>
+                    ) : contentError ? (
+                      <div className="text-center py-8">
+                        <p className="text-destructive mb-2">Error loading content</p>
+                        <p className="text-sm text-muted-foreground">{contentError}</p>
+                      </div>
+                    ) : (
+                      documentContent
+                        .split("\n")
+                        .map((line, index) => {
                         // Helper function to parse markdown bold syntax
                         const parseMarkdown = (text: string) => {
                           return text
@@ -357,7 +325,8 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                             ></p>
                           );
                         }
-                      })}
+                      })
+                    )}
                   </div>
                 </ScrollArea>
               </Card>
@@ -443,8 +412,16 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                       </label>
                       <p className="text-sm">
                         {document.summary
-                          ? document.summary.split("\n")[0]
+                          ? document.summary
                           : "No summary available yet"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Content Source
+                      </label>
+                      <p className="text-sm capitalize">
+                        {contentSource || "Loading..."}
                       </p>
                     </div>
                     <div>
