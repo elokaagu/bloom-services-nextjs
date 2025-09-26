@@ -103,26 +103,30 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`Found ${documents?.length || 0} documents in workspace`);
-    console.log("Documents:", documents?.map(d => ({ id: d.id, title: d.title, status: d.status })));
+    console.log(
+      "Documents:",
+      documents?.map((d) => ({ id: d.id, title: d.title, status: d.status }))
+    );
 
     // Check if this is a general conversation question (not document-related)
-    const isGeneralQuestion = !question.toLowerCase().includes('document') && 
-                             !question.toLowerCase().includes('file') &&
-                             !question.toLowerCase().includes('upload') &&
-                             !question.toLowerCase().includes('pdf') &&
-                             !question.toLowerCase().includes('content') &&
-                             !question.toLowerCase().includes('search') &&
-                             !question.toLowerCase().includes('find') &&
-                             !question.toLowerCase().includes('what does') &&
-                             !question.toLowerCase().includes('tell me about') &&
-                             question.length < 50; // Short questions are likely general
+    const isGeneralQuestion =
+      !question.toLowerCase().includes("document") &&
+      !question.toLowerCase().includes("file") &&
+      !question.toLowerCase().includes("upload") &&
+      !question.toLowerCase().includes("pdf") &&
+      !question.toLowerCase().includes("content") &&
+      !question.toLowerCase().includes("search") &&
+      !question.toLowerCase().includes("find") &&
+      !question.toLowerCase().includes("what does") &&
+      !question.toLowerCase().includes("tell me about") &&
+      question.length < 50; // Short questions are likely general
 
     console.log("Is general question:", isGeneralQuestion);
 
     // If it's a general question or no documents exist, provide general conversation
     if (isGeneralQuestion || !documents || documents.length === 0) {
       console.log("Providing general conversation response");
-      
+
       const generalPrompt = [
         {
           role: "system",
@@ -148,7 +152,9 @@ IMPORTANT RULES:
         max_tokens: 500,
       });
 
-      const answer = completion.choices[0]?.message?.content || "I'm here to help! What would you like to know?";
+      const answer =
+        completion.choices[0]?.message?.content ||
+        "I'm here to help! What would you like to know?";
 
       console.log("General conversation response generated");
 
@@ -163,14 +169,16 @@ IMPORTANT RULES:
     // Check if any documents have chunks
     const { data: chunks, error: chunksError } = await supabase
       .from("document_chunks")
-      .select(`
+      .select(
+        `
         id, 
         document_id,
         documents!inner (
           id,
           workspace_id
         )
-      `)
+      `
+      )
       .eq("documents.workspace_id", workspaceId)
       .limit(1);
 
@@ -323,7 +331,8 @@ IMPORTANT RULES:
         max_tokens: 300,
       });
 
-      const fallbackAnswer = fallbackCompletion.choices[0]?.message?.content || 
+      const fallbackAnswer =
+        fallbackCompletion.choices[0]?.message?.content ||
         "I couldn't find any relevant information in your documents to answer this question. Try asking about different topics or check if your documents contain the information you're looking for.";
 
       return NextResponse.json({
