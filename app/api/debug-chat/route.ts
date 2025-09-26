@@ -4,7 +4,7 @@ import { supabaseService } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   try {
     console.log("=== DEBUG CHAT API START ===");
-    
+
     const supabase = supabaseService();
     console.log("Supabase client created");
 
@@ -16,13 +16,19 @@ export async function GET(req: NextRequest) {
 
     if (testError) {
       console.error("Database connection error:", testError);
-      return NextResponse.json({ 
-        error: "Database connection failed", 
-        details: testError.message 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Database connection failed",
+          details: testError.message,
+        },
+        { status: 500 }
+      );
     }
 
-    console.log("Database connection successful, found documents:", testData?.length || 0);
+    console.log(
+      "Database connection successful, found documents:",
+      testData?.length || 0
+    );
 
     // Test if document_chunks table exists
     const { data: chunksData, error: chunksError } = await supabase
@@ -32,13 +38,19 @@ export async function GET(req: NextRequest) {
 
     if (chunksError) {
       console.error("Document chunks table error:", chunksError);
-      return NextResponse.json({ 
-        error: "Document chunks table issue", 
-        details: chunksError.message 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Document chunks table issue",
+          details: chunksError.message,
+        },
+        { status: 500 }
+      );
     }
 
-    console.log("Document chunks table accessible, found chunks:", chunksData?.length || 0);
+    console.log(
+      "Document chunks table accessible, found chunks:",
+      chunksData?.length || 0
+    );
 
     // Test if RPC function exists
     try {
@@ -73,14 +85,16 @@ export async function GET(req: NextRequest) {
         hasOpenAIKey: !!process.env.OPENAI_API_KEY,
         embeddingModel: process.env.EMBEDDING_MODEL,
         generationModel: process.env.GENERATION_MODEL,
-      }
+      },
     });
-
   } catch (e: any) {
     console.error("=== DEBUG CHAT API ERROR ===", e);
-    return NextResponse.json({ 
-      error: e.message,
-      stack: e.stack 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: e.message,
+        stack: e.stack,
+      },
+      { status: 500 }
+    );
   }
 }

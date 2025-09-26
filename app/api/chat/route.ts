@@ -58,10 +58,11 @@ export async function POST(req: NextRequest) {
     if (testError) {
       console.error("Database connection error:", testError);
       return NextResponse.json(
-        { 
-          error: "Database connection failed", 
+        {
+          error: "Database connection failed",
           details: testError.message,
-          suggestion: "Please check if the database schema has been set up correctly"
+          suggestion:
+            "Please check if the database schema has been set up correctly",
         },
         { status: 500 }
       );
