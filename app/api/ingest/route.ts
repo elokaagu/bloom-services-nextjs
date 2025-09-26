@@ -103,22 +103,24 @@ export async function POST(req: NextRequest) {
       if (doc.title.endsWith(".pdf")) {
         console.log("Parsing PDF file:", doc.title);
         console.log("PDF buffer size:", buf.length);
-        
+
         try {
           const pdf = (await import("pdf-parse")).default;
           console.log("PDF-parse library loaded successfully");
-          
+
           const parsed = await pdf(buf);
           console.log("PDF parsing completed");
           console.log("PDF pages:", parsed.numpages);
           console.log("PDF info:", parsed.info);
           console.log("Raw text length:", parsed.text.length);
-          
+
           text = parsed.text;
           console.log("PDF parsed successfully, text length:", text.length);
-          
+
           if (text.length === 0) {
-            console.warn("PDF parsing returned empty text - this might be a scanned PDF or image-based PDF");
+            console.warn(
+              "PDF parsing returned empty text - this might be a scanned PDF or image-based PDF"
+            );
           }
         } catch (pdfError) {
           console.error("PDF parsing error:", pdfError);

@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== PDF READING TEST START ===");
-    
+
     const supabase = supabaseService();
-    
+
     // Find all PDF documents
     const { data: pdfDocuments, error: docsError } = await supabase
       .from("documents")
@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
     console.log(`Found ${pdfDocuments.length} PDF documents to test`);
 
     const results = [];
-    
+
     for (const doc of pdfDocuments) {
       try {
         console.log(`Testing PDF reading for: ${doc.title} (${doc.id})`);
-        
+
         const testResult = {
           documentId: doc.id,
           title: doc.title,
@@ -64,7 +64,9 @@ export async function POST(req: NextRequest) {
             .download(doc.storage_path);
 
           if (fileError) {
-            testResult.errors.push(`Storage access failed: ${fileError.message}`);
+            testResult.errors.push(
+              `Storage access failed: ${fileError.message}`
+            );
             testResult.details.storageError = fileError.message;
           } else if (fileData) {
             testResult.tests.storageAccess = true;
@@ -72,7 +74,9 @@ export async function POST(req: NextRequest) {
             console.log("Storage access successful, file size:", fileData.size);
           }
         } catch (storageError) {
-          testResult.errors.push(`Storage access error: ${storageError.message}`);
+          testResult.errors.push(
+            `Storage access error: ${storageError.message}`
+          );
           testResult.details.storageError = storageError.message;
         }
 
@@ -94,7 +98,7 @@ export async function POST(req: NextRequest) {
               console.log("Testing PDF parsing...");
               const pdf = (await import("pdf-parse")).default;
               const parsed = await pdf(buf);
-              
+
               testResult.tests.pdfParsing = true;
               testResult.details.rawTextLength = parsed.text.length;
               testResult.details.pageCount = parsed.numpages;
@@ -102,15 +106,23 @@ export async function POST(req: NextRequest) {
                 pages: parsed.numpages,
                 info: parsed.info,
               };
-              console.log("PDF parsing successful, text length:", parsed.text.length);
+              console.log(
+                "PDF parsing successful, text length:",
+                parsed.text.length
+              );
 
               // Test 4: Text Extraction and Cleaning
               if (parsed.text && parsed.text.length > 0) {
                 const cleanedText = parsed.text.replace(/\s+/g, " ").trim();
                 testResult.tests.textExtraction = true;
                 testResult.details.cleanedTextLength = cleanedText.length;
-                testResult.details.textPreview = cleanedText.substring(0, 200) + (cleanedText.length > 200 ? "..." : "");
-                console.log("Text extraction successful, cleaned length:", cleanedText.length);
+                testResult.details.textPreview =
+                  cleanedText.substring(0, 200) +
+                  (cleanedText.length > 200 ? "..." : "");
+                console.log(
+                  "Text extraction successful, cleaned length:",
+                  cleanedText.length
+                );
 
                 // Test 5: Chunk Creation
                 try {
@@ -123,16 +135,25 @@ export async function POST(req: NextRequest) {
                       text: cleanedText.substring(i, i + chunkSize),
                     });
                   }
-                  
+
                   testResult.tests.chunkCreation = true;
                   testResult.details.chunkCount = chunks.length;
-                  testResult.details.chunkPreview = chunks.slice(0, 2).map(c => ({
-                    chunkNo: c.chunk_no,
-                    textPreview: c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
-                  }));
-                  console.log("Chunk creation successful, chunks:", chunks.length);
+                  testResult.details.chunkPreview = chunks
+                    .slice(0, 2)
+                    .map((c) => ({
+                      chunkNo: c.chunk_no,
+                      textPreview:
+                        c.text.substring(0, 100) +
+                        (c.text.length > 100 ? "..." : ""),
+                    }));
+                  console.log(
+                    "Chunk creation successful, chunks:",
+                    chunks.length
+                  );
                 } catch (chunkError) {
-                  testResult.errors.push(`Chunk creation failed: ${chunkError.message}`);
+                  testResult.errors.push(
+                    `Chunk creation failed: ${chunkError.message}`
+                  );
                   testResult.details.chunkError = chunkError.message;
                 }
               } else {
@@ -140,11 +161,15 @@ export async function POST(req: NextRequest) {
                 testResult.details.textError = "Empty text content";
               }
             } catch (parseError) {
-              testResult.errors.push(`PDF parsing failed: ${parseError.message}`);
+              testResult.errors.push(
+                `PDF parsing failed: ${parseError.message}`
+              );
               testResult.details.parseError = parseError.message;
             }
           } catch (downloadError) {
-            testResult.errors.push(`File download failed: ${downloadError.message}`);
+            testResult.errors.push(
+              `File download failed: ${downloadError.message}`
+            );
             testResult.details.downloadError = downloadError.message;
           }
         }
@@ -161,7 +186,6 @@ export async function POST(req: NextRequest) {
 
         results.push(testResult);
         console.log(`PDF test completed for ${doc.title}`);
-
       } catch (error) {
         console.error(`Error testing PDF ${doc.title}:`, error);
         results.push({
@@ -181,14 +205,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const successCount = results.filter(r => 
-      r.tests.storageAccess && 
-      r.tests.fileDownload && 
-      r.tests.pdfParsing && 
-      r.tests.textExtraction
+    const successCount = results.filter(
+      (r) =>
+        r.tests.storageAccess &&
+        r.tests.fileDownload &&
+        r.tests.pdfParsing &&
+        r.tests.textExtraction
     ).length;
 
-    console.log(`PDF reading test completed: ${successCount}/${results.length} PDFs readable`);
+    console.log(
+      `PDF reading test completed: ${successCount}/${results.length} PDFs readable`
+    );
     console.log("=== PDF READING TEST SUCCESS ===");
 
     return NextResponse.json({
@@ -202,14 +229,13 @@ export async function POST(req: NextRequest) {
         readablePDFs: successCount,
         failedPDFs: pdfDocuments.length - successCount,
         commonIssues: results
-          .flatMap(r => r.errors)
+          .flatMap((r) => r.errors)
           .reduce((acc, error) => {
             acc[error] = (acc[error] || 0) + 1;
             return acc;
           }, {} as Record<string, number>),
       },
     });
-
   } catch (error) {
     console.error("=== PDF READING TEST ERROR ===", error);
     return NextResponse.json(

@@ -162,7 +162,7 @@ export const BloomApp = () => {
 
         <SidebarInset className="flex-1 min-w-0 ml-3">
           <Header />
-          <main className="flex-1 py-4 sm:py-8 px-2 sm:px-0">
+          <main className="flex-1 py-4 sm:py-8 px-2 sm:px-0 pt-20">
             {renderCurrentPage()}
           </main>
         </SidebarInset>

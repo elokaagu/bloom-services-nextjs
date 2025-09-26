@@ -180,34 +180,6 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* CTA Section */}
-            <Card className="max-w-4xl mx-auto p-8 sm:p-12 text-center bg-gradient-to-br from-primary/5 to-success/5 border-primary/20">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                Ready to unlock your organization&apos;s knowledge?
-              </h2>
-              <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Join thousands of teams already using Bloom to transform how
-                they access, share, and discover organizational knowledge.
-              </p>
-              <Button
-                size="lg"
-                className="px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                onClick={handleGetStarted}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    <span>Connecting...</span>
-                  </div>
-                ) : (
-                  <>
-                    Start Your Journey
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
-              </Button>
-            </Card>
           </div>
         </div>
       </main>

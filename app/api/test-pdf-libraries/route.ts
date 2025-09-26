@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== PDF LIBRARY TEST START ===");
-    
+
     // Test if pdf-parse library is available and working
     let libraryTest = {
       available: false,
@@ -83,7 +83,7 @@ startxref
 
         const pdf = (await import("pdf-parse")).default;
         const parsed = await pdf(testBuffer);
-        
+
         parsingTest.success = true;
         parsingTest.details = {
           textLength: parsed.text.length,
@@ -91,7 +91,7 @@ startxref
           hasText: parsed.text.includes("Test PDF Content"),
           info: parsed.info,
         };
-        
+
         console.log("PDF parsing test successful:", parsingTest.details);
       } catch (parseError) {
         parsingTest.error = parseError.message;
@@ -125,13 +125,16 @@ startxref
         mammoth: mammothTest,
       },
       recommendations: [
-        !libraryTest.available && "Install pdf-parse library: npm install pdf-parse",
+        !libraryTest.available &&
+          "Install pdf-parse library: npm install pdf-parse",
         !parsingTest.success && "Fix PDF parsing configuration",
-        !mammothTest.available && "Install mammoth library: npm install mammoth",
-        libraryTest.available && parsingTest.success && "PDF reading is working correctly",
+        !mammothTest.available &&
+          "Install mammoth library: npm install mammoth",
+        libraryTest.available &&
+          parsingTest.success &&
+          "PDF reading is working correctly",
       ].filter(Boolean),
     });
-
   } catch (error) {
     console.error("=== PDF LIBRARY TEST ERROR ===", error);
     return NextResponse.json(
