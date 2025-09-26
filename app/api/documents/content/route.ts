@@ -33,6 +33,9 @@ export async function GET(req: NextRequest) {
     }
 
     console.log("Document found:", document.title);
+    console.log("Document status:", document.status);
+    console.log("Document storage_path:", document.storage_path);
+    console.log("Document created_at:", document.created_at);
 
     // Try to get content from document chunks first
     const { data: chunks, error: chunksError } = await supabase
@@ -44,15 +47,19 @@ export async function GET(req: NextRequest) {
     let content = "";
     let contentSource = "";
 
+    console.log("Chunks query result:", { chunksCount: chunks?.length || 0, chunksError: chunksError?.message });
+
     if (!chunksError && chunks && chunks.length > 0) {
       // Use chunks content
       content = chunks.map((chunk) => chunk.text).join("\n\n");
       contentSource = "chunks";
       console.log(`Retrieved content from ${chunks.length} chunks`);
     } else {
+      console.log("No chunks found, trying to fetch from storage...");
+      console.log("Chunks error:", chunksError?.message);
+      
       // Try to get content from storage
       try {
-        console.log("No chunks found, trying to fetch from storage...");
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(document.storage_path);
@@ -91,6 +98,8 @@ export async function GET(req: NextRequest) {
             content = `# ${document.title}\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${document.error || "Unknown error"}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
           } else if (document.status === "uploading") {
             content = `# ${document.title}\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          } else if (document.status === "ready") {
+            content = `# ${document.title}\n\nThis document is ready but there's an issue accessing its content. This might be a temporary storage issue.\n\n**Status:** Ready\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Try refreshing the page\n2. If the issue persists, try re-uploading the document\n3. Or contact support if the problem continues`;
           } else {
             content = `# ${document.title}\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${document.status}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
           }
@@ -107,6 +116,8 @@ export async function GET(req: NextRequest) {
           content = `# ${document.title}\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${document.error || "Unknown error"}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
         } else if (document.status === "uploading") {
           content = `# ${document.title}\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+        } else if (document.status === "ready") {
+          content = `# ${document.title}\n\nThis document is ready but there's an issue accessing its content. This might be a temporary storage issue.\n\n**Status:** Ready\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Try refreshing the page\n2. If the issue persists, try re-uploading the document\n3. Or contact support if the problem continues`;
         } else {
           content = `# ${document.title}\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${document.status}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
         }
