@@ -12,7 +12,6 @@ import {
   Shield,
   Zap,
   ArrowRight,
-  CheckCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -53,13 +52,6 @@ export default function HomePage() {
       description:
         "Bank-grade security with role-based access control and audit trails",
     },
-  ];
-
-  const benefits = [
-    "Reduce time spent searching for information by 80%",
-    "Improve team productivity and knowledge sharing",
-    "Ensure compliance with data governance policies",
-    "Scale your knowledge base as your organization grows",
   ];
 
   return (
@@ -142,23 +134,7 @@ export default function HomePage() {
                     </>
                   )}
                 </Button>
-              </div>
-
-              {/* Benefits */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                {benefits.map((benefit, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center space-x-3 text-left"
-                  >
-                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">
-                      {benefit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                     </div>
 
                    {/* Features List */}
                    <div className="space-y-6 mb-16">
