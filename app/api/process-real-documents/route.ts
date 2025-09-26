@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== REAL DOCUMENT PROCESSING START ===");
-    
+
     const supabase = supabaseService();
-    
+
     // Get all documents that don't have chunks yet
     const { data: documents, error: docsError } = await supabase
       .from("documents")
@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
     }
 
     const results = [];
-    
+
     for (const doc of documents) {
       try {
         console.log(`Processing document: ${doc.title} (${doc.id})`);
-        
+
         // Trigger ingestion for this document using the real ingest API
         const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
           method: "POST",

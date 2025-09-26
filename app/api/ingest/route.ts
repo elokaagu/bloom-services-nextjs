@@ -34,7 +34,7 @@ async function embed(texts: string[]) {
 export async function POST(req: NextRequest) {
   try {
     console.log("=== DOCUMENT INGESTION START ===");
-    
+
     const { documentId } = await req.json();
     if (!documentId) {
       console.error("No documentId provided");
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       .select("*")
       .eq("id", documentId)
       .single();
-    
+
     if (docErr) {
       console.error("Database error loading document:", docErr);
       throw docErr;
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     let text = "";
     try {
       console.log("Fetching file from storage:", doc.storage_path);
-      
+
       const { data: fileData, error: fileError } = await supabase.storage
         .from(process.env.STORAGE_BUCKET || "documents")
         .download(doc.storage_path);
@@ -119,13 +119,12 @@ export async function POST(req: NextRequest) {
 
       // Clean up text
       text = text.replace(/\s+/g, " ").trim();
-      
+
       if (text.length === 0) {
         throw new Error("No text content found in document");
       }
 
       console.log("Text cleaned, final length:", text.length);
-
     } catch (parseError) {
       console.error("File parsing error:", parseError);
       await supabase
@@ -157,7 +156,7 @@ export async function POST(req: NextRequest) {
     const { error: insErr } = await supabase
       .from("document_chunks")
       .insert(rows);
-    
+
     if (insErr) {
       console.error("Database error inserting chunks:", insErr);
       throw insErr;
@@ -174,15 +173,14 @@ export async function POST(req: NextRequest) {
     console.log("Document status updated to ready");
     console.log("=== DOCUMENT INGESTION SUCCESS ===");
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       chunks: rows.length,
-      documentId: documentId 
+      documentId: documentId,
     });
-
   } catch (e: any) {
     console.error("=== DOCUMENT INGESTION ERROR ===", e);
-    
+
     // Mark document as failed if possible
     try {
       const { documentId } = await req.json();
@@ -196,7 +194,7 @@ export async function POST(req: NextRequest) {
     } catch (updateError) {
       console.error("Error updating document status:", updateError);
     }
-    
+
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

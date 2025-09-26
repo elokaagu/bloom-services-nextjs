@@ -58,37 +58,66 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get file content from storage
+    // Try to get file content from storage first, fallback to chunks
     let fileContent = "";
+    let contentSource = "";
+    
     try {
-      const { data: fileData, error: fileError } = await supabase.storage
-        .from(process.env.STORAGE_BUCKET || "documents")
-        .download(document.storage_path);
+      // First try to get content from storage if available
+      if (document.storage_path) {
+        console.log("Attempting to fetch from storage:", document.storage_path);
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from(process.env.STORAGE_BUCKET || "documents")
+          .download(document.storage_path);
 
-      if (fileError) {
-        console.error("Storage fetch error:", fileError);
-        return NextResponse.json(
-          { error: `Storage error: ${fileError.message}` },
-          { status: 500 }
-        );
+        if (!fileError && fileData) {
+          console.log("Successfully fetched file from storage");
+          // Parse file content based on file type
+          const buffer = Buffer.from(await fileData.arrayBuffer());
+          
+          if (document.title.endsWith(".pdf")) {
+            const pdf = (await import("pdf-parse")).default;
+            const parsed = await pdf(buffer);
+            fileContent = parsed.text;
+          } else if (document.title.endsWith(".docx")) {
+            const mammoth = (await import("mammoth")).default;
+            const parsed = await mammoth.extractRawText({ buffer });
+            fileContent = parsed.value;
+          } else if (document.title.endsWith(".txt")) {
+            fileContent = buffer.toString("utf8");
+          } else {
+            // For other file types, try to extract text
+            fileContent = buffer.toString("utf8");
+          }
+          contentSource = "storage";
+        } else {
+          console.log("Storage fetch failed, trying chunks:", fileError?.message);
+        }
       }
-
-      // Parse file content based on file type
-      const buffer = Buffer.from(await fileData.arrayBuffer());
       
-      if (document.title.endsWith(".pdf")) {
-        const pdf = (await import("pdf-parse")).default;
-        const parsed = await pdf(buffer);
-        fileContent = parsed.text;
-      } else if (document.title.endsWith(".docx")) {
-        const mammoth = (await import("mammoth")).default;
-        const parsed = await mammoth.extractRawText({ buffer });
-        fileContent = parsed.value;
-      } else if (document.title.endsWith(".txt")) {
-        fileContent = buffer.toString("utf8");
-      } else {
-        // For other file types, try to extract text
-        fileContent = buffer.toString("utf8");
+      // If storage failed or no storage_path, try to get content from chunks
+      if (!fileContent) {
+        console.log("Fetching content from document chunks");
+        const { data: chunks, error: chunksError } = await supabase
+          .from("document_chunks")
+          .select("text")
+          .eq("document_id", documentId)
+          .order("chunk_no");
+
+        if (!chunksError && chunks && chunks.length > 0) {
+          fileContent = chunks.map(chunk => chunk.text).join(" ");
+          contentSource = "chunks";
+          console.log(`Retrieved content from ${chunks.length} chunks`);
+        } else {
+          console.log("No chunks found:", chunksError?.message);
+        }
+      }
+      
+      // If still no content, create a basic summary based on document metadata
+      if (!fileContent) {
+        console.log("No content available, creating metadata-based summary");
+        fileContent = `This document titled "${document.title}" was uploaded to the workspace. The document appears to be a ${document.title.split('.').pop()?.toUpperCase() || 'file'} file.`;
+        contentSource = "metadata";
       }
 
       // Clean up the text
@@ -101,10 +130,12 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      console.log(`Content retrieved from ${contentSource}, length: ${fileContent.length}`);
+
     } catch (parseError) {
-      console.error("File parsing error:", parseError);
+      console.error("Content retrieval error:", parseError);
       return NextResponse.json(
-        { error: "Failed to parse document content" },
+        { error: "Failed to retrieve document content" },
         { status: 500 }
       );
     }
@@ -150,6 +181,7 @@ export async function POST(req: NextRequest) {
         success: true,
         summary: summary,
         documentId: documentId,
+        contentSource: contentSource,
       });
 
     } catch (openaiError) {

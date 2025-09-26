@@ -9,8 +9,11 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const workspaceId =
-      (formData.get("workspaceId") as string) || "550e8400-e29b-41d4-a716-446655440001";
-    const ownerId = (formData.get("ownerId") as string) || "550e8400-e29b-41d4-a716-446655440002";
+      (formData.get("workspaceId") as string) ||
+      "550e8400-e29b-41d4-a716-446655440001";
+    const ownerId =
+      (formData.get("ownerId") as string) ||
+      "550e8400-e29b-41d4-a716-446655440002";
     const title = (formData.get("title") as string) || file?.name;
 
     console.log("Form data parsed:", {
@@ -45,8 +48,10 @@ export async function POST(req: NextRequest) {
     console.log("Supabase client initialized");
 
     // Generate unique file path
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2)}.${fileExt}`;
     const filePath = `documents/${fileName}`;
 
     console.log("Uploading file to storage:", filePath);
@@ -55,8 +60,8 @@ export async function POST(req: NextRequest) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(process.env.STORAGE_BUCKET || "documents")
       .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
+        cacheControl: "3600",
+        upsert: false,
       });
 
     if (uploadError) {
@@ -91,7 +96,7 @@ export async function POST(req: NextRequest) {
       await supabase.storage
         .from(process.env.STORAGE_BUCKET || "documents")
         .remove([filePath]);
-      
+
       return NextResponse.json(
         { error: `Database error: ${docError.message}` },
         { status: 500 }
@@ -103,19 +108,19 @@ export async function POST(req: NextRequest) {
     // Trigger document ingestion for RAG
     try {
       console.log("Starting document ingestion for RAG...");
-      const ingestResponse = await fetch(
-        `${req.nextUrl.origin}/api/ingest`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentId: document.id }),
-        }
-      );
+      const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: document.id }),
+      });
 
       if (ingestResponse.ok) {
         console.log("Document ingestion completed successfully");
       } else {
-        console.error("Document ingestion failed:", await ingestResponse.text());
+        console.error(
+          "Document ingestion failed:",
+          await ingestResponse.text()
+        );
       }
     } catch (ingestError) {
       console.error("Error triggering document ingestion:", ingestError);
