@@ -47,7 +47,10 @@ export async function GET(req: NextRequest) {
     let content = "";
     let contentSource = "";
 
-    console.log("Chunks query result:", { chunksCount: chunks?.length || 0, chunksError: chunksError?.message });
+    console.log("Chunks query result:", {
+      chunksCount: chunks?.length || 0,
+      chunksError: chunksError?.message,
+    });
 
     if (!chunksError && chunks && chunks.length > 0) {
       // Use chunks content
@@ -57,7 +60,7 @@ export async function GET(req: NextRequest) {
     } else {
       console.log("No chunks found, trying to fetch from storage...");
       console.log("Chunks error:", chunksError?.message);
-      
+
       // Try to get content from storage
       try {
         const { data: fileData, error: fileError } = await supabase.storage
@@ -91,17 +94,41 @@ export async function GET(req: NextRequest) {
           console.error("Storage fetch failed:", fileError);
           console.error("Document status:", document.status);
           console.error("Storage path:", document.storage_path);
-          
+
           if (document.status === "processing") {
-            content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.\n\n**Status:** Processing\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+            content = `# ${
+              document.title
+            }\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.\n\n**Status:** Processing\n**Uploaded:** ${new Date(
+              document.created_at
+            ).toLocaleDateString()}`;
           } else if (document.status === "failed") {
-            content = `# ${document.title}\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${document.error || "Unknown error"}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+            content = `# ${
+              document.title
+            }\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${
+              document.error || "Unknown error"
+            }\n**Uploaded:** ${new Date(
+              document.created_at
+            ).toLocaleDateString()}`;
           } else if (document.status === "uploading") {
-            content = `# ${document.title}\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+            content = `# ${
+              document.title
+            }\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(
+              document.created_at
+            ).toLocaleDateString()}`;
           } else if (document.status === "ready") {
-            content = `# ${document.title}\n\nThis document is ready but there's an issue accessing its content. This might be a temporary storage issue.\n\n**Status:** Ready\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Try refreshing the page\n2. If the issue persists, try re-uploading the document\n3. Or contact support if the problem continues`;
+            content = `# ${
+              document.title
+            }\n\nThis document is ready but there's an issue accessing its content. This might be a temporary storage issue.\n\n**Status:** Ready\n**Uploaded:** ${new Date(
+              document.created_at
+            ).toLocaleDateString()}\n\n**To fix this:**\n1. Try refreshing the page\n2. If the issue persists, try re-uploading the document\n3. Or contact support if the problem continues`;
           } else {
-            content = `# ${document.title}\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${document.status}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
+            content = `# ${
+              document.title
+            }\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${
+              document.status
+            }\n**Uploaded:** ${new Date(
+              document.created_at
+            ).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
           }
           contentSource = "fallback";
         }
@@ -109,17 +136,41 @@ export async function GET(req: NextRequest) {
         console.error("Storage error:", storageError);
         console.error("Document status:", document.status);
         console.error("Storage path:", document.storage_path);
-        
+
         if (document.status === "processing") {
-          content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.\n\n**Status:** Processing\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          content = `# ${
+            document.title
+          }\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.\n\n**Status:** Processing\n**Uploaded:** ${new Date(
+            document.created_at
+          ).toLocaleDateString()}`;
         } else if (document.status === "failed") {
-          content = `# ${document.title}\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${document.error || "Unknown error"}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          content = `# ${
+            document.title
+          }\n\nThis document failed to process. Please try re-uploading it.\n\n**Status:** Failed\n**Error:** ${
+            document.error || "Unknown error"
+          }\n**Uploaded:** ${new Date(
+            document.created_at
+          ).toLocaleDateString()}`;
         } else if (document.status === "uploading") {
-          content = `# ${document.title}\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}`;
+          content = `# ${
+            document.title
+          }\n\nThis document is still being uploaded. Please wait a moment and refresh the page.\n\n**Status:** Uploading\n**Uploaded:** ${new Date(
+            document.created_at
+          ).toLocaleDateString()}`;
         } else if (document.status === "ready") {
-          content = `# ${document.title}\n\nThis document is ready but there's an issue accessing its content. This might be a temporary storage issue.\n\n**Status:** Ready\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Try refreshing the page\n2. If the issue persists, try re-uploading the document\n3. Or contact support if the problem continues`;
+          content = `# ${
+            document.title
+          }\n\nThis document is ready but there's an issue accessing its content. This might be a temporary storage issue.\n\n**Status:** Ready\n**Uploaded:** ${new Date(
+            document.created_at
+          ).toLocaleDateString()}\n\n**To fix this:**\n1. Try refreshing the page\n2. If the issue persists, try re-uploading the document\n3. Or contact support if the problem continues`;
         } else {
-          content = `# ${document.title}\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${document.status}\n**Uploaded:** ${new Date(document.created_at).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
+          content = `# ${
+            document.title
+          }\n\nThis document needs to be processed before it can be viewed. The processing usually happens automatically after upload.\n\n**Status:** ${
+            document.status
+          }\n**Uploaded:** ${new Date(
+            document.created_at
+          ).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
         }
         contentSource = "fallback";
       }

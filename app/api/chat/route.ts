@@ -105,12 +105,58 @@ export async function POST(req: NextRequest) {
     console.log(`Found ${documents?.length || 0} documents in workspace`);
     console.log("Documents:", documents?.map(d => ({ id: d.id, title: d.title, status: d.status })));
 
-    if (!documents || documents.length === 0) {
+    // Check if this is a general conversation question (not document-related)
+    const isGeneralQuestion = !question.toLowerCase().includes('document') && 
+                             !question.toLowerCase().includes('file') &&
+                             !question.toLowerCase().includes('upload') &&
+                             !question.toLowerCase().includes('pdf') &&
+                             !question.toLowerCase().includes('content') &&
+                             !question.toLowerCase().includes('search') &&
+                             !question.toLowerCase().includes('find') &&
+                             !question.toLowerCase().includes('what does') &&
+                             !question.toLowerCase().includes('tell me about') &&
+                             question.length < 50; // Short questions are likely general
+
+    console.log("Is general question:", isGeneralQuestion);
+
+    // If it's a general question or no documents exist, provide general conversation
+    if (isGeneralQuestion || !documents || documents.length === 0) {
+      console.log("Providing general conversation response");
+      
+      const generalPrompt = [
+        {
+          role: "system",
+          content: `You are Bloom, an AI assistant for a knowledge management platform. You help users with their documents and can also have general conversations.
+
+IMPORTANT RULES:
+- Be helpful, friendly, and conversational
+- If asked about documents but none exist, explain how to upload documents
+- If asked about general topics, provide helpful responses
+- Keep responses concise but informative
+- Use a professional but approachable tone`,
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ] as any;
+
+      const completion = await openai.chat.completions.create({
+        model: process.env.GENERATION_MODEL || "gpt-4o-mini",
+        messages: generalPrompt,
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      const answer = completion.choices[0]?.message?.content || "I'm here to help! What would you like to know?";
+
+      console.log("General conversation response generated");
+
       return NextResponse.json({
-        answer:
-          "I don't see any documents in your workspace yet. Please upload some documents first, and then I'll be able to help answer questions about them.\n\nTo get started:\n1. Go to the Document Library\n2. Upload PDF or DOCX files\n3. Wait for them to be processed\n4. Then ask me questions about the content!",
+        answer,
         citations: [],
-        documentsFound: 0,
+        isGeneralConversation: true,
+        documentsFound: documents?.length || 0,
       });
     }
 
@@ -252,12 +298,40 @@ export async function POST(req: NextRequest) {
     if (retrievedChunks.length === 0) {
       console.log("No relevant chunks found for this question");
 
+      // If no relevant chunks found, try to provide a general response
+      const fallbackPrompt = [
+        {
+          role: "system",
+          content: `You are Bloom, an AI assistant for a knowledge management platform. The user asked a question but no relevant information was found in their documents.
+
+IMPORTANT RULES:
+- Be helpful and acknowledge that you couldn't find relevant information in their documents
+- Offer to help with general questions or suggest they check their document content
+- Be friendly and conversational
+- Keep responses concise`,
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ] as any;
+
+      const fallbackCompletion = await openai.chat.completions.create({
+        model: process.env.GENERATION_MODEL || "gpt-4o-mini",
+        messages: fallbackPrompt,
+        temperature: 0.7,
+        max_tokens: 300,
+      });
+
+      const fallbackAnswer = fallbackCompletion.choices[0]?.message?.content || 
+        "I couldn't find any relevant information in your documents to answer this question. Try asking about different topics or check if your documents contain the information you're looking for.";
+
       return NextResponse.json({
-        answer:
-          "I couldn't find any relevant information in your documents to answer this question. Try asking about different topics or check if your documents contain the information you're looking for.",
+        answer: fallbackAnswer,
         citations: [],
         queryId: qrow?.id,
         chunksFound: 0,
+        isGeneralConversation: true,
       });
     }
 
@@ -278,15 +352,15 @@ export async function POST(req: NextRequest) {
     const prompt = [
       {
         role: "system",
-        content: `You are Bloom's intelligent knowledge assistant. You help users find information from their uploaded documents.
+        content: `You are Bloom, an intelligent AI assistant for a knowledge management platform. You help users find information from their uploaded documents.
 
 IMPORTANT RULES:
 - Only answer based on the provided CONTEXT from the documents
 - If the answer is not in the context, say "I don't have enough information in the uploaded documents to answer this question"
-- Be concise but comprehensive
+- Be conversational, helpful, and friendly
 - Include [Source n] citations where n refers to the numbered sources
 - If you reference specific information, always cite the source
-- Be helpful and conversational`,
+- Use a professional but approachable tone`,
       },
       {
         role: "user",
@@ -302,7 +376,7 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     const completion = await openai.chat.completions.create({
       model: process.env.GENERATION_MODEL || "gpt-4o-mini",
       messages: prompt,
-      temperature: 0.2,
+      temperature: 0.3,
       max_tokens: 1000,
     });
 
