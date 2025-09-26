@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== PROCESS DOCUMENTS API START ===");
-    
+
     const supabase = supabaseService();
-    
+
     // Get all documents that don't have chunks yet
     const { data: documents, error: docsError } = await supabase
       .from("documents")
@@ -28,25 +28,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "No documents found to process",
-        processed: 0
+        processed: 0,
       });
     }
 
     const results = [];
-    
+
     for (const doc of documents) {
       try {
         console.log(`Processing document: ${doc.title} (${doc.id})`);
-        
+
         // Trigger ingestion for this document
-        const ingestResponse = await fetch(
-          `${req.nextUrl.origin}/api/ingest`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ documentId: doc.id }),
-          }
-        );
+        const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentId: doc.id }),
+        });
 
         if (ingestResponse.ok) {
           const ingestResult = await ingestResponse.json();
@@ -55,7 +52,7 @@ export async function POST(req: NextRequest) {
             documentId: doc.id,
             title: doc.title,
             success: true,
-            chunks: ingestResult.chunks || 0
+            chunks: ingestResult.chunks || 0,
           });
         } else {
           const errorData = await ingestResponse.json();
@@ -64,7 +61,7 @@ export async function POST(req: NextRequest) {
             documentId: doc.id,
             title: doc.title,
             success: false,
-            error: errorData.error
+            error: errorData.error,
           });
         }
       } catch (error) {
@@ -73,15 +70,17 @@ export async function POST(req: NextRequest) {
           documentId: doc.id,
           title: doc.title,
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error"
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
 
-    const successful = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success).length;
+    const successful = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
 
-    console.log(`Processing complete: ${successful} successful, ${failed} failed`);
+    console.log(
+      `Processing complete: ${successful} successful, ${failed} failed`
+    );
     console.log("=== PROCESS DOCUMENTS API SUCCESS ===");
 
     return NextResponse.json({
@@ -91,10 +90,9 @@ export async function POST(req: NextRequest) {
       summary: {
         total: documents.length,
         successful,
-        failed
-      }
+        failed,
+      },
     });
-
   } catch (e: any) {
     console.error("=== PROCESS DOCUMENTS API ERROR ===", e);
     return NextResponse.json(
