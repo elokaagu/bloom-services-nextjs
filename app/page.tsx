@@ -4,11 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Sparkles,
-  Zap,
-  ArrowRight,
-} from "lucide-react";
+import { Sparkles, Zap, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {
@@ -103,8 +99,8 @@ export default function HomePage() {
                     </>
                   )}
                 </Button>
-                     </div>
-                 </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

@@ -5,11 +5,16 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function questionEmbedding(q: string) {
-  const r = await openai.embeddings.create({
-    model: process.env.EMBEDDING_MODEL!,
-    input: q,
-  });
-  return r.data[0].embedding;
+  try {
+    const r = await openai.embeddings.create({
+      model: process.env.EMBEDDING_MODEL || "text-embedding-3-small",
+      input: q,
+    });
+    return r.data[0].embedding;
+  } catch (error) {
+    console.error("Error generating question embedding:", error);
+    throw error;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -77,7 +82,7 @@ export async function POST(req: NextRequest) {
         workspace_id: workspaceId,
         user_id: userId,
         question,
-        model: process.env.GENERATION_MODEL,
+        model: process.env.GENERATION_MODEL || "gpt-4o-mini",
       })
       .select("*")
       .single();
@@ -117,8 +122,8 @@ export async function POST(req: NextRequest) {
           .from("document_chunks")
           .select(
             `
-            id, 
-            text, 
+            id,
+            text,
             document_id,
             documents!inner (
               id,
@@ -143,10 +148,11 @@ export async function POST(req: NextRequest) {
       console.log("Retrieved", chunks.length, "chunks");
     } catch (retrievalError) {
       console.error("Chunk retrieval error:", retrievalError);
-      
+
       // If chunk retrieval fails, provide a helpful error message
       return NextResponse.json({
-        answer: "I'm having trouble accessing the document information right now. This might be because the documents are still being processed or there's a temporary issue. Please try again in a moment, or upload a new document if the problem persists.",
+        answer:
+          "I'm having trouble accessing the document information right now. This might be because the documents are still being processed or there's a temporary issue. Please try again in a moment, or upload a new document if the problem persists.",
         citations: [],
         queryId: qrow?.id,
         error: "Chunk retrieval failed",
@@ -155,22 +161,24 @@ export async function POST(req: NextRequest) {
 
     if (chunks.length === 0) {
       console.log("No relevant chunks found");
-      
+
       // Check if there are any documents at all
       const { data: docCount } = await supabase
         .from("documents")
         .select("id", { count: "exact" })
         .eq("workspace_id", workspaceId);
-      
+
       if (docCount && docCount.length === 0) {
         return NextResponse.json({
-          answer: "I don't see any documents in your workspace yet. Please upload some documents first, and then I'll be able to help answer questions about them.",
+          answer:
+            "I don't see any documents in your workspace yet. Please upload some documents first, and then I'll be able to help answer questions about them.",
           citations: [],
           queryId: qrow?.id,
         });
       } else {
         return NextResponse.json({
-          answer: "I don't have any processed information from your documents to answer this question. The documents may still be processing, or there might be an issue with document processing. Please try uploading a new document or contact support if the issue persists.",
+          answer:
+            "I don't have any processed information from your documents to answer this question. The documents may still be processing, or there might be an issue with document processing. Please try uploading a new document or contact support if the issue persists.",
           citations: [],
           queryId: qrow?.id,
         });
@@ -194,7 +202,7 @@ export async function POST(req: NextRequest) {
     const prompt = [
       {
         role: "system",
-        content: `You are Bloom's intelligent knowledge assistant. You help users find information from their uploaded documents. 
+        content: `You are Bloom's intelligent knowledge assistant. You help users find information from their uploaded documents.
 
 IMPORTANT RULES:
 - Only answer based on the provided CONTEXT from the documents
