@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     try {
       if (document.storage_path) {
         console.log("Fetching file from storage:", document.storage_path);
-        
+
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(document.storage_path);
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         if (!fileError && fileData) {
           const buffer = Buffer.from(await fileData.arrayBuffer());
           fileSize = buffer.length;
-          
+
           console.log("File buffer created, size:", buffer.length);
 
           // Parse content based on file type
@@ -62,10 +62,15 @@ export async function GET(req: NextRequest) {
               previewContent = parsed.text.replace(/\s+/g, " ").trim();
               previewType = "pdf";
               contentSource = "storage";
-              console.log("PDF preview generated, text length:", previewContent.length);
+              console.log(
+                "PDF preview generated, text length:",
+                previewContent.length
+              );
             } catch (pdfError: any) {
               console.error("PDF parsing error:", pdfError);
-              previewContent = `PDF file (${(fileSize / 1024 / 1024).toFixed(1)} MB) - Content preview unavailable`;
+              previewContent = `PDF file (${(fileSize / 1024 / 1024).toFixed(
+                1
+              )} MB) - Content preview unavailable`;
               previewType = "pdf-error";
             }
           } else if (document.title.endsWith(".docx")) {
@@ -75,23 +80,42 @@ export async function GET(req: NextRequest) {
               previewContent = parsed.value.replace(/\s+/g, " ").trim();
               previewType = "docx";
               contentSource = "storage";
-              console.log("DOCX preview generated, text length:", previewContent.length);
+              console.log(
+                "DOCX preview generated, text length:",
+                previewContent.length
+              );
             } catch (docxError: any) {
               console.error("DOCX parsing error:", docxError);
-              previewContent = `Word document (${(fileSize / 1024 / 1024).toFixed(1)} MB) - Content preview unavailable`;
+              previewContent = `Word document (${(
+                fileSize /
+                1024 /
+                1024
+              ).toFixed(1)} MB) - Content preview unavailable`;
               previewType = "docx-error";
             }
           } else if (document.title.endsWith(".txt")) {
-            previewContent = buffer.toString("utf8").replace(/\s+/g, " ").trim();
+            previewContent = buffer
+              .toString("utf8")
+              .replace(/\s+/g, " ")
+              .trim();
             previewType = "text";
             contentSource = "storage";
-            console.log("TXT preview generated, text length:", previewContent.length);
+            console.log(
+              "TXT preview generated, text length:",
+              previewContent.length
+            );
           } else {
             // For other file types, try to extract text
-            previewContent = buffer.toString("utf8").replace(/\s+/g, " ").trim();
+            previewContent = buffer
+              .toString("utf8")
+              .replace(/\s+/g, " ")
+              .trim();
             previewType = "text";
             contentSource = "storage";
-            console.log("Generic text preview generated, text length:", previewContent.length);
+            console.log(
+              "Generic text preview generated, text length:",
+              previewContent.length
+            );
           }
 
           // Limit preview content to first 500 characters
@@ -119,7 +143,7 @@ export async function GET(req: NextRequest) {
           previewType = "chunks";
           contentSource = "chunks";
           console.log(`Retrieved preview from ${chunks.length} chunks`);
-          
+
           // Limit preview content
           if (previewContent.length > 500) {
             previewContent = previewContent.substring(0, 500) + "...";
@@ -131,12 +155,12 @@ export async function GET(req: NextRequest) {
 
       // If still no content, create a basic preview
       if (!previewContent) {
-        const fileExt = document.title.split(".").pop()?.toUpperCase() || "FILE";
+        const fileExt =
+          document.title.split(".").pop()?.toUpperCase() || "FILE";
         previewContent = `${fileExt} document - Content preview not available`;
         previewType = "unavailable";
         contentSource = "metadata";
       }
-
     } catch (error: any) {
       console.error("Content retrieval error:", error);
       previewContent = "Content preview unavailable";
@@ -152,7 +176,10 @@ export async function GET(req: NextRequest) {
         id: document.id,
         title: document.title,
         status: document.status,
-        fileSize: fileSize > 0 ? `${(fileSize / 1024 / 1024).toFixed(1)} MB` : "Size not available",
+        fileSize:
+          fileSize > 0
+            ? `${(fileSize / 1024 / 1024).toFixed(1)} MB`
+            : "Size not available",
         uploadedAt: document.created_at,
         summary: document.summary,
       },
