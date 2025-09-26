@@ -33,49 +33,120 @@ async function embed(texts: string[]) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("=== DOCUMENT INGESTION START ===");
+    
     const { documentId } = await req.json();
-    if (!documentId)
+    if (!documentId) {
+      console.error("No documentId provided");
       return NextResponse.json(
         { error: "documentId required" },
         { status: 400 }
       );
+    }
+
+    console.log("Processing document:", documentId);
 
     const supabase = supabaseService();
 
-    // load doc
+    // Load document from database
     const { data: doc, error: docErr } = await supabase
       .from("documents")
       .select("*")
       .eq("id", documentId)
       .single();
-    if (docErr) throw docErr;
+    
+    if (docErr) {
+      console.error("Database error loading document:", docErr);
+      throw docErr;
+    }
 
-    // update status
+    if (!doc) {
+      console.error("Document not found:", documentId);
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Document found:", doc.title);
+
+    // Update status to processing
     await supabase
       .from("documents")
       .update({ status: "processing" })
       .eq("id", documentId);
 
-    const buf = await fetchFileBuffer(doc.storage_path);
+    console.log("Document status updated to processing");
 
-    // parse by filetype
+    // Get file content from storage
     let text = "";
-    if (doc.title.endsWith(".pdf")) {
-      const pdf = (await import("pdf-parse")).default;
-      const parsed = await pdf(buf);
-      text = parsed.text;
-    } else if (doc.title.endsWith(".docx")) {
-      const parsed = await mammoth.extractRawText({ buffer: buf });
-      text = parsed.value;
-    } else {
-      text = buf.toString("utf8");
+    try {
+      console.log("Fetching file from storage:", doc.storage_path);
+      
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from(process.env.STORAGE_BUCKET || "documents")
+        .download(doc.storage_path);
+
+      if (fileError) {
+        console.error("Storage error:", fileError);
+        throw fileError;
+      }
+
+      const buf = Buffer.from(await fileData.arrayBuffer());
+      console.log("File buffer created, size:", buf.length);
+
+      // Parse by file type
+      if (doc.title.endsWith(".pdf")) {
+        console.log("Parsing PDF file");
+        const pdf = (await import("pdf-parse")).default;
+        const parsed = await pdf(buf);
+        text = parsed.text;
+        console.log("PDF parsed, text length:", text.length);
+      } else if (doc.title.endsWith(".docx")) {
+        console.log("Parsing DOCX file");
+        const parsed = await mammoth.extractRawText({ buffer: buf });
+        text = parsed.value;
+        console.log("DOCX parsed, text length:", text.length);
+      } else if (doc.title.endsWith(".txt")) {
+        console.log("Parsing TXT file");
+        text = buf.toString("utf8");
+        console.log("TXT parsed, text length:", text.length);
+      } else {
+        console.log("Parsing as plain text");
+        text = buf.toString("utf8");
+        console.log("Plain text parsed, text length:", text.length);
+      }
+
+      // Clean up text
+      text = text.replace(/\s+/g, " ").trim();
+      
+      if (text.length === 0) {
+        throw new Error("No text content found in document");
+      }
+
+      console.log("Text cleaned, final length:", text.length);
+
+    } catch (parseError) {
+      console.error("File parsing error:", parseError);
+      await supabase
+        .from("documents")
+        .update({ status: "failed", error: parseError.message })
+        .eq("id", documentId);
+      throw parseError;
     }
 
-    text = text.replace(/\s+/g, " ").trim();
+    // Create chunks
+    console.log("Creating document chunks");
     const chunks = simpleChunk(text);
-    const embeddings = await embed(chunks.map((c) => c.text));
+    console.log("Created", chunks.length, "chunks");
 
-    // insert chunks
+    // Generate embeddings
+    console.log("Generating embeddings");
+    const embeddings = await embed(chunks.map((c) => c.text));
+    console.log("Generated", embeddings.length, "embeddings");
+
+    // Insert chunks into database
+    console.log("Inserting chunks into database");
     const rows = chunks.map((c, i) => ({
       document_id: documentId,
       chunk_no: c.chunk_no,
@@ -86,28 +157,46 @@ export async function POST(req: NextRequest) {
     const { error: insErr } = await supabase
       .from("document_chunks")
       .insert(rows);
-    if (insErr) throw insErr;
+    
+    if (insErr) {
+      console.error("Database error inserting chunks:", insErr);
+      throw insErr;
+    }
 
+    console.log("Chunks inserted successfully");
+
+    // Update document status to ready
     await supabase
       .from("documents")
       .update({ status: "ready" })
       .eq("id", documentId);
-    return NextResponse.json({ ok: true, chunks: rows.length });
+
+    console.log("Document status updated to ready");
+    console.log("=== DOCUMENT INGESTION SUCCESS ===");
+
+    return NextResponse.json({ 
+      success: true, 
+      chunks: rows.length,
+      documentId: documentId 
+    });
+
   } catch (e: any) {
-    console.error(e);
-    if (req.body) {
-      // mark failed if possible
-      try {
-        const { documentId } = await req.json();
-        if (documentId) {
-          const supabase = supabaseService();
-          await supabase
-            .from("documents")
-            .update({ status: "failed", error: e.message })
-            .eq("id", documentId);
-        }
-      } catch {}
+    console.error("=== DOCUMENT INGESTION ERROR ===", e);
+    
+    // Mark document as failed if possible
+    try {
+      const { documentId } = await req.json();
+      if (documentId) {
+        const supabase = supabaseService();
+        await supabase
+          .from("documents")
+          .update({ status: "failed", error: e.message })
+          .eq("id", documentId);
+      }
+    } catch (updateError) {
+      console.error("Error updating document status:", updateError);
     }
+    
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

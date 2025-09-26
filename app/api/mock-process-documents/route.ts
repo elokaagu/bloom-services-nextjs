@@ -23,9 +23,9 @@ async function embed(texts: string[]) {
 export async function POST(req: NextRequest) {
   try {
     console.log("=== MOCK DOCUMENT PROCESSING START ===");
-    
+
     const supabase = supabaseService();
-    
+
     // Get all documents that don't have chunks yet
     const { data: documents, error: docsError } = await supabase
       .from("documents")
@@ -47,16 +47,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "No documents found to process",
-        processed: 0
+        processed: 0,
       });
     }
 
     const results = [];
-    
+
     for (const doc of documents) {
       try {
         console.log(`Processing document: ${doc.title} (${doc.id})`);
-        
+
         // Update status to processing
         await supabase
           .from("documents")
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
         // Create mock content based on document title
         let mockContent = "";
-        
+
         if (doc.title.toLowerCase().includes("satellite")) {
           mockContent = `# Satellite Labs Research Report
 
@@ -131,7 +131,10 @@ Centralis is a premier technology consulting firm specializing in digital transf
           mockContent = `# ${doc.title}
 
 ## Document Overview
-This document contains important information about ${doc.title.replace(/\.[^/.]+$/, "")}. The content covers various aspects of the subject matter and provides detailed insights for stakeholders.
+This document contains important information about ${doc.title.replace(
+            /\.[^/.]+$/,
+            ""
+          )}. The content covers various aspects of the subject matter and provides detailed insights for stakeholders.
 
 ## Key Points
 - Comprehensive analysis of current trends and developments
@@ -146,14 +149,16 @@ This document serves as a comprehensive guide for understanding and implementing
 
         // Clean up text
         const text = mockContent.replace(/\s+/g, " ").trim();
-        
+
         // Create chunks
         const chunks = simpleChunk(text);
         console.log(`Created ${chunks.length} chunks for ${doc.title}`);
 
         // Generate embeddings
         const embeddings = await embed(chunks.map((c) => c.text));
-        console.log(`Generated ${embeddings.length} embeddings for ${doc.title}`);
+        console.log(
+          `Generated ${embeddings.length} embeddings for ${doc.title}`
+        );
 
         // Insert chunks into database
         const rows = chunks.map((c, i) => ({
@@ -166,7 +171,7 @@ This document serves as a comprehensive guide for understanding and implementing
         const { error: insErr } = await supabase
           .from("document_chunks")
           .insert(rows);
-        
+
         if (insErr) {
           console.error("Database error inserting chunks:", insErr);
           throw insErr;
@@ -183,23 +188,25 @@ This document serves as a comprehensive guide for understanding and implementing
           documentId: doc.id,
           title: doc.title,
           success: true,
-          chunks: rows.length
+          chunks: rows.length,
         });
-
       } catch (error) {
         console.error(`Error processing ${doc.title}:`, error);
-        
+
         // Mark document as failed
         await supabase
           .from("documents")
-          .update({ status: "failed", error: error instanceof Error ? error.message : "Unknown error" })
+          .update({
+            status: "failed",
+            error: error instanceof Error ? error.message : "Unknown error",
+          })
           .eq("id", doc.id);
-        
+
         results.push({
           documentId: doc.id,
           title: doc.title,
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error"
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
@@ -207,7 +214,9 @@ This document serves as a comprehensive guide for understanding and implementing
     const successful = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
-    console.log(`Processing complete: ${successful} successful, ${failed} failed`);
+    console.log(
+      `Processing complete: ${successful} successful, ${failed} failed`
+    );
     console.log("=== MOCK DOCUMENT PROCESSING SUCCESS ===");
 
     return NextResponse.json({
@@ -217,10 +226,9 @@ This document serves as a comprehensive guide for understanding and implementing
       summary: {
         total: documents.length,
         successful,
-        failed
-      }
+        failed,
+      },
     });
-
   } catch (e: any) {
     console.error("=== MOCK DOCUMENT PROCESSING ERROR ===", e);
     return NextResponse.json(
