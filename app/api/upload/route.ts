@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       workspace_id: workspaceId,
       owner_id: ownerId,
       storage_path: filePath,
-      status: "ready",
+      status: "uploading", // Start with uploading status
       acl: "workspace",
     };
 
@@ -108,6 +108,13 @@ export async function POST(req: NextRequest) {
     // Trigger document ingestion for RAG
     try {
       console.log("Starting document ingestion for RAG...");
+      
+      // Update status to processing
+      await supabase
+        .from("documents")
+        .update({ status: "processing" })
+        .eq("id", document.id);
+      
       const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,15 +123,29 @@ export async function POST(req: NextRequest) {
 
       if (ingestResponse.ok) {
         console.log("Document ingestion completed successfully");
+        // Update status to ready
+        await supabase
+          .from("documents")
+          .update({ status: "ready" })
+          .eq("id", document.id);
       } else {
         console.error(
           "Document ingestion failed:",
           await ingestResponse.text()
         );
+        // Update status to failed
+        await supabase
+          .from("documents")
+          .update({ status: "failed" })
+          .eq("id", document.id);
       }
     } catch (ingestError) {
       console.error("Error triggering document ingestion:", ingestError);
-      // Don't fail the upload if ingestion fails
+      // Update status to failed
+      await supabase
+        .from("documents")
+        .update({ status: "failed" })
+        .eq("id", document.id);
     }
 
     console.log("=== UPLOAD API SUCCESS (REAL STORAGE) ===");

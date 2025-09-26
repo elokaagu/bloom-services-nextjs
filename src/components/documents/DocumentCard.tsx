@@ -81,21 +81,22 @@ const getStatusBadge = (status: Document["status"], progress?: number) => {
   switch (status) {
     case "uploading":
       return (
-        <Badge variant="secondary" className="flex items-center space-x-1">
+        <Badge variant="secondary" className="flex items-center space-x-1 bg-blue-100 text-blue-800">
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>Uploading {progress}%</span>
         </Badge>
       );
     case "processing":
       return (
-        <Badge variant="secondary" className="flex items-center space-x-1">
-          <Clock className="h-3 w-3" />
+        <Badge variant="secondary" className="flex items-center space-x-1 bg-yellow-100 text-yellow-800 animate-pulse">
+          <Loader2 className="h-3 w-3 animate-spin" />
           <span>Processing</span>
         </Badge>
       );
     case "ready":
       return (
-        <Badge className="flex items-center space-x-1 bg-primary text-primary-foreground">
+        <Badge className="flex items-center space-x-1 bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3" />
           <span>Ready</span>
         </Badge>
       );
@@ -361,6 +362,25 @@ export const DocumentCard = ({
                   style={{ height: `${height * 2}px` }}
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Processing state with animated indicator */}
+        {document.status === "processing" && (
+          <div className="mt-3 p-2 bg-yellow-50 rounded-md border border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                <span className="text-xs text-yellow-800 font-medium">
+                  Processing document for AI search...
+                </span>
+              </div>
+              <div className="flex space-x-1">
+                <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
             </div>
           </div>
         )}
