@@ -102,8 +102,9 @@ export async function POST(req: NextRequest) {
     let text = "";
     try {
       // Handle both old format (documents/filename) and new format (filename)
+      // Remove documents/ prefix if it exists to prevent double prefix
       const storagePath = doc.storage_path.startsWith("documents/") 
-        ? doc.storage_path 
+        ? doc.storage_path.replace(/^documents\//, "")
         : doc.storage_path;
         
       console.log("Fetching file from storage:", storagePath);

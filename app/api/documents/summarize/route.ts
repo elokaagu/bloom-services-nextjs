@@ -65,10 +65,16 @@ export async function POST(req: NextRequest) {
     try {
       // First try to get content from storage if available
       if (document.storage_path) {
-        console.log("Attempting to fetch from storage:", document.storage_path);
+        // Handle both old format (documents/filename) and new format (filename)
+        // Remove documents/ prefix if it exists to prevent double prefix
+        const storagePath = document.storage_path.startsWith("documents/") 
+          ? document.storage_path.replace(/^documents\//, "")
+          : document.storage_path;
+          
+        console.log("Attempting to fetch from storage:", storagePath);
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
-          .download(document.storage_path);
+          .download(storagePath);
 
         if (!fileError && fileData) {
           console.log("Successfully fetched file from storage");
