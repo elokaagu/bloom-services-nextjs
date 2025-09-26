@@ -4,7 +4,7 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== PROCESS NATIONAL PROCUREMENT DOCUMENT ===");
-    
+
     const supabase = supabaseService();
 
     // Find the National Procurement Statement document
@@ -84,7 +84,6 @@ export async function POST(req: NextRequest) {
         status: "ready",
       },
     });
-
   } catch (error: any) {
     console.error("=== PROCESS ERROR ===", error);
     return NextResponse.json(

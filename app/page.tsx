@@ -22,7 +22,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/20">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 shadow-sm relative overflow-hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 shadow-sm relative overflow-hidden sticky top-0">
         {/* Blurred background text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-[8rem] sm:text-[12rem] lg:text-[16rem] font-black text-primary/5 select-none blur-sm">

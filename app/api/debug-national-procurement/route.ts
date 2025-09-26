@@ -4,7 +4,7 @@ import { supabaseService } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   try {
     console.log("=== DEBUG NATIONAL PROCUREMENT DOCUMENT ===");
-    
+
     const supabase = supabaseService();
 
     // Find the National Procurement Statement document
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(document.storage_path);
-        
+
         storageInfo = {
           hasFile: !fileError && !!fileData,
           error: fileError?.message,
@@ -62,11 +62,15 @@ export async function GET(req: NextRequest) {
     // Test the document content API
     let contentApiResult = null;
     try {
-      const contentResponse = await fetch(`${req.nextUrl.origin}/api/documents/content?documentId=${document.id}`);
+      const contentResponse = await fetch(
+        `${req.nextUrl.origin}/api/documents/content?documentId=${document.id}`
+      );
       if (contentResponse.ok) {
         contentApiResult = await contentResponse.json();
       } else {
-        contentApiResult = { error: `Content API failed: ${contentResponse.statusText}` };
+        contentApiResult = {
+          error: `Content API failed: ${contentResponse.statusText}`,
+        };
       }
     } catch (contentError: any) {
       contentApiResult = { error: contentError.message };
@@ -87,22 +91,27 @@ export async function GET(req: NextRequest) {
       chunks: {
         count: chunks?.length || 0,
         error: chunksError?.message,
-        preview: chunks?.slice(0, 2).map(c => ({
-          chunkNo: c.chunk_no,
-          textPreview: c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
-        })) || [],
+        preview:
+          chunks?.slice(0, 2).map((c) => ({
+            chunkNo: c.chunk_no,
+            textPreview:
+              c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
+          })) || [],
       },
       storage: storageInfo,
       contentApi: contentApiResult,
       recommendations: [
-        chunks?.length === 0 ? "Document needs to be processed - run /api/process-document-simple" : null,
+        chunks?.length === 0
+          ? "Document needs to be processed - run /api/process-document-simple"
+          : null,
         !storageInfo?.hasFile ? "File not found in storage" : null,
         document.status === "uploading" ? "Document still uploading" : null,
         document.status === "failed" ? "Document processing failed" : null,
-        document.status === "processing" ? "Document is currently being processed" : null,
+        document.status === "processing"
+          ? "Document is currently being processed"
+          : null,
       ].filter(Boolean),
     });
-
   } catch (error) {
     console.error("=== DEBUG ERROR ===", error);
     return NextResponse.json(
