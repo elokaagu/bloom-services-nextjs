@@ -59,7 +59,7 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [contentError, setContentError] = useState<string | null>(null);
   const [contentSource, setContentSource] = useState<string>("");
-  
+
   const aclInfo = getACLInfo(document.acl);
   const Icon = aclInfo.icon;
 
@@ -68,15 +68,19 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
       try {
         setIsLoadingContent(true);
         setContentError(null);
-        
-        const response = await fetch(`/api/documents/content?documentId=${document.id}`);
-        
+
+        const response = await fetch(
+          `/api/documents/content?documentId=${document.id}`
+        );
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch document content: ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch document content: ${response.statusText}`
+          );
         }
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           setDocumentContent(data.content);
           setContentSource(data.contentSource);
@@ -85,8 +89,12 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
         }
       } catch (error) {
         console.error("Error fetching document content:", error);
-        setContentError(error instanceof Error ? error.message : "Failed to load content");
-        setDocumentContent(`# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`);
+        setContentError(
+          error instanceof Error ? error.message : "Failed to load content"
+        );
+        setDocumentContent(
+          `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`
+        );
       } finally {
         setIsLoadingContent(false);
       }
@@ -205,17 +213,21 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                     {isLoadingContent ? (
                       <div className="flex items-center justify-center h-32">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <span className="ml-2 text-muted-foreground">Loading document content...</span>
+                        <span className="ml-2 text-muted-foreground">
+                          Loading document content...
+                        </span>
                       </div>
                     ) : contentError ? (
                       <div className="text-center py-8">
-                        <p className="text-destructive mb-2">Error loading content</p>
-                        <p className="text-sm text-muted-foreground">{contentError}</p>
+                        <p className="text-destructive mb-2">
+                          Error loading content
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {contentError}
+                        </p>
                       </div>
                     ) : (
-                      documentContent
-                        .split("\n")
-                        .map((line, index) => {
+                      documentContent.split("\n").map((line, index) => {
                         // Helper function to parse markdown bold syntax
                         const parseMarkdown = (text: string) => {
                           return text

@@ -65,8 +65,16 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/20">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 shadow-sm">
-        <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 shadow-sm relative overflow-hidden">
+        {/* Blurred background text */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-[8rem] sm:text-[12rem] lg:text-[16rem] font-black text-primary/5 select-none blur-sm">
+            KNOWLEDGE
+          </div>
+        </div>
+        
+        {/* Header content */}
+        <div className="relative z-10 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg">
               <Sparkles className="h-6 w-6 text-primary-foreground" />

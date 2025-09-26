@@ -4,10 +4,10 @@ import { supabaseService } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   try {
     console.log("=== DOCUMENT CONTENT API START ===");
-    
+
     const { searchParams } = new URL(req.url);
     const documentId = searchParams.get("documentId");
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     if (!chunksError && chunks && chunks.length > 0) {
       // Use chunks content
-      content = chunks.map(chunk => chunk.text).join("\n\n");
+      content = chunks.map((chunk) => chunk.text).join("\n\n");
       contentSource = "chunks";
       console.log(`Retrieved content from ${chunks.length} chunks`);
     } else {
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
 
         if (!fileError && fileData) {
           const buf = Buffer.from(await fileData.arrayBuffer());
-          
+
           // Parse by file type
           if (document.title.endsWith(".pdf")) {
             const pdf = (await import("pdf-parse")).default;
@@ -74,9 +74,12 @@ export async function GET(req: NextRequest) {
           } else {
             content = buf.toString("utf8");
           }
-          
+
           contentSource = "storage";
-          console.log("Retrieved content from storage, length:", content.length);
+          console.log(
+            "Retrieved content from storage, length:",
+            content.length
+          );
         } else {
           console.error("Storage fetch failed:", fileError);
           content = `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`;
@@ -109,7 +112,6 @@ export async function GET(req: NextRequest) {
       contentLength: content.length,
       hasChunks: chunks?.length || 0,
     });
-
   } catch (error) {
     console.error("=== DOCUMENT CONTENT API ERROR ===", error);
     return NextResponse.json(
