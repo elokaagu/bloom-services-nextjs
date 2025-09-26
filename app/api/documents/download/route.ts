@@ -81,38 +81,68 @@ export async function GET(req: NextRequest) {
     console.log("Bucket:", process.env.STORAGE_BUCKET);
     console.log("Path:", document.storage_path);
 
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from(process.env.STORAGE_BUCKET)
-      .download(document.storage_path);
+    let fileData = null;
+    let fileError = null;
 
-    if (fileError) {
-      console.error("Storage download error:", fileError);
-      console.error("Error details:", {
-        message: fileError.message,
-        statusCode: fileError.statusCode,
-        error: fileError.error,
-      });
-      return NextResponse.json(
-        { 
-          error: "Failed to download file from storage",
-          details: fileError.message,
-          storagePath: document.storage_path,
-          bucket: process.env.STORAGE_BUCKET
-        },
-        { status: 500 }
-      );
+    // Try multiple approaches to get the file
+    const buckets = [process.env.STORAGE_BUCKET, "documents"];
+    const paths = [
+      document.storage_path,
+      document.storage_path?.replace("documents/", ""),
+      `documents/${document.storage_path}`,
+    ];
+
+    for (const bucket of buckets) {
+      if (!bucket) continue;
+      
+      for (const path of paths) {
+        if (!path) continue;
+        
+        console.log(`Trying bucket: ${bucket}, path: ${path}`);
+        
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .download(path);
+
+        if (!error && data) {
+          console.log(`Success! Found file in bucket: ${bucket}, path: ${path}`);
+          fileData = data;
+          break;
+        } else {
+          console.log(`Failed bucket: ${bucket}, path: ${path}, error:`, error?.message);
+        }
+      }
+      
+      if (fileData) break;
     }
 
     if (!fileData) {
-      console.error("No file data returned from storage");
+      console.error("All download attempts failed");
+      
+      // List files in storage to help debug
+      const { data: files, error: listError } = await supabase.storage
+        .from(process.env.STORAGE_BUCKET || "documents")
+        .list("documents", { limit: 10 });
+
+      console.log("Files in storage:", files);
+      console.log("List error:", listError);
+
       return NextResponse.json(
-        { error: "No file data available" },
-        { status: 500 }
+        {
+          error: "Failed to download file from storage",
+          details: "File not found in any expected location",
+          storagePath: document.storage_path,
+          bucket: process.env.STORAGE_BUCKET,
+          availableFiles: files?.map(f => f.name) || [],
+          listError: listError?.message,
+        },
+        { status: 404 }
       );
     }
 
+
     console.log("File data received, converting to buffer...");
-    
+
     // Convert to buffer
     const buffer = Buffer.from(await fileData.arrayBuffer());
 
