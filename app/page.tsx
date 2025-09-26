@@ -160,25 +160,29 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Features Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-              {features.map((feature, index) => (
-                <Card
-                  key={index}
-                  className="p-6 text-center hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm"
-                >
-                  <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <feature.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
-                </Card>
-              ))}
-            </div>
+                   {/* Features List */}
+                   <div className="space-y-6 mb-16">
+                     {features.map((feature, index) => (
+                       <Card
+                         key={index}
+                         className="p-6 hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm"
+                       >
+                         <div className="flex items-start space-x-4">
+                           <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                             <feature.icon className="h-6 w-6 text-primary" />
+                           </div>
+                           <div className="flex-1">
+                             <h3 className="text-lg font-semibold text-foreground mb-2">
+                               {feature.title}
+                             </h3>
+                             <p className="text-sm text-muted-foreground leading-relaxed">
+                               {feature.description}
+                             </p>
+                           </div>
+                         </div>
+                       </Card>
+                     ))}
+                   </div>
           </div>
         </div>
       </main>

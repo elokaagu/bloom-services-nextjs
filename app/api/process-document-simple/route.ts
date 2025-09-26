@@ -4,9 +4,9 @@ import { supabaseService } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     console.log("=== PROCESS DOCUMENT API START ===");
-    
+
     const { documentId } = await req.json();
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -90,7 +90,6 @@ export async function POST(req: NextRequest) {
         status: "ready",
       },
     });
-
   } catch (error) {
     console.error("=== PROCESS DOCUMENT API ERROR ===", error);
     return NextResponse.json(
