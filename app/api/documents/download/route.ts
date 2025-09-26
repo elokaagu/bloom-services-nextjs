@@ -90,35 +90,53 @@ export async function GET(req: NextRequest) {
       document.storage_path,
       document.storage_path?.replace("documents/", ""),
       `documents/${document.storage_path}`,
-    ];
+      // Handle case where storage_path already includes documents/
+      document.storage_path?.startsWith("documents/") 
+        ? document.storage_path 
+        : `documents/${document.storage_path}`,
+      // Try just the filename
+      document.storage_path?.split("/").pop(),
+    ].filter(Boolean); // Remove any undefined/null paths
+
+    console.log("Will try these combinations:");
+    buckets.forEach(bucket => {
+      paths.forEach(path => {
+        console.log(`  - Bucket: ${bucket}, Path: ${path}`);
+      });
+    });
 
     for (const bucket of buckets) {
       if (!bucket) continue;
-      
+
       for (const path of paths) {
         if (!path) continue;
-        
+
         console.log(`Trying bucket: ${bucket}, path: ${path}`);
-        
+
         const { data, error } = await supabase.storage
           .from(bucket)
           .download(path);
 
         if (!error && data) {
-          console.log(`Success! Found file in bucket: ${bucket}, path: ${path}`);
+          console.log(
+            `Success! Found file in bucket: ${bucket}, path: ${path}`
+          );
           fileData = data;
           break;
         } else {
-          console.log(`Failed bucket: ${bucket}, path: ${path}, error:`, error?.message);
+          console.log(
+            `Failed bucket: ${bucket}, path: ${path}, error:`,
+            error?.message
+          );
         }
       }
-      
+
       if (fileData) break;
     }
 
     if (!fileData) {
       console.error("All download attempts failed");
-      
+
       // List files in storage to help debug
       const { data: files, error: listError } = await supabase.storage
         .from(process.env.STORAGE_BUCKET || "documents")
@@ -133,13 +151,12 @@ export async function GET(req: NextRequest) {
           details: "File not found in any expected location",
           storagePath: document.storage_path,
           bucket: process.env.STORAGE_BUCKET,
-          availableFiles: files?.map(f => f.name) || [],
+          availableFiles: files?.map((f) => f.name) || [],
           listError: listError?.message,
         },
         { status: 404 }
       );
     }
-
 
     console.log("File data received, converting to buffer...");
 

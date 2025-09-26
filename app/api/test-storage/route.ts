@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
     console.log("Root error:", rootError);
 
     // Test 3: Check bucket info
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    const { data: buckets, error: bucketsError } =
+      await supabase.storage.listBuckets();
 
     console.log("Available buckets:", buckets);
     console.log("Buckets error:", bucketsError);
