@@ -20,6 +20,8 @@ import {
   User,
   FileIcon,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Document } from "@/components/documents/DocumentCard";
 
@@ -59,49 +61,67 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [contentError, setContentError] = useState<string | null>(null);
   const [contentSource, setContentSource] = useState<string>("");
-
+  const [retryCount, setRetryCount] = useState(0);
+  
   const aclInfo = getACLInfo(document.acl);
   const Icon = aclInfo.icon;
 
-  useEffect(() => {
-    const fetchDocumentContent = async () => {
-      try {
-        setIsLoadingContent(true);
-        setContentError(null);
-
-        const response = await fetch(
-          `/api/documents/content?documentId=${document.id}`
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch document content: ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setDocumentContent(data.content);
-          setContentSource(data.contentSource);
-        } else {
-          throw new Error(data.error || "Failed to load document content");
-        }
-      } catch (error) {
-        console.error("Error fetching document content:", error);
-        setContentError(
-          error instanceof Error ? error.message : "Failed to load content"
-        );
-        setDocumentContent(
-          `# ${document.title}\n\nThis document is currently being processed and will be available for full viewing shortly. Please check back later for the complete content.`
-        );
-      } finally {
-        setIsLoadingContent(false);
+  const fetchDocumentContent = async () => {
+    try {
+      setIsLoadingContent(true);
+      setContentError(null);
+      
+      console.log("Fetching document content for:", document.id);
+      
+      const response = await fetch(`/api/documents/content?documentId=${document.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch document content: ${response.statusText}`);
       }
-    };
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setDocumentContent(data.content);
+        setContentSource(data.contentSource);
+        console.log("Document content loaded successfully:", {
+          contentLength: data.contentLength,
+          contentSource: data.contentSource,
+          hasChunks: data.hasChunks
+        });
+      } else {
+        throw new Error(data.error || "Failed to load document content");
+      }
+    } catch (error) {
+      console.error("Error fetching document content:", error);
+      setContentError(error instanceof Error ? error.message : "Failed to load content");
+      
+      // Set fallback content
+      setDocumentContent(`# ${document.title}
 
+This document is ready but there's an issue accessing its content. This might be a temporary storage issue.
+
+**Status:** ${document.status}
+**Uploaded:** ${document.uploadedAt}
+
+**To fix this:**
+1. Try refreshing the page
+2. If the issue persists, try re-uploading the document
+3. Or contact support if the problem continues`);
+      setContentSource("fallback");
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDocumentContent();
-  }, [document.id, document.title]);
+  }, [document.id]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    fetchDocumentContent();
+  };
 
   const handleDownload = () => {
     console.log("Downloading document:", document.title);
@@ -109,6 +129,113 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
 
   const handleShare = () => {
     console.log("Sharing document:", document.title);
+  };
+
+  const renderContent = () => {
+    if (isLoadingContent) {
+      return (
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">
+            Loading document content...
+          </span>
+        </div>
+      );
+    }
+
+    if (contentError) {
+      return (
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive mb-2 text-lg font-semibold">
+            Error loading content
+          </p>
+          <p className="text-sm text-muted-foreground mb-4">
+            {contentError}
+          </p>
+          <Button onClick={handleRetry} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again ({retryCount}/3)
+          </Button>
+        </div>
+      );
+    }
+
+    // Safe content rendering without dangerouslySetInnerHTML
+    return (
+      <div className="prose prose-sm max-w-none">
+        {documentContent.split("\n").map((line, index) => {
+          if (line.startsWith("# ")) {
+            return (
+              <h1
+                key={index}
+                className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
+              >
+                {line.slice(2)}
+              </h1>
+            );
+          } else if (line.startsWith("## ")) {
+            return (
+              <h2
+                key={index}
+                className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
+              >
+                <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
+                {line.slice(3)}
+              </h2>
+            );
+          } else if (line.startsWith("### ")) {
+            return (
+              <h3
+                key={index}
+                className="text-xl font-medium mb-3 mt-6 text-foreground/90"
+              >
+                {line.slice(4)}
+              </h3>
+            );
+          } else if (line.startsWith("- ")) {
+            return (
+              <div
+                key={index}
+                className="flex items-start mb-2 ml-6"
+              >
+                <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
+                <p className="text-foreground/80 leading-relaxed">
+                  {line.slice(2)}
+                </p>
+              </div>
+            );
+          } else if (line.match(/^\d+\. /)) {
+            const number = line.match(/^(\d+)\. /)?.[1];
+            const text = line.replace(/^\d+\. /, "");
+            return (
+              <div
+                key={index}
+                className="flex items-start mb-2 ml-6"
+              >
+                <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
+                  {number}
+                </span>
+                <p className="text-foreground/80 leading-relaxed">
+                  {text}
+                </p>
+              </div>
+            );
+          } else if (line.trim() === "") {
+            return <div key={index} className="h-4"></div>;
+          } else {
+            return (
+              <p
+                key={index}
+                className="text-foreground/80 leading-relaxed mb-4"
+              >
+                {line}
+              </p>
+            );
+          }
+        })}
+      </div>
+    );
   };
 
   return (
@@ -142,11 +269,11 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
                       ? document.summary.split("\n")[0]
                       : document.size}
                   </span>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="hidden sm:inline">
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <span className="text-xs text-muted-foreground">
                     Uploaded {document.uploadedAt}
                   </span>
-                  <span className="hidden sm:inline">•</span>
+                  <span className="text-xs text-muted-foreground">•</span>
                   <div className="flex items-center gap-1">
                     <User className="h-3 w-3" />
                     <span className="truncate">{document.owner}</span>
@@ -210,283 +337,83 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[70vh] w-full rounded-md">
                   <div className="p-4 sm:p-8 max-w-none">
-                    {isLoadingContent ? (
-                      <div className="flex items-center justify-center h-32">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <span className="ml-2 text-muted-foreground">
-                          Loading document content...
-                        </span>
-                      </div>
-                    ) : contentError ? (
-                      <div className="text-center py-8">
-                        <p className="text-destructive mb-2">
-                          Error loading content
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {contentError}
-                        </p>
-                      </div>
-                    ) : (
-                      documentContent.split("\n").map((line, index) => {
-                        // Helper function to parse markdown bold syntax
-                        const parseMarkdown = (text: string) => {
-                          return text
-                            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                            .replace(
-                              /<strong>(.*?)<\/strong>/g,
-                              "<strong>$1</strong>"
-                            );
-                        };
-
-                        if (line.startsWith("# ")) {
-                          return (
-                            <h1
-                              key={index}
-                              className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
-                            >
-                              <span
-                                dangerouslySetInnerHTML={{
-                                  __html: parseMarkdown(line.slice(2)),
-                                }}
-                              ></span>
-                            </h1>
-                          );
-                        } else if (line.startsWith("## ")) {
-                          return (
-                            <h2
-                              key={index}
-                              className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
-                            >
-                              <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
-                              <span
-                                dangerouslySetInnerHTML={{
-                                  __html: parseMarkdown(line.slice(3)),
-                                }}
-                              ></span>
-                            </h2>
-                          );
-                        } else if (line.startsWith("### ")) {
-                          return (
-                            <h3
-                              key={index}
-                              className="text-xl font-medium mb-3 mt-6 text-foreground/90"
-                            >
-                              <span
-                                dangerouslySetInnerHTML={{
-                                  __html: parseMarkdown(line.slice(4)),
-                                }}
-                              ></span>
-                            </h3>
-                          );
-                        } else if (line.startsWith("- ")) {
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-start mb-2 ml-6"
-                            >
-                              <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
-                              <p
-                                className="text-foreground/80 leading-relaxed"
-                                dangerouslySetInnerHTML={{
-                                  __html: parseMarkdown(line.slice(2)),
-                                }}
-                              ></p>
-                            </div>
-                          );
-                        } else if (line.match(/^\d+\. /)) {
-                          const number = line.match(/^(\d+)\. /)?.[1];
-                          const text = line.replace(/^\d+\. /, "");
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-start mb-3 ml-6"
-                            >
-                              <div className="flex items-center justify-center w-6 h-6 bg-primary/10 text-primary text-sm font-semibold rounded-full mr-3 flex-shrink-0 mt-0.5">
-                                {number}
-                              </div>
-                              <p
-                                className="text-foreground/80 leading-relaxed font-medium"
-                                dangerouslySetInnerHTML={{
-                                  __html: parseMarkdown(text),
-                                }}
-                              ></p>
-                            </div>
-                          );
-                        } else if (line.trim() === "") {
-                          return <div key={index} className="mb-5"></div>;
-                        } else if (
-                          line.startsWith("**") &&
-                          line.endsWith("**")
-                        ) {
-                          return (
-                            <p
-                              key={index}
-                              className="mb-4 text-foreground font-semibold leading-relaxed bg-muted/30 p-3 rounded-lg border-l-4 border-primary/40"
-                            >
-                              {line.slice(2, -2)}
-                            </p>
-                          );
-                        } else {
-                          return (
-                            <p
-                              key={index}
-                              className="mb-4 text-foreground/70 leading-relaxed text-[15px] tracking-wide"
-                              dangerouslySetInnerHTML={{
-                                __html: parseMarkdown(line),
-                              }}
-                            ></p>
-                          );
-                        }
-                      })
-                    )}
+                    {renderContent()}
                   </div>
                 </ScrollArea>
               </Card>
             </TabsContent>
 
             <TabsContent value="analytics" className="flex-1 mt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <Card className="p-4">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-4 w-5 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">Queries Answered</p>
-                      <p className="text-xl sm:text-2xl font-bold">
-                        {document.queryCount || 0}
-                      </p>
-                    </div>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
+                <div className="p-4 sm:p-8">
+                  <div className="text-center py-8">
+                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      Document Analytics
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Analytics for this document will be available soon.
+                    </p>
                   </div>
-                </Card>
-
-                <Card className="p-4">
-                  <div className="flex items-center space-x-2">
-                    <Eye className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <p className="text-sm font-medium">Last Accessed</p>
-                      <p className="text-sm text-muted-foreground">
-                        {document.lastAccessed || "Never"}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-4">
-                  <div className="flex items-center space-x-2">
-                    <MessageCircle className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="text-sm font-medium">Chat References</p>
-                      <p className="text-2xl font-bold">12</p>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Usage Over Time</h3>
-                <div className="h-32 flex items-end space-x-2">
-                  {[3, 7, 2, 8, 5, 9, 4, 6, 3, 8, 5, 7].map((height, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 bg-primary/60 rounded-sm"
-                      style={{ height: `${height * 12}px` }}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                  <span>12 weeks ago</span>
-                  <span>This week</span>
                 </div>
               </Card>
             </TabsContent>
 
-            <TabsContent value="metadata" className="mt-6 space-y-4">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Document Information
-                </h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        File Name
-                      </label>
-                      <p className="text-sm">{document.title}</p>
+            <TabsContent value="metadata" className="flex-1 mt-0">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
+                <div className="p-4 sm:p-8">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <FileIcon className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Document Details</span>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        File Type
-                      </label>
-                      <p className="text-sm uppercase">{document.type}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Summary
-                      </label>
-                      <p className="text-sm">
-                        {document.summary
-                          ? document.summary
-                          : "No summary available yet"}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Content Source
-                      </label>
-                      <p className="text-sm capitalize">
-                        {contentSource || "Loading..."}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Upload Date
-                      </label>
-                      <p className="text-sm">{document.uploadedAt}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Owner
-                      </label>
-                      <p className="text-sm">{document.owner}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Status
-                      </label>
-                      <Badge className="mt-1">
-                        {document.status.charAt(0).toUpperCase() +
-                          document.status.slice(1)}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Access Control
-                    </label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Icon className="h-4 w-4" />
-                      <span className="text-sm">{aclInfo.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        - {aclInfo.description}
-                      </span>
-                    </div>
-                  </div>
-
-                  {document.preview && (
-                    <>
-                      <Separator />
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Document Preview
-                        </label>
-                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                          {document.preview}
-                        </p>
+                        <label className="text-sm font-medium text-muted-foreground">Title</label>
+                        <p className="text-sm text-foreground">{document.title}</p>
                       </div>
-                    </>
-                  )}
+                      
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Status</label>
+                        <p className="text-sm text-foreground capitalize">{document.status}</p>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Size</label>
+                        <p className="text-sm text-foreground">{document.size}</p>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Uploaded</label>
+                        <p className="text-sm text-foreground">{document.uploadedAt}</p>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Owner</label>
+                        <p className="text-sm text-foreground">{document.owner}</p>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Access Level</label>
+                        <p className="text-sm text-foreground capitalize">{document.acl}</p>
+                      </div>
+                    </div>
+
+                    {contentSource && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Content Source</label>
+                        <p className="text-sm text-foreground capitalize">{contentSource}</p>
+                      </div>
+                    )}
+
+                    {document.summary && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Summary</label>
+                        <p className="text-sm text-foreground">{document.summary}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Card>
             </TabsContent>

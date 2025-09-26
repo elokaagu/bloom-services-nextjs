@@ -574,7 +574,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
                 <DialogHeader>
                   <DialogTitle>Upload Documents</DialogTitle>
                 </DialogHeader>
-                <UploadDropzone onUploadComplete={handleUploadComplete} />
+                <div className="mt-4">
+                  <UploadDropzone onUploadComplete={handleUploadComplete} />
+                </div>
               </DialogContent>
             </Dialog>
           </div>
