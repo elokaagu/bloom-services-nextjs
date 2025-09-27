@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -66,7 +66,7 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const aclInfo = getACLInfo(document.acl);
   const Icon = aclInfo.icon;
 
-  const fetchDocumentContent = async () => {
+  const fetchDocumentContent = useCallback(async () => {
     try {
       setIsLoadingContent(true);
       setContentError(null);
@@ -118,11 +118,11 @@ This document is ready but there's an issue accessing its content. This might be
     } finally {
       setIsLoadingContent(false);
     }
-  };
+  }, [document.id]);
 
   useEffect(() => {
     fetchDocumentContent();
-  }, [document.id]);
+  }, [document.id, fetchDocumentContent]);
 
   const handleRetry = () => {
     setRetryCount((prev) => prev + 1);

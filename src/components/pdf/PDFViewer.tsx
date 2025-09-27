@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -44,7 +44,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     switch (e.key) {
       case "ArrowLeft":
         handlePreviousPage();
@@ -62,8 +62,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
       case "r":
         handleRotate();
         break;
+      default:
+        break;
     }
-  };
+  }, [currentPage, pages.length]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);

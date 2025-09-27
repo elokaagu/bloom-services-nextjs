@@ -7,12 +7,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ["pdf-parse", "mammoth", "pdfjs-dist", "tesseract.js", "sharp"],
-  // Increase body size limit for file uploads
-  api: {
-    bodyParser: {
-      sizeLimit: "10mb",
-    },
-  },
 };
 
 module.exports = nextConfig;
