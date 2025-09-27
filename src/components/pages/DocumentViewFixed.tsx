@@ -136,8 +136,10 @@ This document is ready but there's an issue accessing its content. This might be
       console.log("Downloading document:", document.title);
 
       // Check if we're in a browser environment
-      if (typeof window === 'undefined') {
-        console.error("Download can only be initiated from browser environment");
+      if (typeof window === "undefined") {
+        console.error(
+          "Download can only be initiated from browser environment"
+        );
         return;
       }
 
@@ -148,7 +150,11 @@ This document is ready but there's an issue accessing its content. This might be
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to download document: ${response.statusText} - ${errorData.error || 'Unknown error'}`);
+        throw new Error(
+          `Failed to download document: ${response.statusText} - ${
+            errorData.error || "Unknown error"
+          }`
+        );
       }
 
       // Get the file blob
@@ -160,12 +166,12 @@ This document is ready but there's an issue accessing its content. This might be
       link.href = url;
       link.download = document.title;
       link.style.display = "none";
-      
+
       // Add to DOM, click, and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
 

@@ -85,6 +85,7 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
   const [isUpdatingACL, setIsUpdatingACL] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"text" | "pdf">("text");
   const { toast } = useToast();
 
   const aclInfo = getACLInfo(document.acl);
@@ -208,8 +209,10 @@ This document is ready but there's an issue accessing its content. This might be
       console.log("Downloading document:", document.title);
 
       // Check if we're in a browser environment
-      if (typeof window === 'undefined') {
-        console.error("Download can only be initiated from browser environment");
+      if (typeof window === "undefined") {
+        console.error(
+          "Download can only be initiated from browser environment"
+        );
         return;
       }
 
@@ -220,7 +223,11 @@ This document is ready but there's an issue accessing its content. This might be
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to download document: ${response.statusText} - ${errorData.error || 'Unknown error'}`);
+        throw new Error(
+          `Failed to download document: ${response.statusText} - ${
+            errorData.error || "Unknown error"
+          }`
+        );
       }
 
       // Get the file blob
@@ -232,12 +239,12 @@ This document is ready but there's an issue accessing its content. This might be
       link.href = url;
       link.download = document.title;
       link.style.display = "none";
-      
+
       // Add to DOM, click, and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
 
@@ -316,7 +323,8 @@ This document is ready but there's an issue accessing its content. This might be
     if (
       document.title.endsWith(".pdf") &&
       document.pageData &&
-      document.pageData.length > 0
+      document.pageData.length > 0 &&
+      viewMode === "pdf"
     ) {
       return (
         <div className="h-full">
@@ -334,64 +342,67 @@ This document is ready but there's an issue accessing its content. This might be
     // Fallback to text rendering for non-PDF documents or PDFs without page data
     return (
       <div className="prose prose-sm max-w-none">
-        {documentContent.split("\n").map((line, index) => {
-          if (line.startsWith("# ")) {
+        {documentContent.split("\n\n").map((paragraph, index) => {
+          const trimmedParagraph = paragraph.trim();
+          if (!trimmedParagraph) return null;
+
+          // Handle headings
+          if (trimmedParagraph.startsWith("# ")) {
             return (
               <h1
                 key={index}
                 className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
               >
-                {line.slice(2)}
+                {trimmedParagraph.slice(2)}
               </h1>
             );
-          } else if (line.startsWith("## ")) {
+          } else if (trimmedParagraph.startsWith("## ")) {
             return (
               <h2
                 key={index}
                 className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
               >
                 <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
-                {line.slice(3)}
+                {trimmedParagraph.slice(3)}
               </h2>
             );
-          } else if (line.startsWith("### ")) {
+          } else if (trimmedParagraph.startsWith("### ")) {
             return (
               <h3
                 key={index}
                 className="text-xl font-medium mb-3 mt-6 text-foreground/90"
               >
-                {line.slice(4)}
+                {trimmedParagraph.slice(4)}
               </h3>
             );
-          } else if (line.startsWith("- ")) {
+          } else if (trimmedParagraph.startsWith("- ") || trimmedParagraph.startsWith("• ")) {
+            // Handle bullet points
             return (
-              <div key={index} className="flex items-start mb-2 ml-6">
-                <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
-                <p className="text-foreground/80 leading-relaxed">
-                  {line.slice(2)}
-                </p>
-              </div>
+              <ul key={index} className="list-disc list-inside mb-4 space-y-1">
+                {trimmedParagraph.split(/\n(?=- |• )/).map((item, itemIndex) => (
+                  <li key={itemIndex} className="text-foreground/80 leading-relaxed">
+                    {item.replace(/^[-•] /, "")}
+                  </li>
+                ))}
+              </ul>
             );
-          } else if (line.match(/^\d+\. /)) {
-            const number = line.match(/^(\d+)\. /)?.[1];
-            const text = line.replace(/^\d+\. /, "");
+          } else if (trimmedParagraph.match(/^\d+\. /)) {
+            // Handle numbered lists
+            const number = trimmedParagraph.match(/^(\d+)\. /)?.[1];
+            const text = trimmedParagraph.replace(/^\d+\. /, "");
             return (
-              <div key={index} className="flex items-start mb-2 ml-6">
+              <div key={index} className="flex items-start mb-4 ml-6">
                 <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
                   {number}
                 </span>
                 <p className="text-foreground/80 leading-relaxed">{text}</p>
               </div>
             );
-          } else if (line.trim() === "") {
-            return <div key={index} className="h-4"></div>;
           } else {
+            // Regular paragraph
             return (
-              <p
-                key={index}
-                className="text-foreground/80 leading-relaxed mb-4"
-              >
-                {line}
+              <p key={index} className="text-foreground/80 leading-relaxed mb-4">
+                {trimmedParagraph}
               </p>
             );
           }
@@ -567,6 +578,32 @@ This document is ready but there's an issue accessing its content. This might be
                 Details
               </TabsTrigger>
             </TabsList>
+            
+            {/* PDF View Mode Toggle */}
+            {document.title.endsWith(".pdf") && document.pageData && document.pageData.length > 0 && (
+              <div className="flex justify-center mb-4">
+                <div className="flex items-center space-x-2 bg-muted/50 rounded-lg p-1">
+                  <Button
+                    variant={viewMode === "text" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("text")}
+                    className="text-xs"
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    Text
+                  </Button>
+                  <Button
+                    variant={viewMode === "pdf" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("pdf")}
+                    className="text-xs"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    PDF View
+                  </Button>
+                </div>
+              </div>
+            )}
             
             <TabsContent value="content" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">

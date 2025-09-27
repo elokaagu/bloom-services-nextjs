@@ -92,28 +92,33 @@ class AdvancedPDFProcessor {
       .replace(/([.!?])([A-Z])/g, "$1\n\n$2") // New paragraph after sentences
       .replace(/([a-z])([0-9])/g, "$1 $2") // Space between letters and numbers
       .replace(/([0-9])([A-Z])/g, "$1 $2") // Space between numbers and letters
-      // Clean up multiple spaces and newlines
-      .replace(/\s+/g, " ")
-      .replace(/\n\s*\n/g, "\n\n")
+      // Clean up multiple spaces but preserve newlines
+      .replace(/[ \t]+/g, " ") // Replace multiple spaces/tabs with single space
+      .replace(/\n\s*\n/g, "\n\n") // Clean up multiple newlines
       .trim();
 
-    // Add proper paragraph breaks
+    // Split into sentences and create proper paragraphs
     const sentences = formatted.split(/(?<=[.!?])\s+/);
     const paragraphs: string[] = [];
     let currentParagraph = "";
 
     for (const sentence of sentences) {
-      if (sentence.length > 150 || sentence.endsWith(".")) {
-        if (currentParagraph) {
-          paragraphs.push(currentParagraph);
+      const trimmedSentence = sentence.trim();
+      if (!trimmedSentence) continue;
+
+      // Start new paragraph for longer sentences or sentences ending with periods
+      if (trimmedSentence.length > 100 || trimmedSentence.endsWith(".")) {
+        if (currentParagraph.trim()) {
+          paragraphs.push(currentParagraph.trim());
         }
-        currentParagraph = sentence;
+        currentParagraph = trimmedSentence;
       } else {
-        currentParagraph += (currentParagraph ? " " : "") + sentence;
+        currentParagraph += (currentParagraph ? " " : "") + trimmedSentence;
       }
     }
-    if (currentParagraph) {
-      paragraphs.push(currentParagraph);
+    
+    if (currentParagraph.trim()) {
+      paragraphs.push(currentParagraph.trim());
     }
 
     return paragraphs.join("\n\n");
