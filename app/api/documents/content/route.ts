@@ -69,19 +69,29 @@ export async function GET(req: NextRequest) {
 
         // Use the storage path as-is (should be just filename now)
         const storagePath = document.storage_path;
-          
-        console.log(
-          "Attempting to download from storage:",
-          storagePath
-        );
+
+        console.log("Attempting to download from storage:", storagePath);
         console.log(
           "Storage bucket:",
           process.env.STORAGE_BUCKET || "documents"
         );
 
+        console.log("Attempting download with path:", storagePath);
+        console.log("Bucket:", process.env.STORAGE_BUCKET || "documents");
+
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(storagePath);
+
+        if (fileError) {
+          console.error("Storage download error:", fileError);
+          console.error("Error details:", {
+            message: fileError.message,
+            statusCode: fileError.statusCode,
+            error: fileError.error,
+            url: fileError.url,
+          });
+        }
 
         if (!fileError && fileData) {
           const buf = Buffer.from(await fileData.arrayBuffer());
@@ -148,17 +158,20 @@ export async function GET(req: NextRequest) {
           }
           contentSource = "fallback";
           // Don't return success when we can't access the actual content
-          return NextResponse.json({
-            success: false,
-            error: "Unable to access document content from storage",
-            details: {
-              storageError: fileError?.message,
-              documentStatus: document.status,
-              storagePath: document.storage_path,
-              hasChunks: chunks?.length || 0,
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Unable to access document content from storage",
+              details: {
+                storageError: fileError?.message,
+                documentStatus: document.status,
+                storagePath: document.storage_path,
+                hasChunks: chunks?.length || 0,
+              },
+              fallbackContent: content,
             },
-            fallbackContent: content,
-          }, { status: 200 }); // Return 200 to show error in UI
+            { status: 200 }
+          ); // Return 200 to show error in UI
         }
       } catch (storageError) {
         console.error("Storage error:", storageError);
@@ -201,19 +214,25 @@ export async function GET(req: NextRequest) {
           ).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
         }
         contentSource = "fallback";
-        
+
         // Return error response when storage fails
-        return NextResponse.json({
-          success: false,
-          error: "Unable to access document content from storage",
-          details: {
-            storageError: storageError instanceof Error ? storageError.message : "Unknown storage error",
-            documentStatus: document.status,
-            storagePath: document.storage_path,
-            hasChunks: chunks?.length || 0,
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Unable to access document content from storage",
+            details: {
+              storageError:
+                storageError instanceof Error
+                  ? storageError.message
+                  : "Unknown storage error",
+              documentStatus: document.status,
+              storagePath: document.storage_path,
+              hasChunks: chunks?.length || 0,
+            },
+            fallbackContent: content,
           },
-          fallbackContent: content,
-        }, { status: 200 }); // Return 200 to show error in UI
+          { status: 200 }
+        ); // Return 200 to show error in UI
       }
     }
 

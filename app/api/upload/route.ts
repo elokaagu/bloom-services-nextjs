@@ -49,11 +49,12 @@ export async function POST(req: NextRequest) {
     const supabase = supabaseService();
     console.log("Supabase client initialized");
 
-    // Generate unique file path
+    // Generate unique file path with safe naming
     const fileExt = file.name.split(".").pop();
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_'); // Replace special chars with underscores
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
-      .substring(2)}.${fileExt}`;
+      .substring(2)}-${safeFileName}`;
     const filePath = fileName; // Upload to root of bucket
 
     console.log("Uploading file to storage:", filePath);
@@ -79,20 +80,22 @@ export async function POST(req: NextRequest) {
         statusCode: uploadError.statusCode,
         error: uploadError.error,
       });
-      
+
       // Check if bucket exists
       const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === (process.env.STORAGE_BUCKET || "documents"));
-      
+      const bucketExists = buckets?.some(
+        (bucket) => bucket.name === (process.env.STORAGE_BUCKET || "documents")
+      );
+
       return NextResponse.json(
-        { 
+        {
           error: `Storage upload failed: ${uploadError.message}`,
           details: {
             bucket: process.env.STORAGE_BUCKET || "documents",
             path: filePath,
             bucketExists,
-            availableBuckets: buckets?.map(b => b.name) || [],
-          }
+            availableBuckets: buckets?.map((b) => b.name) || [],
+          },
         },
         { status: 500 }
       );
