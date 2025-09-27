@@ -105,16 +105,26 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
       }
 
       const data = await response.json();
+      
+      console.log("API Response data:", data);
 
       if (data.success) {
-        setDocumentContent(data.content);
-        setContentSource(data.contentSource);
+        console.log("Setting document content:", {
+          contentLength: data.content?.length || 0,
+          contentSource: data.contentSource,
+          hasChunks: data.hasChunks,
+        });
+        
+        setDocumentContent(data.content || "");
+        setContentSource(data.contentSource || "api");
+        
         console.log("Document content loaded successfully:", {
           contentLength: data.contentLength,
           contentSource: data.contentSource,
           hasChunks: data.hasChunks,
         });
       } else {
+        console.error("API returned success: false", data);
         throw new Error(data.error || "Failed to load document content");
       }
     } catch (error) {
