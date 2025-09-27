@@ -1,22 +1,22 @@
-import { 
-  Library, 
-  MessageSquare, 
-  Settings, 
+import {
+  Library,
+  MessageSquare,
+  Settings,
   BarChart3,
   Building2,
   ChevronDown,
   LogOut,
-  User
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
@@ -48,25 +48,27 @@ interface AppSidebarProps {
 }
 
 const menuItems = [
-  { id: 'library', label: 'Library', icon: Library },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'admin', label: 'Members', icon: Settings },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 }
+  { id: "library", label: "Library", icon: Library },
+  { id: "chat", label: "Chat", icon: MessageSquare },
+  { id: "admin", label: "Members", icon: Settings },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
 ];
 
-export function AppSidebar({ 
-  currentWorkspace, 
-  workspaces, 
-  onWorkspaceChange, 
+export function AppSidebar({
+  currentWorkspace,
+  workspaces,
+  onWorkspaceChange,
   onNavigate,
-  currentPage 
+  currentPage,
 }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
   return (
     <Sidebar
-      className={`${collapsed ? "w-14" : "w-64 sm:w-64"} rounded-2xl m-3 shadow-xl border bg-card/95 backdrop-blur-sm flex flex-col h-[calc(100vh-1.5rem)]`}
+      className={`${
+        collapsed ? "w-14" : "w-64 sm:w-64"
+      } rounded-2xl m-3 shadow-xl border bg-card/95 backdrop-blur-sm flex flex-col h-[calc(100vh-1.5rem)]`}
       collapsible="icon"
       variant="floating"
     >
@@ -84,18 +86,27 @@ export function AppSidebar({
                   className="object-contain"
                 />
               </div>
-              <span className="text-xl font-bold text-foreground tracking-tight">bloom</span>
+              <span className="text-xl font-bold text-foreground tracking-tight">
+                bloom
+              </span>
             </div>
-            
+
             {/* Workspace Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full justify-between text-left h-auto py-3 border-border/50 hover:bg-accent/50 transition-colors">
+                <Button
+                  variant="outline"
+                  className="w-full justify-between text-left h-auto py-3 border-border/50 hover:bg-accent/50 transition-colors"
+                >
                   <div className="flex items-center space-x-2 min-w-0 flex-1">
                     <Building2 className="h-4 w-4 flex-shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{currentWorkspace.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{currentWorkspace.organization}</div>
+                      <div className="text-sm font-medium truncate">
+                        {currentWorkspace.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {currentWorkspace.organization}
+                      </div>
                     </div>
                   </div>
                   <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
@@ -105,20 +116,22 @@ export function AppSidebar({
                 <DropdownMenuLabel>Switch Workspace</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {workspaces.map((workspace) => (
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     key={workspace.id}
                     onClick={() => onWorkspaceChange(workspace)}
                     className="flex flex-col items-start space-y-1 p-3"
                   >
                     <div className="font-medium">{workspace.name}</div>
-                    <div className="text-xs text-muted-foreground">{workspace.organization}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {workspace.organization}
+                    </div>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         )}
-        
+
         {collapsed && (
           <div className="flex justify-center">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
@@ -130,18 +143,20 @@ export function AppSidebar({
 
       <SidebarContent className="px-3 flex-1 overflow-y-auto">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/80 px-2">Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/80 px-2">
+            Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     onClick={() => onNavigate(item.id)}
                     isActive={currentPage === item.id}
                     className={`w-full rounded-xl transition-all duration-200 ${
-                      currentPage === item.id 
-                        ? 'bg-primary text-primary-foreground shadow-md' 
-                        : 'hover:bg-accent/50'
+                      currentPage === item.id
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "hover:bg-accent/50"
                     }`}
                   >
                     <item.icon className="h-4 w-4" />
@@ -158,14 +173,21 @@ export function AppSidebar({
         {!collapsed ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start p-3 h-auto rounded-xl hover:bg-accent/50 transition-colors">
+              <Button
+                variant="ghost"
+                className="w-full justify-start p-3 h-auto rounded-xl hover:bg-accent/50 transition-colors"
+              >
                 <Avatar className="h-9 w-9 mr-3 flex-shrink-0 ring-2 ring-border/20">
                   <AvatarImage src="" alt="User" />
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start min-w-0 flex-1 text-left">
-                  <p className="text-sm font-medium truncate w-full">John Doe</p>
-                  <p className="text-xs text-muted-foreground truncate w-full">john.doe@company.com</p>
+                  <p className="text-sm font-medium truncate w-full">
+                    John Doe
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate w-full">
+                    john.doe@company.com
+                  </p>
                 </div>
                 <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
               </Button>
