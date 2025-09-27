@@ -42,11 +42,11 @@ export async function POST(req: NextRequest) {
     if (fileError) {
       console.error("File not found in storage:", fileError);
       return NextResponse.json(
-        { 
-          error: "File not found in storage", 
+        {
+          error: "File not found in storage",
           details: fileError.message,
           storagePath: document.storage_path,
-          bucket: process.env.STORAGE_BUCKET || "documents"
+          bucket: process.env.STORAGE_BUCKET || "documents",
         },
         { status: 404 }
       );
@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
     // This bypasses the ingestion process for now
     const { error: updateError } = await supabase
       .from("documents")
-      .update({ 
+      .update({
         status: "ready",
-        error: null 
+        error: null,
       })
       .eq("id", document.id);
 
@@ -85,7 +85,6 @@ export async function POST(req: NextRequest) {
         fileSize: fileData.size,
       },
     });
-
   } catch (error) {
     console.error("=== FIX DOCUMENT STATUS ERROR ===", error);
     return NextResponse.json(

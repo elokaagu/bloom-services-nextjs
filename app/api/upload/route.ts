@@ -221,22 +221,37 @@ export async function POST(req: NextRequest) {
       });
 
       if (ingestResponse.ok) {
-        console.log("Document ingestion completed successfully");
+        const ingestResult = await ingestResponse.json();
+        console.log("Document ingestion completed successfully:", ingestResult);
+        
         // Update status to ready
         await supabase
           .from("documents")
           .update({ status: "ready" })
           .eq("id", document.id);
       } else {
-        console.error(
-          "Document ingestion failed:",
-          await ingestResponse.text()
-        );
-        // Update status to failed
-        await supabase
-          .from("documents")
-          .update({ status: "failed" })
-          .eq("id", document.id);
+        const errorText = await ingestResponse.text();
+        console.error("Document ingestion failed:", errorText);
+        
+        // Even if ingestion fails, mark as ready if file exists in storage
+        console.log("Checking if file exists in storage despite ingestion failure...");
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from(process.env.STORAGE_BUCKET || "documents")
+          .download(document.storage_path);
+
+        if (!fileError && fileData) {
+          console.log("File exists in storage, marking as ready despite ingestion failure");
+          await supabase
+            .from("documents")
+            .update({ status: "ready", error: "Ingestion failed but file accessible" })
+            .eq("id", document.id);
+        } else {
+          console.log("File not found in storage, marking as failed");
+          await supabase
+            .from("documents")
+            .update({ status: "failed", error: errorText })
+            .eq("id", document.id);
+        }
       }
     } catch (ingestError) {
       console.error("Error triggering document ingestion:", ingestError);
