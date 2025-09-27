@@ -3,17 +3,10 @@ import { supabaseService } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("=== DEBUG DOCUMENT API START ===");
+    console.log("=== DOCUMENT DEBUG API START ===");
 
     const { searchParams } = new URL(req.url);
-    const documentId = searchParams.get("documentId");
-
-    if (!documentId) {
-      return NextResponse.json(
-        { error: "Document ID is required" },
-        { status: 400 }
-      );
-    }
+    const documentId = searchParams.get("documentId") || "36695968-051a-419d-9fb2-d58aa260ee62";
 
     const supabase = supabaseService();
 
@@ -25,45 +18,84 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (docError || !document) {
-      console.error("Document not found:", docError);
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: "Document not found",
+        documentId,
+      });
     }
 
     console.log("Document found:", document.title);
+    console.log("Storage path:", document.storage_path);
+    console.log("Status:", document.status);
 
-    // Check for chunks
+    // Check if chunks exist
     const { data: chunks, error: chunksError } = await supabase
       .from("document_chunks")
       .select("id, chunk_no, text")
       .eq("document_id", documentId)
       .order("chunk_no");
 
-    // Check storage
-    let storageInfo = null;
-    if (document.storage_path) {
-      try {
+    console.log("Chunks found:", chunks?.length || 0);
+
+    // Try to access storage
+    let storageTest = {
+      success: false,
+      error: null,
+      path: document.storage_path,
+      correctedPath: null,
+    };
+
+    try {
+      // Try different path variations
+      const paths = [
+        document.storage_path,
+        document.storage_path?.replace(/^documents\//, ""),
+        `documents/${document.storage_path}`,
+        document.title, // Just the filename
+      ].filter(Boolean);
+
+      console.log("Testing paths:", paths);
+
+      for (const path of paths) {
+        console.log(`Testing path: ${path}`);
+        
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
-          .download(document.storage_path);
+          .download(path);
 
-        storageInfo = {
-          hasFile: !fileError && !!fileData,
-          error: fileError?.message,
-          path: document.storage_path,
-        };
-      } catch (storageError: any) {
-        storageInfo = {
-          hasFile: false,
-          error: storageError.message,
-          path: document.storage_path,
-        };
+        if (!fileError && fileData) {
+          console.log(`SUCCESS! Found file at path: ${path}`);
+          storageTest = {
+            success: true,
+            error: null,
+            path: document.storage_path,
+            correctedPath: path,
+            fileSize: (await fileData.arrayBuffer()).byteLength,
+          };
+          break;
+        } else {
+          console.log(`Failed path: ${path}, error:`, fileError?.message);
+        }
       }
+
+      if (!storageTest.success) {
+        // List files in storage to see what's actually there
+        const { data: files, error: listError } = await supabase.storage
+          .from(process.env.STORAGE_BUCKET || "documents")
+          .list("", { limit: 20 });
+
+        console.log("Files in storage:", files);
+        storageTest.error = "File not found in any expected location";
+        storageTest.availableFiles = files?.map(f => f.name) || [];
+        storageTest.listError = listError?.message;
+      }
+    } catch (storageError: any) {
+      console.error("Storage test error:", storageError);
+      storageTest.error = storageError.message;
     }
 
-    console.log("=== DEBUG DOCUMENT API SUCCESS ===");
+    console.log("=== DOCUMENT DEBUG API SUCCESS ===");
 
     return NextResponse.json({
       success: true,
@@ -71,35 +103,23 @@ export async function GET(req: NextRequest) {
         id: document.id,
         title: document.title,
         status: document.status,
-        storage_path: document.storage_path,
-        summary: document.summary,
-        created_at: document.created_at,
+        storagePath: document.storage_path,
+        createdAt: document.created_at,
       },
       chunks: {
         count: chunks?.length || 0,
         error: chunksError?.message,
-        preview:
-          chunks?.slice(0, 2).map((c) => ({
-            chunkNo: c.chunk_no,
-            textPreview:
-              c.text.substring(0, 100) + (c.text.length > 100 ? "..." : ""),
-          })) || [],
+        preview: chunks?.slice(0, 2).map(c => ({
+          chunkNo: c.chunk_no,
+          textPreview: c.text.substring(0, 100) + "...",
+        })) || [],
       },
-      storage: storageInfo,
-      recommendations: [
-        chunks?.length === 0
-          ? "Document needs to be processed - run /api/process-document"
-          : null,
-        !storageInfo?.hasFile ? "File not found in storage" : null,
-        document.status === "uploading" ? "Document still uploading" : null,
-        document.status === "failed" ? "Document processing failed" : null,
-      ].filter(Boolean),
+      storageTest,
     });
-  } catch (error) {
-    console.error("=== DEBUG DOCUMENT API ERROR ===", error);
+  } catch (error: any) {
+    console.error("=== DOCUMENT DEBUG API ERROR ===", error);
     return NextResponse.json(
       {
-        success: false,
         error: error instanceof Error ? error.message : "Unknown error",
         stack: error instanceof Error ? error.stack : undefined,
       },
