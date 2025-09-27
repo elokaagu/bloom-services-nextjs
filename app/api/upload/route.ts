@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
       .substring(2)}.${fileExt}`;
-    const filePath = fileName; // Don't add documents/ prefix here
+    const filePath = fileName; // Upload to root of bucket
 
     console.log("Uploading file to storage:", filePath);
 
