@@ -60,7 +60,7 @@ export const UploadDropzone = ({
         );
 
         console.log("=== SENDING REQUEST ===");
-        const response = await fetch("/api/upload-new", {
+        const response = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });

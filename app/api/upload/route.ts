@@ -66,8 +66,13 @@ export async function POST(req: NextRequest) {
     // Generate clean file path with readable naming convention
     const fileExt = file.name.split(".").pop()?.toLowerCase();
     const baseName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-    const cleanBaseName = baseName.replace(/[^a-zA-Z0-9\s-]/g, "").replace(/\s+/g, "_"); // Clean name
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, ""); // YYYYMMDDTHHMMSS
+    const cleanBaseName = baseName
+      .replace(/[^a-zA-Z0-9\s-]/g, "")
+      .replace(/\s+/g, "_"); // Clean name
+    const timestamp = new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[:-]/g, ""); // YYYYMMDDTHHMMSS
     const fileName = `${timestamp}_${cleanBaseName}.${fileExt}`;
     const filePath = fileName; // Upload to root of bucket
 
@@ -83,8 +88,11 @@ export async function POST(req: NextRequest) {
     console.log("About to call supabase.storage.upload...");
     console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
     console.log("STORAGE_BUCKET:", process.env.STORAGE_BUCKET);
-    console.log("File will be uploaded to:", `${process.env.SUPABASE_URL}/storage/v1/object/${process.env.STORAGE_BUCKET}/${filePath}`);
-    
+    console.log(
+      "File will be uploaded to:",
+      `${process.env.SUPABASE_URL}/storage/v1/object/${process.env.STORAGE_BUCKET}/${filePath}`
+    );
+
     let uploadResult;
     try {
       uploadResult = await supabase.storage
@@ -97,7 +105,7 @@ export async function POST(req: NextRequest) {
     } catch (uploadException: any) {
       console.error("Upload exception:", uploadException);
       return NextResponse.json(
-        { 
+        {
           error: "Upload failed with exception",
           details: uploadException.message,
           fileSize: file.size,
@@ -160,7 +168,10 @@ export async function POST(req: NextRequest) {
 
     console.log("File verification successful, file size:", verifyData.size);
     console.log("✅ FILE SUCCESSFULLY UPLOADED TO SUPABASE STORAGE");
-    console.log("Storage URL:", `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.STORAGE_BUCKET}/${filePath}`);
+    console.log(
+      "Storage URL:",
+      `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.STORAGE_BUCKET}/${filePath}`
+    );
 
     // Create document record in database
     const documentData = {
