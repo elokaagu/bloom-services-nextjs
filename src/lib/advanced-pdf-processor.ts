@@ -1,6 +1,6 @@
-import { createWorker } from 'tesseract.js';
-import * as pdfjsLib from 'pdfjs-dist';
-import sharp from 'sharp';
+import { createWorker } from "tesseract.js";
+import * as pdfjsLib from "pdfjs-dist";
+import sharp from "sharp";
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -31,7 +31,7 @@ export class AdvancedPDFProcessor {
 
   async initializeOCR() {
     if (!this.worker) {
-      this.worker = await createWorker('eng');
+      this.worker = await createWorker("eng");
     }
   }
 
@@ -44,21 +44,21 @@ export class AdvancedPDFProcessor {
 
   async processPDF(buffer: Buffer): Promise<AdvancedPDFResult> {
     try {
-      console.log('Starting advanced PDF processing...');
-      
+      console.log("Starting advanced PDF processing...");
+
       // Load PDF document
       const loadingTask = pdfjsLib.getDocument({ data: buffer });
       const pdf = await loadingTask.promise;
-      
+
       console.log(`PDF loaded: ${pdf.numPages} pages`);
-      
+
       const result: AdvancedPDFResult = {
-        text: '',
-        formattedText: '',
+        text: "",
+        formattedText: "",
         pages: [],
         metadata: {
           totalPages: pdf.numPages,
-        }
+        },
       };
 
       // Get metadata
@@ -82,39 +82,44 @@ export class AdvancedPDFProcessor {
       // Process each page
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         console.log(`Processing page ${pageNum}/${pdf.numPages}...`);
-        
+
         const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
-        
+
         // Render page to canvas
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        
+
         const renderContext = {
           canvasContext: context,
-          viewport: viewport
+          viewport: viewport,
         };
-        
+
         await page.render(renderContext).promise;
-        
+
         // Convert canvas to image buffer
-        const imageBuffer = Buffer.from(canvas.toDataURL('image/png').split(',')[1], 'base64');
-        
+        const imageBuffer = Buffer.from(
+          canvas.toDataURL("image/png").split(",")[1],
+          "base64"
+        );
+
         // Extract text using PDF.js text layer
         const textContent = await page.getTextContent();
         const pageText = textContent.items
           .map((item: any) => item.str)
-          .join(' ')
-          .replace(/\s+/g, ' ')
+          .join(" ")
+          .replace(/\s+/g, " ")
           .trim();
 
         // Perform OCR on the image for additional text extraction
-        let ocrText = '';
+        let ocrText = "";
         try {
-          const { data: { text } } = await this.worker.recognize(imageBuffer);
-          ocrText = text.replace(/\s+/g, ' ').trim();
+          const {
+            data: { text },
+          } = await this.worker.recognize(imageBuffer);
+          ocrText = text.replace(/\s+/g, " ").trim();
         } catch (ocrError) {
           console.warn(`OCR failed for page ${pageNum}:`, ocrError);
         }
@@ -124,7 +129,7 @@ export class AdvancedPDFProcessor {
         const formattedText = this.formatText(combinedText);
 
         // Convert image to base64 for display
-        const imageData = canvas.toDataURL('image/png');
+        const imageData = canvas.toDataURL("image/png");
 
         result.pages.push({
           pageNumber: pageNum,
@@ -133,15 +138,14 @@ export class AdvancedPDFProcessor {
           imageData: imageData,
         });
 
-        result.text += combinedText + '\n\n';
-        result.formattedText += formattedText + '\n\n';
+        result.text += combinedText + "\n\n";
+        result.formattedText += formattedText + "\n\n";
       }
 
-      console.log('Advanced PDF processing completed');
+      console.log("Advanced PDF processing completed");
       return result;
-
     } catch (error) {
-      console.error('Advanced PDF processing failed:', error);
+      console.error("Advanced PDF processing failed:", error);
       throw error;
     } finally {
       await this.terminateOCR();
@@ -153,40 +157,40 @@ export class AdvancedPDFProcessor {
     if (pdfText.length > ocrText.length * 0.8) {
       return pdfText;
     }
-    
+
     // If OCR found more text, use it as primary
     if (ocrText.length > pdfText.length * 0.8) {
       return ocrText;
     }
-    
+
     // If both are similar, combine them intelligently
     const pdfWords = pdfText.split(/\s+/);
     const ocrWords = ocrText.split(/\s+/);
-    
+
     // Use the longer text as base and fill in gaps with the other
     const baseText = pdfWords.length > ocrWords.length ? pdfText : ocrText;
     const fillText = pdfWords.length > ocrWords.length ? ocrText : pdfText;
-    
-    return baseText + ' ' + fillText;
+
+    return baseText + " " + fillText;
   }
 
   private formatText(text: string): string {
     // Preserve paragraph structure
     let formatted = text
       // Fix common OCR issues
-      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
-      .replace(/([.!?])([A-Z])/g, '$1\n\n$2') // New paragraph after sentences
-      .replace(/([a-z])([0-9])/g, '$1 $2') // Space between letters and numbers
-      .replace(/([0-9])([A-Z])/g, '$1 $2') // Space between numbers and letters
+      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space between camelCase
+      .replace(/([.!?])([A-Z])/g, "$1\n\n$2") // New paragraph after sentences
+      .replace(/([a-z])([0-9])/g, "$1 $2") // Space between letters and numbers
+      .replace(/([0-9])([A-Z])/g, "$1 $2") // Space between numbers and letters
       // Clean up multiple spaces and newlines
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s*\n/g, '\n\n')
+      .replace(/\s+/g, " ")
+      .replace(/\n\s*\n/g, "\n\n")
       .trim();
 
     // Add proper paragraph breaks
     const sentences = formatted.split(/(?<=[.!?])\s+/);
     const paragraphs: string[] = [];
-    let currentParagraph = '';
+    let currentParagraph = "";
 
     for (const sentence of sentences) {
       if (currentParagraph.length + sentence.length > 200) {
@@ -195,7 +199,7 @@ export class AdvancedPDFProcessor {
         }
         currentParagraph = sentence;
       } else {
-        currentParagraph += (currentParagraph ? ' ' : '') + sentence;
+        currentParagraph += (currentParagraph ? " " : "") + sentence;
       }
     }
 
@@ -203,7 +207,7 @@ export class AdvancedPDFProcessor {
       paragraphs.push(currentParagraph.trim());
     }
 
-    return paragraphs.join('\n\n');
+    return paragraphs.join("\n\n");
   }
 }
 

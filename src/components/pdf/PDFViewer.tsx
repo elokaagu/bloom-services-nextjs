@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+} from "lucide-react";
 
 interface PDFViewerProps {
   pages: Array<{
@@ -18,49 +24,49 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
   const [rotation, setRotation] = useState(0);
 
   const handlePreviousPage = () => {
-    setCurrentPage(prev => Math.max(0, prev - 1));
+    setCurrentPage((prev) => Math.max(0, prev - 1));
   };
 
   const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(pages.length - 1, prev + 1));
+    setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1));
   };
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(3, prev + 0.25));
+    setZoom((prev) => Math.min(3, prev + 0.25));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(0.5, prev - 0.25));
+    setZoom((prev) => Math.max(0.5, prev - 0.25));
   };
 
   const handleRotate = () => {
-    setRotation(prev => (prev + 90) % 360);
+    setRotation((prev) => (prev + 90) % 360);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
     switch (e.key) {
-      case 'ArrowLeft':
+      case "ArrowLeft":
         handlePreviousPage();
         break;
-      case 'ArrowRight':
+      case "ArrowRight":
         handleNextPage();
         break;
-      case '+':
-      case '=':
+      case "+":
+      case "=":
         handleZoomIn();
         break;
-      case '-':
+      case "-":
         handleZoomOut();
         break;
-      case 'r':
+      case "r":
         handleRotate();
         break;
     }
   };
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   if (!pages || pages.length === 0) {
@@ -81,7 +87,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
             Page {currentPage + 1} of {pages.length}
           </span>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {/* Navigation Controls */}
           <div className="flex items-center space-x-1">
@@ -130,7 +136,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
             className="bg-white shadow-lg rounded-lg overflow-hidden"
             style={{
               transform: `scale(${zoom}) rotate(${rotation}deg)`,
-              transformOrigin: 'center top',
+              transformOrigin: "center top",
             }}
           >
             <img
@@ -138,8 +144,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
               alt={`Page ${currentPage + 1}`}
               className="max-w-full h-auto"
               style={{
-                maxHeight: '80vh',
-                width: 'auto',
+                maxHeight: "80vh",
+                width: "auto",
               }}
             />
           </div>
@@ -155,8 +161,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
               onClick={() => setCurrentPage(index)}
               className={`flex-shrink-0 w-16 h-20 border-2 rounded overflow-hidden ${
                 index === currentPage
-                  ? 'border-blue-500 ring-2 ring-blue-200'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? "border-blue-500 ring-2 ring-blue-200"
+                  : "border-gray-300 hover:border-gray-400"
               }`}
             >
               <img
@@ -171,9 +177,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
 
       {/* Keyboard Shortcuts Help */}
       <div className="px-4 py-2 bg-gray-100 text-xs text-gray-600">
-        <span className="font-medium">Keyboard shortcuts:</span>{' '}
-        <span>← → (navigate)</span>{' '}
-        <span>+ - (zoom)</span>{' '}
+        <span className="font-medium">Keyboard shortcuts:</span>{" "}
+        <span>← → (navigate)</span> <span>+ - (zoom)</span>{" "}
         <span>R (rotate)</span>
       </div>
     </div>

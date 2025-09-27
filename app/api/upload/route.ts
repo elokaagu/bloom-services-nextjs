@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
     const documentData = {
       title: title,
       workspace_id: workspaceId,
-      owner_id: ownerId,
+      owner_id: ownerId || "550e8400-e29b-41d4-a716-446655440002", // Default to John Doe if not provided
       storage_path: filePath, // This will be just the filename now
       status: "uploading", // Start with uploading status
       acl: "workspace",

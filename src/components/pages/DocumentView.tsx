@@ -106,7 +106,7 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
       }
 
       const data = await response.json();
-      
+
       console.log("API Response data:", data);
 
       if (data.success) {
@@ -115,10 +115,10 @@ export const DocumentView = ({ document, onBack }: DocumentViewProps) => {
           contentSource: data.contentSource,
           hasChunks: data.hasChunks,
         });
-        
+
         setDocumentContent(data.content || "");
         setContentSource(data.contentSource || "api");
-        
+
         console.log("Document content loaded successfully:", {
           contentLength: data.contentLength,
           contentSource: data.contentSource,
@@ -299,13 +299,17 @@ This document is ready but there's an issue accessing its content. This might be
     }
 
     // Check if this is a PDF with page data for visual display
-    if (document.title.endsWith('.pdf') && document.pageData && document.pageData.length > 0) {
+    if (
+      document.title.endsWith(".pdf") &&
+      document.pageData &&
+      document.pageData.length > 0
+    ) {
       return (
         <div className="h-full">
-          <PDFViewer 
-            pages={document.pageData.map(page => ({
+          <PDFViewer
+            pages={document.pageData.map((page) => ({
               pageNumber: page.pageNumber,
-              imageData: page.imageData
+              imageData: page.imageData,
             }))}
             title={document.title}
           />
@@ -658,6 +662,78 @@ This document is ready but there's an issue accessing its content. This might be
                         <p className="text-sm text-foreground">
                           {document.summary}
                         </p>
+                      </div>
+                    )}
+
+                    {/* PDF Metadata Section */}
+                    {document.metadata && (
+                      <div className="mt-6">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium">PDF Metadata</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {document.metadata.author && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                PDF Author
+                              </label>
+                              <p className="text-sm text-foreground">
+                                {document.metadata.author}
+                              </p>
+                            </div>
+                          )}
+                          {document.metadata.title && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                PDF Title
+                              </label>
+                              <p className="text-sm text-foreground">
+                                {document.metadata.title}
+                              </p>
+                            </div>
+                          )}
+                          {document.metadata.subject && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                Subject
+                              </label>
+                              <p className="text-sm text-foreground">
+                                {document.metadata.subject}
+                              </p>
+                            </div>
+                          )}
+                          {document.metadata.creator && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                Creator
+                              </label>
+                              <p className="text-sm text-foreground">
+                                {document.metadata.creator}
+                              </p>
+                            </div>
+                          )}
+                          {document.metadata.totalPages && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                Total Pages
+                              </label>
+                              <p className="text-sm text-foreground">
+                                {document.metadata.totalPages}
+                              </p>
+                            </div>
+                          )}
+                          {document.metadata.creationDate && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                Creation Date
+                              </label>
+                              <p className="text-sm text-foreground">
+                                {new Date(document.metadata.creationDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                   )}
                   </div>

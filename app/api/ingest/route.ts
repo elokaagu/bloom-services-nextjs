@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
         try {
           console.log("Starting advanced PDF processing...");
           const result = await advancedPDFProcessor.processPDF(buf);
-          
+
           console.log("Advanced PDF processing completed");
           console.log("Total pages:", result.metadata.totalPages);
           console.log("Extracted text length:", result.text.length);
@@ -135,25 +135,72 @@ export async function POST(req: NextRequest) {
 
           // Use formatted text for better chunking
           text = result.formattedText;
-          
+
           // Store page images and metadata for visual display
-          const pageData = result.pages.map(page => ({
+          const pageData = result.pages.map((page) => ({
             pageNumber: page.pageNumber,
             imageData: page.imageData,
             text: page.text,
             formattedText: page.formattedText,
           }));
 
-          // Store page data in document record for visual display
+          // Extract author from PDF metadata and update document owner
+          const pdfAuthor = result.metadata.author || result.metadata.creator;
+          let ownerUpdate = {
+            page_data: pageData,
+            metadata: result.metadata,
+          };
+
+          // If PDF has author information, update the document owner
+          if (pdfAuthor) {
+            console.log("PDF author found:", pdfAuthor);
+            
+            // Check if user exists, if not create them
+            const { data: existingUser } = await supabase
+              .from("users")
+              .select("id")
+              .eq("name", pdfAuthor)
+              .single();
+
+            if (existingUser) {
+              // Update document owner to the PDF author
+              ownerUpdate = {
+                ...ownerUpdate,
+                owner_id: existingUser.id,
+              };
+              console.log("Updated document owner to PDF author:", pdfAuthor);
+            } else {
+              // Create new user for PDF author
+              const { data: newUser, error: userError } = await supabase
+                .from("users")
+                .insert([{
+                  id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  name: pdfAuthor,
+                  email: `${pdfAuthor.toLowerCase().replace(/\s+/g, '.')}@pdf-author.local`,
+                }])
+                .select()
+                .single();
+
+              if (!userError && newUser) {
+                ownerUpdate = {
+                  ...ownerUpdate,
+                  owner_id: newUser.id,
+                };
+                console.log("Created new user for PDF author:", pdfAuthor);
+              }
+            }
+          }
+
+          // Store page data and metadata in document record
           await supabase
             .from("documents")
-            .update({ 
-              page_data: pageData,
-              metadata: result.metadata 
-            })
+            .update(ownerUpdate)
             .eq("id", documentId);
 
-          console.log("PDF parsed successfully with advanced processor, text length:", text.length);
+          console.log(
+            "PDF parsed successfully with advanced processor, text length:",
+            text.length
+          );
 
           if (text.length === 0) {
             console.warn(
@@ -162,16 +209,22 @@ export async function POST(req: NextRequest) {
           }
         } catch (pdfError) {
           console.error("Advanced PDF processing error:", pdfError);
-          
+
           // Fallback to basic PDF parsing
           console.log("Falling back to basic PDF parsing...");
           try {
             const pdf = (await import("pdf-parse")).default;
             const parsed = await pdf(buf);
             text = parsed.text;
-            console.log("Basic PDF parsing fallback successful, text length:", text.length);
+            console.log(
+              "Basic PDF parsing fallback successful, text length:",
+              text.length
+            );
           } catch (fallbackError) {
-            console.error("Basic PDF parsing fallback also failed:", fallbackError);
+            console.error(
+              "Basic PDF parsing fallback also failed:",
+              fallbackError
+            );
             throw new Error(`PDF parsing failed: ${pdfError.message}`);
           }
         }
