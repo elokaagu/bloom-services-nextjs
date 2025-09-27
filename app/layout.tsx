@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   keywords:
     "AI, document management, RAG, retrieval augmented generation, secure, multi-tenant, knowledge base",
   authors: [{ name: "Bloom" }],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/favicon.png",
+  },
   openGraph: {
     title: "Bloom AI - Secure Document Intelligence Platform",
     description:
