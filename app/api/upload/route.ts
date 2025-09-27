@@ -28,6 +28,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    // Check file size (limit to 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      console.error("File too large:", file.size, "bytes");
+      return NextResponse.json(
+        { 
+          error: "File too large. Maximum size is 10MB.",
+          fileSize: file.size,
+          maxSize: maxSize,
+        }, 
+        { status: 413 }
+      );
+    }
+
     // Validate environment variables
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("Missing Supabase environment variables");
@@ -67,14 +81,29 @@ export async function POST(req: NextRequest) {
     console.log("File type:", file.type);
 
     console.log("About to call supabase.storage.upload...");
-    const uploadResult = await supabase.storage
-      .from(process.env.STORAGE_BUCKET || "documents")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    
+    let uploadResult;
+    try {
+      uploadResult = await supabase.storage
+        .from(process.env.STORAGE_BUCKET || "documents")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      console.log("Upload result:", uploadResult);
+    } catch (uploadException: any) {
+      console.error("Upload exception:", uploadException);
+      return NextResponse.json(
+        { 
+          error: "Upload failed with exception",
+          details: uploadException.message,
+          fileSize: file.size,
+          fileName: file.name,
+        },
+        { status: 500 }
+      );
+    }
 
-    console.log("Upload result:", uploadResult);
     const { data: uploadData, error: uploadError } = uploadResult;
 
     if (uploadError) {
