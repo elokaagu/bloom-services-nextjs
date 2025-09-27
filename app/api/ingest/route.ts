@@ -3,6 +3,7 @@ import { supabaseService } from "@/lib/supabase";
 import OpenAI from "openai";
 import mammoth from "mammoth";
 import { simpleChunk } from "@/lib/utils";
+import { advancedPDFProcessor } from "@/lib/advanced-pdf-processor";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const VECTOR_DIM = Number(process.env.VECTOR_DIM || 1536);
@@ -120,30 +121,59 @@ export async function POST(req: NextRequest) {
 
       // Parse by file type
       if (doc.title.endsWith(".pdf")) {
-        console.log("Parsing PDF file:", doc.title);
+        console.log("Parsing PDF file with advanced processor:", doc.title);
         console.log("PDF buffer size:", buf.length);
 
         try {
-          const pdf = (await import("pdf-parse")).default;
-          console.log("PDF-parse library loaded successfully");
+          console.log("Starting advanced PDF processing...");
+          const result = await advancedPDFProcessor.processPDF(buf);
+          
+          console.log("Advanced PDF processing completed");
+          console.log("Total pages:", result.metadata.totalPages);
+          console.log("Extracted text length:", result.text.length);
+          console.log("Formatted text length:", result.formattedText.length);
 
-          const parsed = await pdf(buf);
-          console.log("PDF parsing completed");
-          console.log("PDF pages:", parsed.numpages);
-          console.log("PDF info:", parsed.info);
-          console.log("Raw text length:", parsed.text.length);
+          // Use formatted text for better chunking
+          text = result.formattedText;
+          
+          // Store page images and metadata for visual display
+          const pageData = result.pages.map(page => ({
+            pageNumber: page.pageNumber,
+            imageData: page.imageData,
+            text: page.text,
+            formattedText: page.formattedText,
+          }));
 
-          text = parsed.text;
-          console.log("PDF parsed successfully, text length:", text.length);
+          // Store page data in document record for visual display
+          await supabase
+            .from("documents")
+            .update({ 
+              page_data: pageData,
+              metadata: result.metadata 
+            })
+            .eq("id", documentId);
+
+          console.log("PDF parsed successfully with advanced processor, text length:", text.length);
 
           if (text.length === 0) {
             console.warn(
-              "PDF parsing returned empty text - this might be a scanned PDF or image-based PDF"
+              "Advanced PDF processing returned empty text - this might be a complex PDF"
             );
           }
         } catch (pdfError) {
-          console.error("PDF parsing error:", pdfError);
-          throw new Error(`PDF parsing failed: ${pdfError.message}`);
+          console.error("Advanced PDF processing error:", pdfError);
+          
+          // Fallback to basic PDF parsing
+          console.log("Falling back to basic PDF parsing...");
+          try {
+            const pdf = (await import("pdf-parse")).default;
+            const parsed = await pdf(buf);
+            text = parsed.text;
+            console.log("Basic PDF parsing fallback successful, text length:", text.length);
+          } catch (fallbackError) {
+            console.error("Basic PDF parsing fallback also failed:", fallbackError);
+            throw new Error(`PDF parsing failed: ${pdfError.message}`);
+          }
         }
       } else if (doc.title.endsWith(".docx")) {
         console.log("Parsing DOCX file");

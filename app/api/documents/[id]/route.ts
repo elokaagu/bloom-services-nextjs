@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     console.log("=== DELETE DOCUMENT API START ===");
-    
+
     const documentId = params.id;
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -48,7 +51,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       );
     }
 
-    console.log("Document found:", document.title, "Storage path:", document.storage_path);
+    console.log(
+      "Document found:",
+      document.title,
+      "Storage path:",
+      document.storage_path
+    );
 
     // Delete from Supabase storage first
     if (document.storage_path) {
@@ -92,7 +100,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         storagePath: document.storage_path,
       },
     });
-
   } catch (error) {
     console.error("=== DELETE DOCUMENT API ERROR ===", error);
     return NextResponse.json(
@@ -104,14 +111,17 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     console.log("=== UPDATE DOCUMENT API START ===");
-    
+
     const documentId = params.id;
     const body = await req.json();
     const { updates } = body;
-    
+
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
@@ -161,7 +171,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       success: true,
       document: document,
     });
-
   } catch (error) {
     console.error("=== UPDATE DOCUMENT API ERROR ===", error);
     return NextResponse.json(

@@ -58,6 +58,22 @@ export interface Document {
   tags?: string[];
   summary?: string;
   summaryUpdatedAt?: string;
+  pageData?: Array<{
+    pageNumber: number;
+    imageData: string;
+    text: string;
+    formattedText: string;
+  }>;
+  metadata?: {
+    totalPages: number;
+    title?: string;
+    author?: string;
+    subject?: string;
+    creator?: string;
+    producer?: string;
+    creationDate?: string;
+    modificationDate?: string;
+  };
 }
 
 interface DocumentCardProps {

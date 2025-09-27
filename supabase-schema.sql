@@ -45,7 +45,9 @@ create table if not exists documents (
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   status text default 'ready',        -- ready | processing | uploading | failed
-  error text
+  error text,
+  page_data jsonb,                    -- PDF page images and text data
+  metadata jsonb                      -- PDF metadata (title, author, etc.)
 );
 
 -- Document chunks (vector + metadata)
