@@ -9,6 +9,7 @@ import {
   ZoomOut,
   RotateCw,
 } from "lucide-react";
+import Image from "next/image";
 
 interface PDFViewerProps {
   pages: Array<{
@@ -67,7 +68,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [handleKeyDown]);
 
   if (!pages || pages.length === 0) {
     return (
@@ -139,9 +140,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
               transformOrigin: "center top",
             }}
           >
-            <img
+            <Image
               src={pages[currentPage]?.imageData}
               alt={`Page ${currentPage + 1}`}
+              width={800}
+              height={1000}
               className="max-w-full h-auto"
               style={{
                 maxHeight: "80vh",
@@ -165,9 +168,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
                   : "border-gray-300 hover:border-gray-400"
               }`}
             >
-              <img
+              <Image
                 src={page.imageData}
                 alt={`Thumbnail ${index + 1}`}
+                width={64}
+                height={80}
                 className="w-full h-full object-cover"
               />
             </button>

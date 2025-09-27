@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
           // If PDF has author information, update the document owner
           if (pdfAuthor) {
             console.log("PDF author found:", pdfAuthor);
-            
+
             // Check if user exists, if not create them
             const { data: existingUser } = await supabase
               .from("users")
@@ -173,11 +173,17 @@ export async function POST(req: NextRequest) {
               // Create new user for PDF author
               const { data: newUser, error: userError } = await supabase
                 .from("users")
-                .insert([{
-                  id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                  name: pdfAuthor,
-                  email: `${pdfAuthor.toLowerCase().replace(/\s+/g, '.')}@pdf-author.local`,
-                }])
+                .insert([
+                  {
+                    id: `user-${Date.now()}-${Math.random()
+                      .toString(36)
+                      .substr(2, 9)}`,
+                    name: pdfAuthor,
+                    email: `${pdfAuthor
+                      .toLowerCase()
+                      .replace(/\s+/g, ".")}@pdf-author.local`,
+                  },
+                ])
                 .select()
                 .single();
 

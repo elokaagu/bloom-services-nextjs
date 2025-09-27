@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
 
     // Check if document already has metadata
     if (document.metadata && document.metadata.author) {
-      console.log("Document already has author metadata:", document.metadata.author);
+      console.log(
+        "Document already has author metadata:",
+        document.metadata.author
+      );
       return NextResponse.json({
         success: true,
         message: "Document already has author metadata",
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     // Extract author from PDF metadata
     const pdfAuthor = result.metadata.author || result.metadata.creator;
-    
+
     if (!pdfAuthor) {
       console.log("No author found in PDF metadata");
       return NextResponse.json({
@@ -92,11 +95,15 @@ export async function POST(req: NextRequest) {
       // Create new user for PDF author
       const { data: newUser, error: userError } = await supabase
         .from("users")
-        .insert([{
-          id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: pdfAuthor,
-          email: `${pdfAuthor.toLowerCase().replace(/\s+/g, '.')}@pdf-author.local`,
-        }])
+        .insert([
+          {
+            id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: pdfAuthor,
+            email: `${pdfAuthor
+              .toLowerCase()
+              .replace(/\s+/g, ".")}@pdf-author.local`,
+          },
+        ])
         .select()
         .single();
 
@@ -144,7 +151,6 @@ export async function POST(req: NextRequest) {
       },
       metadata: result.metadata,
     });
-
   } catch (error) {
     console.error("=== UPDATE DOCUMENT OWNER ERROR ===", error);
     return NextResponse.json(

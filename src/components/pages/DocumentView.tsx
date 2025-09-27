@@ -19,11 +19,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  ArrowLeft, 
-  Download, 
-  Share, 
-  FileText, 
+import {
+  ArrowLeft,
+  Download,
+  Share,
+  FileText,
   Eye,
   Users,
   Lock,
@@ -50,26 +50,26 @@ interface DocumentViewProps {
 
 const getACLInfo = (acl: Document["acl"]) => {
   const variants = {
-    private: { 
+    private: {
       label: "Private",
       icon: Lock,
       description: "Only you can access this document",
       className: "text-gray-600",
     },
-    workspace: { 
+    workspace: {
       label: "Workspace",
       icon: Users,
       description: "Accessible to all workspace members",
       className: "text-blue-600",
     },
-    organization: { 
+    organization: {
       label: "Organization",
       icon: Globe,
       description: "Accessible to all organization members",
       className: "text-green-600",
     },
   };
-  
+
   return variants[acl];
 };
 
@@ -392,9 +392,9 @@ This document is ready but there's an issue accessing its content. This might be
       <div className="border-b bg-card/50 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 gap-4">
           <div className="flex items-start space-x-4 min-w-0 flex-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onBack}
               className="text-muted-foreground hover:text-foreground flex-shrink-0"
             >
@@ -402,9 +402,9 @@ This document is ready but there's an issue accessing its content. This might be
               <span className="hidden sm:inline">Back to Library</span>
               <span className="sm:hidden">Back</span>
             </Button>
-            
+
             <Separator orientation="vertical" className="h-6 hidden sm:block" />
-            
+
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
               <div className="min-w-0 flex-1">
@@ -430,7 +430,7 @@ This document is ready but there's an issue accessing its content. This might be
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center flex-wrap gap-2">
             <Select
               value={document.acl}
@@ -475,9 +475,9 @@ This document is ready but there's an issue accessing its content. This might be
                   size="sm"
                   className="h-8 px-2 sm:px-3"
                 >
-              <Share className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
+                  <Share className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
@@ -523,7 +523,7 @@ This document is ready but there's an issue accessing its content. This might be
               {isDownloading ? (
                 <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 animate-spin" />
               ) : (
-              <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
               )}
               <span className="hidden sm:inline">
                 {isDownloading ? "Downloading..." : "Download"}
@@ -553,7 +553,7 @@ This document is ready but there's an issue accessing its content. This might be
                 Details
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="content" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[70vh] w-full rounded-md">
@@ -561,7 +561,7 @@ This document is ready but there's an issue accessing its content. This might be
                 </ScrollArea>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="analytics" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <div className="p-4 sm:p-8">
@@ -577,63 +577,63 @@ This document is ready but there's an issue accessing its content. This might be
                 </div>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="metadata" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <div className="p-4 sm:p-8">
-                <div className="space-y-4">
+                  <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <FileIcon className="h-5 w-5 text-muted-foreground" />
                       <span className="font-medium">Document Details</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Title
                         </label>
                         <p className="text-sm text-foreground">
                           {document.title}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Status
                         </label>
                         <p className="text-sm text-foreground capitalize">
                           {document.status}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Size
                         </label>
                         <p className="text-sm text-foreground">
                           {document.size}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Uploaded
                         </label>
                         <p className="text-sm text-foreground">
                           {document.uploadedAt}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Owner
                         </label>
                         <p className="text-sm text-foreground">
                           {document.owner}
                         </p>
-                  </div>
-                  
-                  <div>
+                      </div>
+
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Access Level
                         </label>
@@ -651,9 +651,9 @@ This document is ready but there's an issue accessing its content. This might be
                         <p className="text-sm text-foreground capitalize">
                           {contentSource}
                         </p>
-                  </div>
+                      </div>
                     )}
-                  
+
                     {document.summary && (
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">
@@ -729,13 +729,15 @@ This document is ready but there's an issue accessing its content. This might be
                                 Creation Date
                               </label>
                               <p className="text-sm text-foreground">
-                                {new Date(document.metadata.creationDate).toLocaleDateString()}
+                                {new Date(
+                                  document.metadata.creationDate
+                                ).toLocaleDateString()}
                               </p>
                             </div>
                           )}
                         </div>
                       </div>
-                  )}
+                    )}
                   </div>
                 </div>
               </Card>

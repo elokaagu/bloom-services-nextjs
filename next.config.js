@@ -6,9 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
-  },
+  serverExternalPackages: ["pdf-parse", "mammoth", "pdfjs-dist", "tesseract.js", "sharp"],
   // Increase body size limit for file uploads
   api: {
     bodyParser: {

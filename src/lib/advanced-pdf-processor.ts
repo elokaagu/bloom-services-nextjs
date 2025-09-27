@@ -1,8 +1,9 @@
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
 import sharp from "sharp";
+import { createCanvas } from "canvas";
 
-// Configure PDF.js worker
+// Configure PDF.js worker for server environment
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export interface AdvancedPDFResult {
@@ -87,7 +88,7 @@ export class AdvancedPDFProcessor {
         const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
 
         // Render page to canvas
-        const canvas = document.createElement("canvas");
+        const canvas = createCanvas(viewport.width, viewport.height);
         const context = canvas.getContext("2d");
         canvas.height = viewport.height;
         canvas.width = viewport.width;
