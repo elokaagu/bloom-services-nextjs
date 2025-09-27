@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("=== DEBUG PDF AUTHOR EXTRACTION (GET) ===");
+    console.log("=== DEBUG PDF AUTHOR EXTRACTION (GET) - FULL VERSION ===");
     const { searchParams } = new URL(req.url);
     const documentId = searchParams.get("documentId");
 
