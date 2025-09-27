@@ -12,7 +12,9 @@ export async function GET(req: NextRequest) {
       environment: {
         bucketName,
         supabaseUrl: process.env.SUPABASE_URL ? "Set" : "Missing",
-        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "Set" : "Missing",
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY
+          ? "Set"
+          : "Missing",
       },
       bucketInfo: null,
       fileListing: null,
@@ -24,20 +26,26 @@ export async function GET(req: NextRequest) {
     // Test 1: Check if bucket exists
     try {
       console.log("Checking bucket existence...");
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
+      const { data: buckets, error: bucketsError } =
+        await supabase.storage.listBuckets();
+
       if (bucketsError) {
         results.errors.push(`Bucket listing error: ${bucketsError.message}`);
       } else {
         results.bucketInfo = {
-          availableBuckets: buckets?.map(b => ({
-            name: b.name,
-            public: b.public,
-            createdAt: b.created_at,
-          })) || [],
-          targetBucketExists: buckets?.some(b => b.name === bucketName) || false,
+          availableBuckets:
+            buckets?.map((b) => ({
+              name: b.name,
+              public: b.public,
+              createdAt: b.created_at,
+            })) || [],
+          targetBucketExists:
+            buckets?.some((b) => b.name === bucketName) || false,
         };
-        console.log("Available buckets:", buckets?.map(b => b.name));
+        console.log(
+          "Available buckets:",
+          buckets?.map((b) => b.name)
+        );
       }
     } catch (error: any) {
       results.errors.push(`Bucket check error: ${error.message}`);
@@ -54,12 +62,13 @@ export async function GET(req: NextRequest) {
         results.errors.push(`File listing error: ${listError.message}`);
       } else {
         results.fileListing = {
-          files: files?.map(f => ({
-            name: f.name,
-            size: f.metadata?.size,
-            lastModified: f.updated_at,
-            isPublic: f.metadata?.isPublic,
-          })) || [],
+          files:
+            files?.map((f) => ({
+              name: f.name,
+              size: f.metadata?.size,
+              lastModified: f.updated_at,
+              isPublic: f.metadata?.isPublic,
+            })) || [],
           count: files?.length || 0,
         };
         console.log(`Found ${files?.length || 0} files in bucket`);
@@ -72,11 +81,16 @@ export async function GET(req: NextRequest) {
     if (results.bucketInfo && !results.bucketInfo.targetBucketExists) {
       try {
         console.log("Creating missing bucket...");
-        const { data: newBucket, error: createError } = await supabase.storage.createBucket(bucketName, {
-          public: true,
-          allowedMimeTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
-          fileSizeLimit: 50 * 1024 * 1024, // 50MB
-        });
+        const { data: newBucket, error: createError } =
+          await supabase.storage.createBucket(bucketName, {
+            public: true,
+            allowedMimeTypes: [
+              "application/pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "text/plain",
+            ],
+            fileSizeLimit: 50 * 1024 * 1024, // 50MB
+          });
 
         if (createError) {
           results.errors.push(`Bucket creation error: ${createError.message}`);
@@ -94,12 +108,12 @@ export async function GET(req: NextRequest) {
       console.log("Testing file upload...");
       const testContent = `Test file created at ${new Date().toISOString()}`;
       const testFileName = `test-${Date.now()}.txt`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(testFileName, testContent, {
-          contentType: 'text/plain',
-          cacheControl: '3600',
+          contentType: "text/plain",
+          cacheControl: "3600",
         });
 
       if (uploadError) {
@@ -115,12 +129,13 @@ export async function GET(req: NextRequest) {
         // Test 5: Test file download
         try {
           console.log("Testing file download...");
-          const { data: downloadData, error: downloadError } = await supabase.storage
-            .from(bucketName)
-            .download(testFileName);
+          const { data: downloadData, error: downloadError } =
+            await supabase.storage.from(bucketName).download(testFileName);
 
           if (downloadError) {
-            results.errors.push(`Test download error: ${downloadError.message}`);
+            results.errors.push(
+              `Test download error: ${downloadError.message}`
+            );
           } else {
             const content = await downloadData.text();
             results.testDownload = {
@@ -132,9 +147,7 @@ export async function GET(req: NextRequest) {
           }
 
           // Clean up test file
-          await supabase.storage
-            .from(bucketName)
-            .remove([testFileName]);
+          await supabase.storage.from(bucketName).remove([testFileName]);
           console.log("Test file cleaned up");
         } catch (downloadError: any) {
           results.errors.push(`Test download error: ${downloadError.message}`);
@@ -156,13 +169,14 @@ export async function GET(req: NextRequest) {
       if (docsError) {
         results.errors.push(`Documents query error: ${docsError.message}`);
       } else {
-        results.recentDocuments = documents?.map(doc => ({
-          id: doc.id,
-          title: doc.title,
-          storagePath: doc.storage_path,
-          status: doc.status,
-          createdAt: doc.created_at,
-        })) || [];
+        results.recentDocuments =
+          documents?.map((doc) => ({
+            id: doc.id,
+            title: doc.title,
+            storagePath: doc.storage_path,
+            status: doc.status,
+            createdAt: doc.created_at,
+          })) || [];
         console.log(`Found ${documents?.length || 0} recent documents`);
       }
     } catch (error: any) {
