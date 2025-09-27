@@ -497,10 +497,6 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
                 <span>{document.uploadedAt}</span>
               </div>
             </div>
-            <div className="flex items-center space-x-1">
-              <User className="h-3 w-3" />
-              <span className="truncate">{document.owner}</span>
-            </div>
           </div>
 
           {/* Actions */}

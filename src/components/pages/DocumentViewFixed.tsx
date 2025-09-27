@@ -216,47 +216,77 @@ This document is ready but there's an issue accessing its content. This might be
     // Safe content rendering without dangerouslySetInnerHTML
     return (
       <div className="prose prose-sm max-w-none">
-        {documentContent.split("\n").map((line, index) => {
-          if (line.startsWith("# ")) {
+        {(() => {
+          // Improved paragraph splitting - handle multiple formats
+          let paragraphs = documentContent
+            // First split on double newlines
+            .split(/\n\s*\n/)
+            // If no double newlines, split on single newlines but be smarter about it
+            .flatMap(p => {
+              if (p.includes('\n') && !p.includes('\n\n')) {
+                // Split on single newlines but group related content
+                return p.split('\n').reduce((acc, line) => {
+                  const trimmedLine = line.trim();
+                  if (!trimmedLine) return acc;
+                  
+                  // If current line is short and previous line is long, combine them
+                  if (acc.length > 0 && trimmedLine.length < 50 && acc[acc.length - 1].length > 50) {
+                    acc[acc.length - 1] += ' ' + trimmedLine;
+                  } else {
+                    acc.push(trimmedLine);
+                  }
+                  return acc;
+                }, [] as string[]);
+              }
+              return [p.trim()];
+            })
+            .filter(p => p.trim().length > 0);
+
+          return paragraphs.map((paragraph, index) => {
+            const trimmedParagraph = paragraph.trim();
+            if (!trimmedParagraph) return null;
+
+            // Handle headings
+            if (trimmedParagraph.startsWith("# ")) {
             return (
               <h1
                 key={index}
                 className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
               >
-                {line.slice(2)}
+                {trimmedParagraph.slice(2)}
               </h1>
             );
-          } else if (line.startsWith("## ")) {
+          } else if (trimmedParagraph.startsWith("## ")) {
             return (
               <h2
                 key={index}
                 className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
               >
                 <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
-                {line.slice(3)}
+                {trimmedParagraph.slice(3)}
               </h2>
             );
-          } else if (line.startsWith("### ")) {
+          } else if (trimmedParagraph.startsWith("### ")) {
             return (
               <h3
                 key={index}
                 className="text-xl font-medium mb-3 mt-6 text-foreground/90"
               >
-                {line.slice(4)}
+                {trimmedParagraph.slice(4)}
               </h3>
             );
-          } else if (line.startsWith("- ")) {
+          } else if (trimmedParagraph.startsWith("- ")) {
             return (
               <div key={index} className="flex items-start mb-2 ml-6">
                 <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
                 <p className="text-foreground/80 leading-relaxed">
-                  {line.slice(2)}
+                  {trimmedParagraph.slice(2)}
                 </p>
               </div>
             );
-          } else if (line.match(/^\d+\. /)) {
-            const number = line.match(/^(\d+)\. /)?.[1];
-            const text = line.replace(/^\d+\. /, "");
+          } else if (trimmedParagraph.match(/^\d+\. /)) {
+            const number = trimmedParagraph.match(/^(\d+)\. /)?.[1];
+            const text = trimmedParagraph.replace(/^\d+\. /, "");
             return (
               <div key={index} className="flex items-start mb-2 ml-6">
                 <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
@@ -265,7 +295,7 @@ This document is ready but there's an issue accessing its content. This might be
                 <p className="text-foreground/80 leading-relaxed">{text}</p>
               </div>
             );
-          } else if (line.trim() === "") {
+          } else if (trimmedParagraph.trim() === "") {
             return <div key={index} className="h-4"></div>;
           } else {
             return (
@@ -273,11 +303,12 @@ This document is ready but there's an issue accessing its content. This might be
                 key={index}
                 className="text-foreground/80 leading-relaxed mb-4"
               >
-                {line}
+                {trimmedParagraph}
               </p>
             );
           }
-        })}
+        });
+        })()}
       </div>
     );
   };
@@ -317,11 +348,6 @@ This document is ready but there's an issue accessing its content. This might be
                   <span className="text-xs text-muted-foreground">
                     Uploaded {document.uploadedAt}
                   </span>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    <span className="truncate">{document.owner}</span>
-                  </div>
                 </div>
               </div>
             </div>
