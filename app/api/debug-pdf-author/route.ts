@@ -2,9 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase";
 import { advancedPDFProcessor } from "@/lib/advanced-pdf-processor";
 
+export async function GET(req: NextRequest) {
+  try {
+    console.log("=== DEBUG PDF AUTHOR EXTRACTION (GET) ===");
+    
+    const { searchParams } = new URL(req.url);
+    const documentId = searchParams.get("documentId");
+    
+    if (!documentId) {
+      return NextResponse.json(
+        { error: "Document ID is required as query parameter" },
+        { status: 400 }
+      );
+    }
+    
+    return await debugPDFAuthor(documentId);
+  } catch (error) {
+    console.error("=== DEBUG PDF AUTHOR EXTRACTION ERROR (GET) ===", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== DEBUG PDF AUTHOR EXTRACTION ===");
+    console.log("=== DEBUG PDF AUTHOR EXTRACTION (POST) ===");
 
     const { documentId } = await req.json();
 
@@ -14,6 +40,23 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    
+    return await debugPDFAuthor(documentId);
+  } catch (error) {
+    console.error("=== DEBUG PDF AUTHOR EXTRACTION ERROR (POST) ===", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+async function debugPDFAuthor(documentId: string) {
+  try {
+    console.log("=== DEBUG PDF AUTHOR EXTRACTION ===");
+    console.log("Document ID:", documentId);
 
     const supabase = supabaseService();
 
