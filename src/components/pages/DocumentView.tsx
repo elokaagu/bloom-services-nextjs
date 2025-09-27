@@ -209,7 +209,7 @@ This document is ready but there's an issue accessing its content. This might be
       console.log("Downloading document:", document.title);
 
       // Check if we're in a browser environment
-      if (typeof window === "undefined") {
+      if (typeof window === "undefined" || typeof document === "undefined") {
         console.error(
           "Download can only be initiated from browser environment"
         );
@@ -233,9 +233,25 @@ This document is ready but there's an issue accessing its content. This might be
       // Get the file blob
       const blob = await response.blob();
 
-      // Create download link
+      // Create download link using a more robust approach
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      
+      // Use a more defensive approach to create the link
+      let link: HTMLAnchorElement;
+      try {
+        link = document.createElement("a");
+      } catch (error) {
+        console.error("Failed to create anchor element:", error);
+        // Fallback: try to open the URL directly
+        window.open(url, '_blank');
+        window.URL.revokeObjectURL(url);
+        toast({
+          title: "Download started",
+          description: `${document.title} is being downloaded`,
+        });
+        return;
+      }
+
       link.href = url;
       link.download = document.title;
       link.style.display = "none";
