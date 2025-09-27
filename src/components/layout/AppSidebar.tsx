@@ -75,7 +75,7 @@ export function AppSidebar({
           <div className="space-y-3">
             {/* Bloom Logo */}
             <div className="flex items-center space-x-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg overflow-hidden">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl shadow-lg overflow-hidden">
                 <Image
                   src="/bloom_logo_icon.png"
                   alt="Bloom Logo"
