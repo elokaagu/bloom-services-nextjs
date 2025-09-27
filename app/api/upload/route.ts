@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Generate unique file path with safe naming
     const fileExt = file.name.split(".").pop();
-    const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_'); // Replace special chars with underscores
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_"); // Replace special chars with underscores
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
       .substring(2)}-${safeFileName}`;
@@ -66,12 +66,16 @@ export async function POST(req: NextRequest) {
     console.log("File size:", file.size);
     console.log("File type:", file.type);
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    console.log("About to call supabase.storage.upload...");
+    const uploadResult = await supabase.storage
       .from(process.env.STORAGE_BUCKET || "documents")
       .upload(filePath, file, {
         cacheControl: "3600",
         upsert: false,
       });
+
+    console.log("Upload result:", uploadResult);
+    const { data: uploadData, error: uploadError } = uploadResult;
 
     if (uploadError) {
       console.error("Storage upload error:", uploadError);
@@ -79,6 +83,7 @@ export async function POST(req: NextRequest) {
         message: uploadError.message,
         statusCode: uploadError.statusCode,
         error: uploadError.error,
+        url: uploadError.url,
       });
 
       // Check if bucket exists
@@ -102,6 +107,26 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("File uploaded successfully:", uploadData.path);
+
+    // Verify the file actually exists in storage
+    console.log("Verifying file exists in storage...");
+    const { data: verifyData, error: verifyError } = await supabase.storage
+      .from(process.env.STORAGE_BUCKET || "documents")
+      .download(filePath);
+
+    if (verifyError) {
+      console.error("File verification failed:", verifyError);
+      return NextResponse.json(
+        { 
+          error: `File uploaded but verification failed: ${verifyError.message}`,
+          uploadPath: uploadData.path,
+          verifyError: verifyError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log("File verification successful, file size:", verifyData.size);
 
     // Create document record in database
     const documentData = {
