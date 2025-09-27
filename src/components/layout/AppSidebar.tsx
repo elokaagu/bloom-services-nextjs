@@ -31,6 +31,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import Image from "next/image";
 
 interface Workspace {
   id: string;
@@ -74,8 +75,14 @@ export function AppSidebar({
           <div className="space-y-3">
             {/* Bloom Logo */}
             <div className="flex items-center space-x-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                <div className="h-5 w-5 rounded-sm bg-primary-foreground transform rotate-45"></div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg overflow-hidden">
+                <Image
+                  src="/bloom_logo_icon.png"
+                  alt="Bloom Logo"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
               </div>
               <span className="text-xl font-bold text-foreground tracking-tight">bloom</span>
             </div>

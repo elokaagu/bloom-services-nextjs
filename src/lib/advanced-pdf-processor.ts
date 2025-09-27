@@ -116,7 +116,7 @@ class AdvancedPDFProcessor {
         currentParagraph += (currentParagraph ? " " : "") + trimmedSentence;
       }
     }
-    
+
     if (currentParagraph.trim()) {
       paragraphs.push(currentParagraph.trim());
     }

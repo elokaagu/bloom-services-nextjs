@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Zap, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -33,8 +34,14 @@ export default function HomePage() {
         {/* Header content */}
         <div className="relative z-10 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg overflow-hidden">
+              <Image
+                src="/bloom_logo_icon.png"
+                alt="Bloom Logo"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Bloom</h1>
@@ -60,6 +67,17 @@ export default function HomePage() {
           <div className="text-center">
             {/* Hero Content */}
             <div className="max-w-4xl mx-auto">
+              {/* Bloom Text Logo */}
+              <div className="mb-8 flex justify-center">
+                <Image
+                  src="/bloom_logo_text.jpg"
+                  alt="Bloom"
+                  width={200}
+                  height={60}
+                  className="object-contain"
+                />
+              </div>
+
               <Badge variant="outline" className="mb-6 px-4 py-2">
                 <Zap className="h-4 w-4 mr-2" />
                 Powered by Advanced AI
