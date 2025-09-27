@@ -44,28 +44,31 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ pages, title }) => {
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    switch (e.key) {
-      case "ArrowLeft":
-        handlePreviousPage();
-        break;
-      case "ArrowRight":
-        handleNextPage();
-        break;
-      case "+":
-      case "=":
-        handleZoomIn();
-        break;
-      case "-":
-        handleZoomOut();
-        break;
-      case "r":
-        handleRotate();
-        break;
-      default:
-        break;
-    }
-  }, [currentPage, pages.length]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "ArrowLeft":
+          handlePreviousPage();
+          break;
+        case "ArrowRight":
+          handleNextPage();
+          break;
+        case "+":
+        case "=":
+          handleZoomIn();
+          break;
+        case "-":
+          handleZoomOut();
+          break;
+        case "r":
+          handleRotate();
+          break;
+        default:
+          break;
+      }
+    },
+    [currentPage, pages.length]
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);

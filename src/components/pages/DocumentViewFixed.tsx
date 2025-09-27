@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,8 +131,48 @@ This document is ready but there's an issue accessing its content. This might be
     fetchDocumentContent();
   };
 
-  const handleDownload = () => {
-    console.log("Downloading document:", document.title);
+  const handleDownload = async () => {
+    try {
+      console.log("Downloading document:", document.title);
+
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        console.error("Download can only be initiated from browser environment");
+        return;
+      }
+
+      // Try to get the file from storage
+      const response = await fetch(
+        `/api/documents/download?documentId=${document.id}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to download document: ${response.statusText} - ${errorData.error || 'Unknown error'}`);
+      }
+
+      // Get the file blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = document.title;
+      link.style.display = "none";
+      
+      // Add to DOM, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+
+      console.log("Download started successfully");
+    } catch (error) {
+      console.error("Error downloading document:", error);
+    }
   };
 
   const handleShare = () => {

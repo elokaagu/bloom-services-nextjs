@@ -6,7 +6,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ["pdf-parse", "mammoth", "pdfjs-dist", "tesseract.js", "sharp"],
+  serverExternalPackages: [
+    "pdf-parse",
+    "mammoth",
+    "pdfjs-dist",
+    "tesseract.js",
+    "sharp",
+  ],
 };
 
 module.exports = nextConfig;

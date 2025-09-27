@@ -40,12 +40,12 @@ class AdvancedPDFProcessor {
       // Create page data (simplified for server environment)
       const pages = [];
       const textPerPage = Math.ceil(parsed.text.length / parsed.numpages);
-      
+
       for (let i = 0; i < parsed.numpages; i++) {
         const startIndex = i * textPerPage;
         const endIndex = Math.min((i + 1) * textPerPage, parsed.text.length);
         const pageText = parsed.text.slice(startIndex, endIndex);
-        
+
         pages.push({
           pageNumber: i + 1,
           imageData: `data:image/svg+xml;base64,${Buffer.from(
@@ -55,7 +55,7 @@ class AdvancedPDFProcessor {
                 Page ${i + 1} - Text content available
               </text>
             </svg>`
-          ).toString('base64')}`,
+          ).toString("base64")}`,
           text: pageText,
           formattedText: this.formatText(pageText),
         });
