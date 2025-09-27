@@ -219,12 +219,17 @@ export async function POST(req: NextRequest) {
       console.error("Chunk insertion failed:", insertError);
       // Even if chunk insertion fails, we can still mark the document as ready
       // since the file is accessible and can be viewed
-      console.log("Marking document as ready despite chunk insertion failure...");
+      console.log(
+        "Marking document as ready despite chunk insertion failure..."
+      );
       await supabase
         .from("documents")
-        .update({ status: "ready", error: "Chunks not created but file accessible" })
+        .update({
+          status: "ready",
+          error: "Chunks not created but file accessible",
+        })
         .eq("id", documentId);
-      
+
       return NextResponse.json({
         success: true,
         chunks: 0,

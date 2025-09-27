@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
       if (ingestResponse.ok) {
         const ingestResult = await ingestResponse.json();
         console.log("Document ingestion completed successfully:", ingestResult);
-        
+
         // Update status to ready
         await supabase
           .from("documents")
@@ -232,18 +232,25 @@ export async function POST(req: NextRequest) {
       } else {
         const errorText = await ingestResponse.text();
         console.error("Document ingestion failed:", errorText);
-        
+
         // Even if ingestion fails, mark as ready if file exists in storage
-        console.log("Checking if file exists in storage despite ingestion failure...");
+        console.log(
+          "Checking if file exists in storage despite ingestion failure..."
+        );
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(document.storage_path);
 
         if (!fileError && fileData) {
-          console.log("File exists in storage, marking as ready despite ingestion failure");
+          console.log(
+            "File exists in storage, marking as ready despite ingestion failure"
+          );
           await supabase
             .from("documents")
-            .update({ status: "ready", error: "Ingestion failed but file accessible" })
+            .update({
+              status: "ready",
+              error: "Ingestion failed but file accessible",
+            })
             .eq("id", document.id);
         } else {
           console.log("File not found in storage, marking as failed");

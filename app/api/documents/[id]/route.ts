@@ -33,7 +33,40 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     console.log("Deleting document:", documentId);
 
-    // Delete document (this will cascade delete chunks due to foreign key)
+    // First, get the document to find the storage path
+    const { data: document, error: fetchError } = await supabase
+      .from("documents")
+      .select("storage_path, title")
+      .eq("id", documentId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching document:", fetchError);
+      return NextResponse.json(
+        { error: `Document not found: ${fetchError.message}` },
+        { status: 404 }
+      );
+    }
+
+    console.log("Document found:", document.title, "Storage path:", document.storage_path);
+
+    // Delete from Supabase storage first
+    if (document.storage_path) {
+      console.log("Deleting file from storage:", document.storage_path);
+      const { error: storageError } = await supabase.storage
+        .from(process.env.STORAGE_BUCKET || "documents")
+        .remove([document.storage_path]);
+
+      if (storageError) {
+        console.error("Storage delete error:", storageError);
+        // Continue with database deletion even if storage deletion fails
+        console.log("Continuing with database deletion despite storage error");
+      } else {
+        console.log("File deleted from storage successfully");
+      }
+    }
+
+    // Delete document from database (this will cascade delete chunks due to foreign key)
     const { error } = await supabase
       .from("documents")
       .delete()
@@ -47,12 +80,17 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       );
     }
 
-    console.log("Document deleted successfully:", documentId);
+    console.log("Document deleted successfully from database:", documentId);
     console.log("=== DELETE DOCUMENT API SUCCESS ===");
 
     return NextResponse.json({
       success: true,
-      message: "Document deleted successfully",
+      message: "Document deleted successfully from both storage and database",
+      document: {
+        id: documentId,
+        title: document.title,
+        storagePath: document.storage_path,
+      },
     });
 
   } catch (error) {
