@@ -150,6 +150,18 @@ export async function GET(req: NextRequest) {
             ).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
           }
           contentSource = "fallback";
+          // Don't return success when we can't access the actual content
+          return NextResponse.json({
+            success: false,
+            error: "Unable to access document content from storage",
+            details: {
+              storageError: fileError?.message,
+              documentStatus: document.status,
+              storagePath: document.storage_path,
+              hasChunks: chunks?.length || 0,
+            },
+            fallbackContent: content,
+          }, { status: 200 }); // Return 200 to show error in UI
         }
       } catch (storageError) {
         console.error("Storage error:", storageError);
@@ -192,6 +204,19 @@ export async function GET(req: NextRequest) {
           ).toLocaleDateString()}\n\n**To fix this:**\n1. Go back to the Document Library\n2. Try re-uploading the document\n3. Or contact support if the issue persists`;
         }
         contentSource = "fallback";
+        
+        // Return error response when storage fails
+        return NextResponse.json({
+          success: false,
+          error: "Unable to access document content from storage",
+          details: {
+            storageError: storageError instanceof Error ? storageError.message : "Unknown storage error",
+            documentStatus: document.status,
+            storagePath: document.storage_path,
+            hasChunks: chunks?.length || 0,
+          },
+          fallbackContent: content,
+        }, { status: 200 }); // Return 200 to show error in UI
       }
     }
 
