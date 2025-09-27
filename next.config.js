@@ -7,12 +7,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ['pdf-parse', 'mammoth'],
+    serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
   },
   // Increase body size limit for file uploads
   api: {
     bodyParser: {
-      sizeLimit: '10mb',
+      sizeLimit: "10mb",
     },
   },
 };

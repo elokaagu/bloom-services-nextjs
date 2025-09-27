@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
     if (file.size > maxSize) {
       console.error("File too large:", file.size, "bytes");
       return NextResponse.json(
-        { 
+        {
           error: "File too large. Maximum size is 10MB.",
           fileSize: file.size,
           maxSize: maxSize,
-        }, 
+        },
         { status: 413 }
       );
     }
@@ -63,12 +63,12 @@ export async function POST(req: NextRequest) {
     const supabase = supabaseService();
     console.log("Supabase client initialized");
 
-    // Generate unique file path with safe naming
-    const fileExt = file.name.split(".").pop();
-    const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_"); // Replace special chars with underscores
-    const fileName = `${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2)}-${safeFileName}`;
+    // Generate clean file path with readable naming convention
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const baseName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+    const cleanBaseName = baseName.replace(/[^a-zA-Z0-9\s-]/g, "").replace(/\s+/g, "_"); // Clean name
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, ""); // YYYYMMDDTHHMMSS
+    const fileName = `${timestamp}_${cleanBaseName}.${fileExt}`;
     const filePath = fileName; // Upload to root of bucket
 
     console.log("Uploading file to storage:", filePath);
@@ -81,6 +81,9 @@ export async function POST(req: NextRequest) {
     console.log("File type:", file.type);
 
     console.log("About to call supabase.storage.upload...");
+    console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+    console.log("STORAGE_BUCKET:", process.env.STORAGE_BUCKET);
+    console.log("File will be uploaded to:", `${process.env.SUPABASE_URL}/storage/v1/object/${process.env.STORAGE_BUCKET}/${filePath}`);
     
     let uploadResult;
     try {
@@ -146,7 +149,7 @@ export async function POST(req: NextRequest) {
     if (verifyError) {
       console.error("File verification failed:", verifyError);
       return NextResponse.json(
-        { 
+        {
           error: `File uploaded but verification failed: ${verifyError.message}`,
           uploadPath: uploadData.path,
           verifyError: verifyError.message,
@@ -156,6 +159,8 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("File verification successful, file size:", verifyData.size);
+    console.log("✅ FILE SUCCESSFULLY UPLOADED TO SUPABASE STORAGE");
+    console.log("Storage URL:", `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.STORAGE_BUCKET}/${filePath}`);
 
     // Create document record in database
     const documentData = {
