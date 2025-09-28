@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase-client";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 
 interface SignInModalProps {
@@ -52,23 +51,30 @@ export const SignInModal = ({
           return;
         }
 
-        // Sign up
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
+        // Sign up using direct Supabase API
+        const response = await fetch('https://rrwhcigiawoycpuizczo.supabase.co/auth/v1/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd2hjaWdpYXdveWNwdWl6Y3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NzUzMDAsImV4cCI6MjA3NDM1MTMwMH0.1GY8rrkETW-ETj_1mS1SK4_KNmVBbZS6TRk92scBYqY',
+          },
+          body: JSON.stringify({
+            email,
+            password,
             data: {
               first_name: firstName.trim(),
               last_name: lastName.trim(),
               full_name: `${firstName.trim()} ${lastName.trim()}`,
             },
-          },
+          }),
         });
 
-        if (error) {
+        const result = await response.json();
+
+        if (!response.ok) {
           toast({
             title: "Sign up failed",
-            description: error.message,
+            description: result.error?.message || "Failed to create account",
             variant: "destructive",
           });
         } else {
@@ -79,16 +85,25 @@ export const SignInModal = ({
           setIsSignUp(false);
         }
       } else {
-        // Sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        // Sign in using direct Supabase API
+        const response = await fetch('https://rrwhcigiawoycpuizczo.supabase.co/auth/v1/token?grant_type=password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd2hjaWdpYXdveWNwdWl6Y3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NzUzMDAsImV4cCI6MjA3NDM1MTMwMH0.1GY8rrkETW-ETj_1mS1SK4_KNmVBbZS6TRk92scBYqY',
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
         });
 
-        if (error) {
+        const result = await response.json();
+
+        if (!response.ok) {
           toast({
             title: "Sign in failed",
-            description: error.message,
+            description: result.error?.message || "Invalid email or password",
             variant: "destructive",
           });
         } else {
