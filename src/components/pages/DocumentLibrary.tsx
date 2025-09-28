@@ -248,7 +248,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     });
   }, [documents, fetchDocumentPreview, loadingPreviews]);
 
-  const sortedDocuments = documents.filter((doc) => {
+  const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||

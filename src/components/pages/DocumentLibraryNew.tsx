@@ -248,7 +248,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     });
   }, [documents, fetchDocumentPreview, loadingPreviews]);
 
-  const sortedDocuments = documents.filter((doc) => {
+  const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,7 +261,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   });
 
   // Sort the filtered documents
-  const sortedDocuments = [...sortedDocuments].sort((a, b) => {
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     let comparison = 0;
     
     switch (sortBy) {
