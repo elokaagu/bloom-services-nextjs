@@ -317,7 +317,7 @@ export const ChatInterface = ({
       </div>
 
       {/* Sources Panel */}
-      <div className="w-80 flex flex-col">
+      <div className="w-80 flex flex-col min-h-0">
         {/* Title Section */}
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-foreground">
@@ -325,11 +325,11 @@ export const ChatInterface = ({
           </h3>
         </div>
 
-        <Card className="flex-1 flex flex-col overflow-hidden">
+        <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
           {messages.length > 1 ? (
-            <div className="flex-1 p-4">
+            <div className="flex-1 p-4 min-h-0">
               <ScrollArea className="h-full">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {messages
                     .filter(
                       (m) =>
@@ -337,13 +337,13 @@ export const ChatInterface = ({
                         m.citations &&
                         m.citations.length > 0
                     )
-                    .slice(-2) // Show last 2 assistant messages with citations
+                    .slice(-3) // Show last 3 assistant messages with citations
                     .map((message) => (
                       <div key={message.id} className="space-y-2">
                         {message.citations?.map((citation) => (
                           <Card
                             key={citation.id}
-                            className="p-3 cursor-pointer hover:shadow-sm transition-shadow"
+                            className="p-2 cursor-pointer hover:shadow-sm transition-shadow"
                           >
                             <div
                               className="flex items-start justify-between"
