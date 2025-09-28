@@ -97,6 +97,11 @@ export const ChatInterface = ({
     setIsLoading(true);
 
     try {
+      console.log("Sending chat request with:", {
+        workspaceId,
+        userId,
+        question,
+      });
       const response = await fetch("/api/simple-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,20 +117,20 @@ export const ChatInterface = ({
       // Normal response handling - the simple chat API handles everything
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-          type: "assistant",
-          content: data.answer,
-          citations: data.citations?.map((c: any) => ({
-            id: c.chunkId?.toString() || c.index?.toString(),
-            documentTitle: c.documentTitle || `Document ${c.documentId}`,
-            snippet: c.text || "Retrieved from document",
-            relevanceScore: 0.9,
-          })),
-          timestamp: new Date(),
-          isError: false, // Simple chat API handles errors internally
-          errorType: undefined,
-        };
+        type: "assistant",
+        content: data.answer,
+        citations: data.citations?.map((c: any) => ({
+          id: c.chunkId?.toString() || c.index?.toString(),
+          documentTitle: c.documentTitle || `Document ${c.documentId}`,
+          snippet: c.text || "Retrieved from document",
+          relevanceScore: 0.9,
+        })),
+        timestamp: new Date(),
+        isError: false, // Simple chat API handles errors internally
+        errorType: undefined,
+      };
 
-        setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage: Message = {

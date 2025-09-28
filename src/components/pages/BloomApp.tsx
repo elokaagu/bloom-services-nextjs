@@ -19,10 +19,26 @@ interface Workspace {
 }
 
 const mockWorkspaces: Workspace[] = [
-  { id: "1", name: "Policy Research", organization: "Acme Corp" },
-  { id: "2", name: "Financial Reports", organization: "Acme Corp" },
-  { id: "3", name: "HR Documentation", organization: "Acme Corp" },
-  { id: "4", name: "Security & Compliance", organization: "TechFlow Inc" },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    name: "Policy Research",
+    organization: "Acme Corp",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440002",
+    name: "Financial Reports",
+    organization: "Acme Corp",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440003",
+    name: "HR Documentation",
+    organization: "Acme Corp",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440004",
+    name: "Security & Compliance",
+    organization: "TechFlow Inc",
+  },
 ];
 
 export const BloomApp = () => {
