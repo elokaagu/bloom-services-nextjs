@@ -57,6 +57,7 @@ interface Document {
   type: "pdf" | "docx" | "txt" | "xlsx" | "pptx" | "other";
   size: string;
   uploadedAt: string;
+  uploadedAtDate: Date; // Keep original date for sorting
   status: "ready" | "processing" | "uploading" | "failed";
   acl: "private" | "workspace" | "organization";
   owner: string;
@@ -159,21 +160,25 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
       if (data.success) {
         const transformedDocuments: Document[] = data.documents.map(
-          (doc: any) => ({
-            id: doc.id,
-            title: doc.title,
-            type:
-              (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
-              "pdf",
-            size: doc.fileSize || "Size not available",
-            uploadedAt: new Date(doc.created_at).toLocaleDateString(),
-            status: doc.status,
-            acl: doc.acl || "workspace",
-            owner: doc.users?.name || doc.users?.email || "Unknown User",
-            error: doc.error,
-            summary: doc.summary,
-            summaryUpdatedAt: doc.summary_updated_at,
-          })
+          (doc: any) => {
+            const uploadDate = new Date(doc.created_at);
+            return {
+              id: doc.id,
+              title: doc.title,
+              type:
+                (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
+                "pdf",
+              size: doc.fileSize || "Size not available",
+              uploadedAt: uploadDate.toLocaleDateString(),
+              uploadedAtDate: uploadDate, // Keep original date for sorting
+              status: doc.status,
+              acl: doc.acl || "workspace",
+              owner: doc.users?.name || doc.users?.email || "Unknown User",
+              error: doc.error,
+              summary: doc.summary,
+              summaryUpdatedAt: doc.summary_updated_at,
+            };
+          }
         );
 
         setDocuments(transformedDocuments);
@@ -264,12 +269,16 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     let comparison = 0;
     
+    console.log("Sorting by:", sortBy, "Direction:", sortDirection);
+    
     switch (sortBy) {
       case "uploadedAt":
-        comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+        comparison = a.uploadedAtDate.getTime() - b.uploadedAtDate.getTime();
+        console.log("Date comparison:", a.title, a.uploadedAtDate, "vs", b.title, b.uploadedAtDate, "=", comparison);
         break;
       case "title":
         comparison = a.title.localeCompare(b.title);
+        console.log("Title comparison:", a.title, "vs", b.title, "=", comparison);
         break;
       case "size":
         // Parse size strings like "1.3 MB" to numbers for comparison
@@ -288,18 +297,23 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           return 0;
         };
         comparison = parseSize(a.size) - parseSize(b.size);
+        console.log("Size comparison:", a.title, a.size, "vs", b.title, b.size, "=", comparison);
         break;
       case "owner":
         comparison = a.owner.localeCompare(b.owner);
+        console.log("Owner comparison:", a.title, a.owner, "vs", b.title, b.owner, "=", comparison);
         break;
       default:
         return 0;
     }
     
-    return sortDirection === "desc" ? -comparison : comparison;
+    const result = sortDirection === "desc" ? -comparison : comparison;
+    console.log("Final result:", result);
+    return result;
   });
 
   const handleSortChange = (newSortBy: string) => {
+    console.log("Sort changed to:", newSortBy, "Current direction:", sortDirection);
     if (newSortBy === sortBy) {
       // Toggle direction if same sort field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");

@@ -57,6 +57,7 @@ interface Document {
   type: "pdf" | "docx" | "txt" | "xlsx" | "pptx" | "other";
   size: string;
   uploadedAt: string;
+  uploadedAtDate: Date; // Keep original date for sorting
   status: "ready" | "processing" | "uploading" | "failed";
   acl: "private" | "workspace" | "organization";
   owner: string;
@@ -159,21 +160,25 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
       if (data.success) {
         const transformedDocuments: Document[] = data.documents.map(
-          (doc: any) => ({
-            id: doc.id,
-            title: doc.title,
-            type:
-              (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
-              "pdf",
-            size: doc.fileSize || "Size not available",
-            uploadedAt: new Date(doc.created_at).toLocaleDateString(),
-            status: doc.status,
-            acl: doc.acl || "workspace",
-            owner: doc.users?.name || doc.users?.email || "Unknown User",
-            error: doc.error,
-            summary: doc.summary,
-            summaryUpdatedAt: doc.summary_updated_at,
-          })
+          (doc: any) => {
+            const uploadDate = new Date(doc.created_at);
+            return {
+              id: doc.id,
+              title: doc.title,
+              type:
+                (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
+                "pdf",
+              size: doc.fileSize || "Size not available",
+              uploadedAt: uploadDate.toLocaleDateString(),
+              uploadedAtDate: uploadDate, // Keep original date for sorting
+              status: doc.status,
+              acl: doc.acl || "workspace",
+              owner: doc.users?.name || doc.users?.email || "Unknown User",
+              error: doc.error,
+              summary: doc.summary,
+              summaryUpdatedAt: doc.summary_updated_at,
+            };
+          }
         );
 
         setDocuments(transformedDocuments);
@@ -266,7 +271,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     
     switch (sortBy) {
       case "uploadedAt":
-        comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+        comparison = a.uploadedAtDate.getTime() - b.uploadedAtDate.getTime();
         break;
       case "title":
         comparison = a.title.localeCompare(b.title);
