@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     console.log("=== DOWNLOADING FROM SUPABASE STORAGE ===");
     console.log("Document storage_path:", document.storage_path);
     console.log("Environment STORAGE_BUCKET:", process.env.STORAGE_BUCKET);
-    
+
     let fileData = null;
     let fileError = null;
 
@@ -89,11 +89,14 @@ export async function GET(req: NextRequest) {
     const { data: fileList, error: listError } = await supabase.storage
       .from("documents")
       .list("", { limit: 50 });
-    
+
     if (listError) {
       console.error("Error listing files:", listError);
     } else {
-      console.log("Files found in documents bucket:", fileList?.map(f => f.name) || []);
+      console.log(
+        "Files found in documents bucket:",
+        fileList?.map((f) => f.name) || []
+      );
     }
 
     // Try to download the file - prioritize documents bucket
@@ -111,43 +114,57 @@ export async function GET(req: NextRequest) {
     // Try downloading from documents bucket first
     for (const path of downloadPaths) {
       if (!path) continue;
-      
+
       console.log(`Attempting download from documents bucket, path: "${path}"`);
-      
+
       const { data, error } = await supabase.storage
         .from("documents")
         .download(path);
 
       if (!error && data) {
-        console.log(`✅ SUCCESS! Downloaded file from documents bucket, path: "${path}"`);
+        console.log(
+          `✅ SUCCESS! Downloaded file from documents bucket, path: "${path}"`
+        );
         console.log("File size:", data.size, "bytes");
         fileData = data;
         break;
       } else {
-        console.log(`❌ Failed to download from documents bucket, path: "${path}"`);
+        console.log(
+          `❌ Failed to download from documents bucket, path: "${path}"`
+        );
         console.log("Error:", error?.message);
       }
     }
 
     // If documents bucket failed, try the environment bucket as fallback
-    if (!fileData && process.env.STORAGE_BUCKET && process.env.STORAGE_BUCKET !== "documents") {
+    if (
+      !fileData &&
+      process.env.STORAGE_BUCKET &&
+      process.env.STORAGE_BUCKET !== "documents"
+    ) {
       console.log(`Trying fallback bucket: ${process.env.STORAGE_BUCKET}`);
-      
+
       for (const path of downloadPaths) {
         if (!path) continue;
-        
-        console.log(`Attempting download from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`);
-        
+
+        console.log(
+          `Attempting download from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`
+        );
+
         const { data, error } = await supabase.storage
           .from(process.env.STORAGE_BUCKET)
           .download(path);
 
         if (!error && data) {
-          console.log(`✅ SUCCESS! Downloaded file from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`);
+          console.log(
+            `✅ SUCCESS! Downloaded file from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`
+          );
           fileData = data;
           break;
         } else {
-          console.log(`❌ Failed to download from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`);
+          console.log(
+            `❌ Failed to download from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`
+          );
           console.log("Error:", error?.message);
         }
       }
@@ -172,7 +189,7 @@ export async function GET(req: NextRequest) {
             storagePath: document.storage_path,
             environmentBucket: process.env.STORAGE_BUCKET,
             triedPaths: downloadPaths,
-          }
+          },
         },
         { status: 404 }
       );

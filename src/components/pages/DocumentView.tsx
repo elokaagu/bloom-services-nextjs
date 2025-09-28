@@ -232,40 +232,37 @@ This document is ready but there's an issue accessing its content. This might be
 
       // Get the file blob
       const blob = await response.blob();
+      console.log("File blob received, size:", blob.size, "bytes");
 
-      // Use a simpler approach - create a temporary URL and open it
+      // Use the simplest possible approach - direct navigation
       const url = window.URL.createObjectURL(blob);
+      console.log("Created blob URL:", url);
       
-      // Try to trigger download using a simple approach
-      try {
-        // Method 1: Try using a temporary link element
-        const tempLink = document.createElement("a");
-        tempLink.href = url;
-        tempLink.download = document.title;
-        tempLink.style.display = "none";
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
-      } catch (createError) {
-        console.log("Link creation failed, trying alternative method:", createError);
-        
-        // Method 2: Fallback to opening in new tab
-        const newWindow = window.open(url, '_blank');
-        if (!newWindow) {
-          // Method 3: Last resort - try to navigate to the URL
-          window.location.href = url;
-        }
+      // Method 1: Try to open in new tab (most reliable)
+      const newWindow = window.open(url, '_blank');
+      if (newWindow) {
+        console.log("✅ Opened file in new tab successfully");
+        toast({
+          title: "Download started",
+          description: `${document.title} is being downloaded`,
+        });
+      } else {
+        console.log("❌ Failed to open new tab, trying direct navigation");
+        // Method 2: Direct navigation as last resort
+        window.location.href = url;
+        console.log("✅ Navigated to file URL");
+        toast({
+          title: "Download started",
+          description: `${document.title} is being downloaded`,
+        });
       }
 
       // Clean up after a delay
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
-      }, 1000);
+        console.log("Cleaned up blob URL");
+      }, 5000);
 
-      toast({
-        title: "Download started",
-        description: `${document.title} is being downloaded`,
-      });
     } catch (error) {
       console.error("Error downloading document:", error);
       toast({

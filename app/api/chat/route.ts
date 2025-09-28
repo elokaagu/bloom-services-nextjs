@@ -215,9 +215,13 @@ IMPORTANT RULES:
         `
         id, 
         document_id,
+        text,
+        embedding,
         documents!inner (
           id,
-          workspace_id
+          title,
+          workspace_id,
+          status
         )
       `
       )
@@ -283,6 +287,8 @@ IMPORTANT RULES:
     let retrievedChunks: any[] = [];
 
     try {
+      console.log("Attempting vector search with RPC function...");
+      
       // Try to use the RPC function first
       const { data: retrieved, error: rpcError } = await supabase.rpc(
         "match_chunks",
@@ -295,11 +301,11 @@ IMPORTANT RULES:
 
       if (rpcError) {
         console.log(
-          "RPC function not available, using fallback:",
+          "RPC function failed, using fallback query:",
           rpcError.message
         );
 
-        // Fallback: simple vector search
+        // Fallback: simple vector search using raw SQL
         const { data: fallbackChunks, error: fallbackError } = await supabase
           .from("document_chunks")
           .select(
@@ -315,6 +321,7 @@ IMPORTANT RULES:
           `
           )
           .eq("documents.workspace_id", workspaceId)
+          .not("embedding", "is", null) // Ensure embedding exists
           .limit(topK);
 
         if (fallbackError) {
@@ -323,11 +330,24 @@ IMPORTANT RULES:
         }
 
         retrievedChunks = fallbackChunks || [];
+        console.log("Fallback query returned", retrievedChunks.length, "chunks");
       } else {
         retrievedChunks = retrieved || [];
+        console.log("RPC function returned", retrievedChunks.length, "chunks");
       }
 
-      console.log("Retrieved", retrievedChunks.length, "chunks");
+      console.log("Retrieved", retrievedChunks.length, "chunks total");
+      
+      // Log sample chunks for debugging
+      if (retrievedChunks.length > 0) {
+        console.log("Sample chunk:", {
+          id: retrievedChunks[0].id,
+          documentTitle: retrievedChunks[0].documents?.title,
+          textPreview: retrievedChunks[0].text?.substring(0, 100) + "...",
+          similarity: retrievedChunks[0].similarity
+        });
+      }
+      
     } catch (retrievalError) {
       console.error("Chunk retrieval error:", retrievalError);
 
