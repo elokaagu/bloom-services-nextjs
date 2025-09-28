@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { createBrowserClient } from "@supabase/ssr";
+import { supabase } from "@/lib/supabase-client";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -28,32 +27,10 @@ export const SignInModal = ({ isOpen, onClose, onSuccess }: SignInModalProps) =>
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Only create Supabase client on the client side
-    if (typeof window !== 'undefined') {
-      const client = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      setSupabase(client);
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!supabase) {
-      toast({
-        title: "Authentication error",
-        description: "Supabase client not available. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setIsLoading(true);
 
     try {
