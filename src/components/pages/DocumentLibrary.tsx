@@ -413,7 +413,10 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     return documents.filter((doc) => doc.status === status).length;
   };
 
-  const renderDocumentCard = (document: Document, layout: "grid" | "list" = viewMode) => {
+  const renderDocumentCard = (
+    document: Document,
+    layout: "grid" | "list" = viewMode
+  ) => {
     const isSelected = selectedDocuments.has(document.id);
     const isDeleting = deletingDocuments.has(document.id);
     const isLoadingPreview = loadingPreviews.has(document.id);
@@ -461,15 +464,19 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
                   {document.title}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {document.status === "ready" ? "Ready" : 
-                   document.status === "processing" ? "Processing..." : 
-                   document.status === "failed" ? "Failed" : "Unknown"}
+                  {document.status === "ready"
+                    ? "Ready"
+                    : document.status === "processing"
+                    ? "Processing..."
+                    : document.status === "failed"
+                    ? "Failed"
+                    : "Unknown"}
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <Badge variant="outline" className="text-xs">
-                {getACLColor(document.acl).split(' ')[0]}
+                {getACLColor(document.acl).split(" ")[0]}
               </Badge>
               <Button
                 variant="ghost"
@@ -494,101 +501,101 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               </div>
             </div>
 
-          {/* Document Preview */}
-          <div className="mb-3">
-            {isLoadingPreview ? (
-              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Loading preview...</span>
-              </div>
-            ) : document.preview ? (
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                <p className="line-clamp-3">{document.preview.content}</p>
-                {document.preview.truncated && (
-                  <span className="text-primary">...read more</span>
-                )}
-              </div>
-            ) : document.summary ? (
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                <p className="line-clamp-3">{document.summary}</p>
-              </div>
-            ) : (
-              <div className="text-xs text-muted-foreground">
-                {document.status === "ready"
-                  ? "Content preview loading..."
-                  : "Preview not available"}
-              </div>
-            )}
-          </div>
-
-          {/* Document Metadata */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-            <div className="flex items-center space-x-2">
-              <span>{document.size}</span>
-              <span>•</span>
-              <div className="flex items-center space-x-1">
-                <Calendar className="h-3 w-3" />
-                <span>{document.uploadedAt}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Badge
-                variant="outline"
-                className={`text-xs ${getACLColor(document.acl)}`}
-              >
-                {getACLIcon(document.acl)}
-                <span className="ml-1 capitalize">{document.acl}</span>
-              </Badge>
-            </div>
-
-            <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDocumentShare(document);
-                }}
-                className="h-7 w-7 p-0"
-              >
-                <Share className="h-3 w-3" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDocumentView(document);
-                }}
-                className="h-7 w-7 p-0"
-              >
-                <Eye className="h-3 w-3" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDocumentDelete(document);
-                }}
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
+            {/* Document Preview */}
+            <div className="mb-3">
+              {isLoadingPreview ? (
+                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3 w-3" />
-                )}
-              </Button>
+                  <span>Loading preview...</span>
+                </div>
+              ) : document.preview ? (
+                <div className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="line-clamp-3">{document.preview.content}</p>
+                  {document.preview.truncated && (
+                    <span className="text-primary">...read more</span>
+                  )}
+                </div>
+              ) : document.summary ? (
+                <div className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="line-clamp-3">{document.summary}</p>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">
+                  {document.status === "ready"
+                    ? "Content preview loading..."
+                    : "Preview not available"}
+                </div>
+              )}
+            </div>
+
+            {/* Document Metadata */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+              <div className="flex items-center space-x-2">
+                <span>{document.size}</span>
+                <span>•</span>
+                <div className="flex items-center space-x-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{document.uploadedAt}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${getACLColor(document.acl)}`}
+                >
+                  {getACLIcon(document.acl)}
+                  <span className="ml-1 capitalize">{document.acl}</span>
+                </Badge>
+              </div>
+
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDocumentShare(document);
+                  }}
+                  className="h-7 w-7 p-0"
+                >
+                  <Share className="h-3 w-3" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDocumentView(document);
+                  }}
+                  className="h-7 w-7 p-0"
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDocumentDelete(document);
+                  }}
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
         )}
       </Card>
     );
@@ -809,11 +816,13 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
 
       {/* Documents Grid/List */}
       {!isLoading && !error && filteredDocuments.length > 0 && (
-        <div className={
-          viewMode === "grid" 
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
-            : "space-y-2"
-        }>
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+              : "space-y-2"
+          }
+        >
           {filteredDocuments.map(renderDocumentCard)}
         </div>
       )}

@@ -203,7 +203,9 @@ export async function createChunksForDocument(documentId: string) {
       }
     }
 
-    console.log(`Chunk processing complete: ${successCount} success, ${errorCount} errors`);
+    console.log(
+      `Chunk processing complete: ${successCount} success, ${errorCount} errors`
+    );
 
     // Update document status
     if (successCount > 0) {

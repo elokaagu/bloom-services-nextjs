@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
     try {
       console.log("Starting automatic chunk creation for RAG...");
       console.log("Calling direct chunk creation for document:", document.id);
-      
+
       const chunkResult = await createChunksForDocument(document.id);
       console.log("Automatic chunk creation completed:", chunkResult);
 
