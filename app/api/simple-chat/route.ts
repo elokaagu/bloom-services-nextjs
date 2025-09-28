@@ -236,20 +236,31 @@ export async function POST(req: NextRequest) {
               console.log(
                 `Chunk ${chunk.id} parsed embedding, length: ${embeddingArray?.length}`
               );
-            } else if (typeof chunk.embedding === "object" && chunk.embedding !== null) {
+            } else if (
+              typeof chunk.embedding === "object" &&
+              chunk.embedding !== null
+            ) {
               console.log(
                 `Chunk ${chunk.id} embedding is object, attempting to convert to array`
               );
               // Try to convert object to array (might be a vector object)
               if (chunk.embedding.data && Array.isArray(chunk.embedding.data)) {
                 embeddingArray = chunk.embedding.data;
-              } else if (chunk.embedding.values && Array.isArray(chunk.embedding.values)) {
+              } else if (
+                chunk.embedding.values &&
+                Array.isArray(chunk.embedding.values)
+              ) {
                 embeddingArray = chunk.embedding.values;
-              } else if (chunk.embedding.embedding && Array.isArray(chunk.embedding.embedding)) {
+              } else if (
+                chunk.embedding.embedding &&
+                Array.isArray(chunk.embedding.embedding)
+              ) {
                 embeddingArray = chunk.embedding.embedding;
               } else {
                 // Try to convert object values to array
-                embeddingArray = Object.values(chunk.embedding).filter(val => typeof val === 'number');
+                embeddingArray = Object.values(chunk.embedding).filter(
+                  (val) => typeof val === "number"
+                );
               }
               console.log(
                 `Chunk ${chunk.id} converted object to array, length: ${embeddingArray?.length}`
@@ -332,6 +343,26 @@ export async function POST(req: NextRequest) {
           citations: [],
           chunksFound: 0,
           isGeneralResponse: true,
+        });
+      }
+
+      // If no chunks found but we have documents, create fallback citations
+      if (documents && documents.length > 0) {
+        console.log("No chunks found, creating fallback citations from documents");
+        const fallbackCitations = documents.slice(0, 3).map((doc, index) => ({
+          id: `fallback-${doc.id}-${index}`,
+          documentId: doc.id,
+          documentTitle: doc.title,
+          snippet: "Document available for viewing",
+          relevanceScore: 0.5, // Lower relevance score for fallback
+        }));
+
+        return NextResponse.json({
+          answer:
+            "I couldn't find specific information in your documents to answer this question, but I can help you explore your available documents. Try asking about specific topics or documents.",
+          citations: fallbackCitations,
+          chunksFound: 0,
+          isFallbackResponse: true,
         });
       }
 
