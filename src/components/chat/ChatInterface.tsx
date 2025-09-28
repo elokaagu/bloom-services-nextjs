@@ -49,19 +49,69 @@ export const ChatInterface = ({
   workspaceId = "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
   userId = "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID
 }: ChatInterfaceProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "assistant",
-      content:
-        "Hello! I'm your Bloom AI assistant. I can help you find information from your organization's documents. What would you like to know?",
-      timestamp: new Date(Date.now() - 60000),
-    },
-  ]);
+  // Create a unique storage key for this workspace
+  const storageKey = `bloom-chat-${workspaceId}`;
+  
+  // Load messages from localStorage on component mount
+  const loadMessages = (): Message[] => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Convert timestamp strings back to Date objects
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+    }
+    
+    // Return default welcome message if no saved history
+    return [
+      {
+        id: "1",
+        type: "assistant",
+        content:
+          "Hello! I'm your Bloom AI assistant. I can help you find information from your organization's documents. What would you like to know?",
+        timestamp: new Date(Date.now() - 60000),
+      },
+    ];
+  };
+
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSources, setExpandedSources] = useState<string>("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Save messages to localStorage whenever messages change
+  const saveMessages = (newMessages: Message[]) => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(newMessages));
+    } catch (error) {
+      console.error("Error saving chat history:", error);
+    }
+  };
+
+  // Update messages and save to localStorage
+  const updateMessages = (newMessages: Message[]) => {
+    setMessages(newMessages);
+    saveMessages(newMessages);
+  };
+
+  // Clear chat history
+  const clearChatHistory = () => {
+    const defaultMessage: Message = {
+      id: "1",
+      type: "assistant",
+      content:
+        "Hello! I'm your Bloom AI assistant. I can help you find information from your organization's documents. What would you like to know?",
+      timestamp: new Date(),
+    };
+    updateMessages([defaultMessage]);
+  };
 
   // Helper function to process documents if needed
   const processDocumentsIfNeeded = async () => {
@@ -93,7 +143,7 @@ export const ChatInterface = ({
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    updateMessages([...messages, userMessage]);
     const question = input;
     setInput("");
     setIsLoading(true);
@@ -132,7 +182,7 @@ export const ChatInterface = ({
         errorType: undefined,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      updateMessages([...messages, userMessage, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage: Message = {
@@ -145,7 +195,7 @@ export const ChatInterface = ({
         errorType: "system",
       };
 
-      setMessages((prev) => [...prev, errorMessage]);
+      updateMessages([...messages, userMessage, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -169,11 +219,21 @@ export const ChatInterface = ({
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Title Section */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-foreground">Chat</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Ask questions about your documents
-          </p>
+        <div className="mb-4 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Chat</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Ask questions about your documents
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearChatHistory}
+            className="text-xs"
+          >
+            Clear History
+          </Button>
         </div>
 
         <Card className="flex-1 flex flex-col overflow-hidden">
