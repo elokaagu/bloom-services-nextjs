@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -29,12 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session on mount
     const checkAuth = () => {
       try {
-        const savedUser = localStorage.getItem('bloom-user');
+        const savedUser = localStorage.getItem("bloom-user");
         if (savedUser) {
           setUser(JSON.parse(savedUser));
         }
       } catch (error) {
-        console.error('Error loading user from localStorage:', error);
+        console.error("Error loading user from localStorage:", error);
       } finally {
         setIsLoading(false);
       }
@@ -45,13 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (userData: User) => {
     setUser(userData);
-    localStorage.setItem('bloom-user', JSON.stringify(userData));
+    localStorage.setItem("bloom-user", JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('bloom-user');
-    router.push('/');
+    localStorage.removeItem("bloom-user");
+    router.push("/");
   };
 
   return (
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

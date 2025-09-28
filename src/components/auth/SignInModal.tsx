@@ -123,12 +123,14 @@ export const SignInModal = ({
             email: result.user?.email || email,
             firstName: result.user?.user_metadata?.first_name || firstName,
             lastName: result.user?.user_metadata?.last_name || lastName,
-            fullName: result.user?.user_metadata?.full_name || `${firstName} ${lastName}`,
+            fullName:
+              result.user?.user_metadata?.full_name ||
+              `${firstName} ${lastName}`,
           };
-          
+
           // Login user
           login(userData);
-          
+
           toast({
             title: "Welcome back!",
             description: "You've successfully signed in.",

@@ -182,15 +182,26 @@ export function AppSidebar({
                 <Avatar className="h-9 w-9 mr-3 flex-shrink-0 ring-2 ring-border/20">
                   <AvatarImage src="" alt="User" />
                   <AvatarFallback>
-                    {user ? (user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase() + (user.lastName?.[0] || user.email?.[1] || 'S').toUpperCase() : 'EA'}
+                    {user
+                      ? (
+                          user.firstName?.[0] ||
+                          user.email?.[0] ||
+                          "U"
+                        ).toUpperCase() +
+                        (
+                          user.lastName?.[0] ||
+                          user.email?.[1] ||
+                          "S"
+                        ).toUpperCase()
+                      : "EA"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start min-w-0 flex-1 text-left">
                   <p className="text-sm font-medium truncate w-full">
-                    {user?.fullName || user?.firstName || 'User'}
+                    {user?.fullName || user?.firstName || "User"}
                   </p>
                   <p className="text-xs text-muted-foreground truncate w-full">
-                    {user?.email || 'user@example.com'}
+                    {user?.email || "user@example.com"}
                   </p>
                 </div>
                 <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
@@ -200,10 +211,10 @@ export function AppSidebar({
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {user?.fullName || user?.firstName || 'User'}
+                    {user?.fullName || user?.firstName || "User"}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email || 'user@example.com'}
+                    {user?.email || "user@example.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -213,7 +224,7 @@ export function AppSidebar({
                 <span>Account Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-600 cursor-pointer"
                 onClick={logout}
               >

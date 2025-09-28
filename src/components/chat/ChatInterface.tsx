@@ -451,6 +451,9 @@ export const ChatInterface = ({
           <h3 className="text-lg font-semibold text-foreground">
             Recent Sources
           </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Citations and references from your conversations
+          </p>
         </div>
 
         <Card className="flex-1 flex flex-col overflow-hidden">
