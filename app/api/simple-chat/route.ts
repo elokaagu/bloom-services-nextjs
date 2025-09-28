@@ -89,15 +89,18 @@ export async function POST(req: NextRequest) {
       .limit(20);
 
     // Debug: Log the raw chunks data
-    console.log("Raw chunks from database:", chunks?.slice(0, 1).map(chunk => ({
-      id: chunk.id,
-      document_id: chunk.document_id,
-      hasEmbedding: !!chunk.embedding,
-      embeddingType: typeof chunk.embedding,
-      embeddingIsArray: Array.isArray(chunk.embedding),
-      embeddingLength: chunk.embedding?.length,
-      embeddingSample: chunk.embedding?.slice(0, 3)
-    })));
+    console.log(
+      "Raw chunks from database:",
+      chunks?.slice(0, 1).map((chunk) => ({
+        id: chunk.id,
+        document_id: chunk.document_id,
+        hasEmbedding: !!chunk.embedding,
+        embeddingType: typeof chunk.embedding,
+        embeddingIsArray: Array.isArray(chunk.embedding),
+        embeddingLength: chunk.embedding?.length,
+        embeddingSample: chunk.embedding?.slice(0, 3),
+      }))
+    );
 
     if (chunksError) {
       console.error("Error fetching chunks:", chunksError);
@@ -217,7 +220,7 @@ export async function POST(req: NextRequest) {
             return { ...chunk, similarity: 0 };
           }
 
-          // Handle embedding data type - could be array or string
+          // Handle embedding data type - could be array, string, or object
           let embeddingArray;
           try {
             if (Array.isArray(chunk.embedding)) {
@@ -233,10 +236,29 @@ export async function POST(req: NextRequest) {
               console.log(
                 `Chunk ${chunk.id} parsed embedding, length: ${embeddingArray?.length}`
               );
+            } else if (typeof chunk.embedding === "object" && chunk.embedding !== null) {
+              console.log(
+                `Chunk ${chunk.id} embedding is object, attempting to convert to array`
+              );
+              // Try to convert object to array (might be a vector object)
+              if (chunk.embedding.data && Array.isArray(chunk.embedding.data)) {
+                embeddingArray = chunk.embedding.data;
+              } else if (chunk.embedding.values && Array.isArray(chunk.embedding.values)) {
+                embeddingArray = chunk.embedding.values;
+              } else if (chunk.embedding.embedding && Array.isArray(chunk.embedding.embedding)) {
+                embeddingArray = chunk.embedding.embedding;
+              } else {
+                // Try to convert object values to array
+                embeddingArray = Object.values(chunk.embedding).filter(val => typeof val === 'number');
+              }
+              console.log(
+                `Chunk ${chunk.id} converted object to array, length: ${embeddingArray?.length}`
+              );
             } else {
               console.error(
                 `Chunk ${chunk.id} unknown embedding type:`,
-                typeof chunk.embedding
+                typeof chunk.embedding,
+                chunk.embedding
               );
               return { ...chunk, similarity: 0 };
             }
