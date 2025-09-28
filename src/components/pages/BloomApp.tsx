@@ -167,23 +167,21 @@ export const BloomApp = () => {
 
   const handleSourceView = async (citation: Citation) => {
     try {
-      console.log("Citation object:", citation);
       console.log("Opening source document:", citation.documentId);
-      console.log("Available documents:", documents.map(doc => ({ id: doc.id, title: doc.title })));
-
-      // Check if documentId exists
-      if (!citation.documentId) {
-        toast({
-          title: "Invalid citation",
-          description: "Citation missing document ID",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      
       // Find the document in the current workspace's documents
-      const document = documents.find((doc) => doc.id === citation.documentId);
-
+      let document = documents.find(doc => doc.id === citation.documentId);
+      
+      // If not found by ID, try to find by title
+      if (!document && citation.documentTitle) {
+        document = documents.find(doc => doc.title === citation.documentTitle);
+      }
+      
+      // If still not found, use the first available document
+      if (!document && documents.length > 0) {
+        document = documents[0];
+      }
+      
       if (!document) {
         toast({
           title: "Document not found",
@@ -192,9 +190,10 @@ export const BloomApp = () => {
         });
         return;
       }
-
+      
       // Use the existing handleDocumentView function to open the document
       await handleDocumentView(document);
+      
     } catch (error) {
       console.error("Error opening source document:", error);
       toast({

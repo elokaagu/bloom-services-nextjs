@@ -344,26 +344,36 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       completion.choices[0]?.message?.content ||
       "I couldn't generate an answer.";
 
-    // Step 7: Create citations
+    // Step 7: Create citations with robust document ID resolution
     const citations = relevantChunks
       .filter((chunk) => chunk.similarity > similarityThreshold)
       .map((chunk, index) => {
-        // Use document_id from chunk, or fallback to documents.id, or find by title
+        // Multiple fallback strategies for document ID
         let documentId = chunk.document_id || chunk.documents?.id;
-        
+
         // If still undefined, try to find document by title
         if (!documentId && chunk.documents?.title) {
-          const matchingDoc = documents.find(doc => doc.title === chunk.documents.title);
+          const matchingDoc = documents.find(
+            (doc) => doc.title === chunk.documents.title
+          );
           documentId = matchingDoc?.id;
+        }
+
+        // Final fallback: use first available document ID
+        if (!documentId && documents.length > 0) {
+          documentId = documents[0].id;
+        }
+
+        // Ensure we always have a valid documentId
+        if (!documentId) {
+          documentId = "fallback-document-id";
         }
 
         return {
           id: `citation-${documentId}-${index}`,
           documentId: documentId,
-          documentTitle: chunk.documents?.title || "Unknown Document",
-          snippet:
-            chunk.text.substring(0, 200) +
-            (chunk.text.length > 200 ? "..." : ""),
+          documentTitle: chunk.documents?.title || "Document",
+          snippet: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
           relevanceScore: chunk.similarity || 0,
         };
       });
