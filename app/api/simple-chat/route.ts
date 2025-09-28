@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
     console.log("Step 2: Checking for chunks with embeddings...");
     const { data: chunks, error: chunksError } = await supabase
       .from("document_chunks")
-      .select(`
+      .select(
+        `
         id,
         document_id,
         text,
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
           title,
           workspace_id
         )
-      `)
+      `
+      )
       .not("embedding", "is", null)
       .eq("documents.workspace_id", normalizedWorkspaceId)
       .limit(20);
@@ -346,15 +348,22 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     const citations = relevantChunks
       .filter((chunk) => chunk.similarity > similarityThreshold)
       .map((chunk, index) => {
-        // Use document_id from chunk, or fallback to documents.id
-        const documentId = chunk.document_id || chunk.documents?.id;
+        // Use document_id from chunk, or fallback to documents.id, or find by title
+        let documentId = chunk.document_id || chunk.documents?.id;
         
+        // If still undefined, try to find document by title
+        if (!documentId && chunk.documents?.title) {
+          const matchingDoc = documents.find(doc => doc.title === chunk.documents.title);
+          documentId = matchingDoc?.id;
+        }
+
         return {
           id: `citation-${documentId}-${index}`,
           documentId: documentId,
           documentTitle: chunk.documents?.title || "Unknown Document",
           snippet:
-            chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+            chunk.text.substring(0, 200) +
+            (chunk.text.length > 200 ? "..." : ""),
           relevanceScore: chunk.similarity || 0,
         };
       });
