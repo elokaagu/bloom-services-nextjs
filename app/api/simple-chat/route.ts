@@ -348,7 +348,9 @@ export async function POST(req: NextRequest) {
 
       // If no chunks found but we have documents, create fallback citations
       if (documents && documents.length > 0) {
-        console.log("No chunks found, creating fallback citations from documents");
+        console.log(
+          "No chunks found, creating fallback citations from documents"
+        );
         const fallbackCitations = documents.slice(0, 3).map((doc, index) => ({
           id: `fallback-${doc.id}-${index}`,
           documentId: doc.id,
@@ -425,6 +427,7 @@ Please provide a helpful answer based on the context above. Include [Source n] c
 
     // Step 7: Create citations (only for chunks actually used and with appropriate relevance)
     console.log("Creating citations from relevant chunks...");
+    console.log("Total relevant chunks:", relevantChunks.length);
     console.log(
       "Relevant chunks sample:",
       relevantChunks.slice(0, 2).map((chunk) => ({
@@ -432,6 +435,8 @@ Please provide a helpful answer based on the context above. Include [Source n] c
         document_id: chunk.document_id,
         title: chunk.documents?.title,
         similarity: chunk.similarity,
+        hasDocumentId: !!chunk.document_id,
+        documentIdType: typeof chunk.document_id,
       }))
     );
 
@@ -442,7 +447,14 @@ Please provide a helpful answer based on the context above. Include [Source n] c
           chunkId: chunk.id,
           documentId: chunk.document_id,
           title: chunk.documents?.title,
+          hasDocumentId: !!chunk.document_id,
         });
+
+        // Safety check: ensure we have a valid documentId
+        if (!chunk.document_id) {
+          console.error(`Chunk ${chunk.id} has no document_id, skipping citation`);
+          return null;
+        }
 
         return {
           id: `citation-${chunk.document_id}-${index}`,
@@ -453,7 +465,8 @@ Please provide a helpful answer based on the context above. Include [Source n] c
             (chunk.text.length > 200 ? "..." : ""),
           relevanceScore: chunk.similarity || 0,
         };
-      });
+      })
+      .filter(citation => citation !== null); // Remove null citations
 
     // Log final citations for debugging
     console.log(
