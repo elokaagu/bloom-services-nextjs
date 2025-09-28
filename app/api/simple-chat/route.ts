@@ -373,7 +373,9 @@ Please provide a helpful answer based on the context above. Include [Source n] c
           id: `citation-${documentId}-${index}`,
           documentId: documentId,
           documentTitle: chunk.documents?.title || "Document",
-          snippet: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+          snippet:
+            chunk.text.substring(0, 200) +
+            (chunk.text.length > 200 ? "..." : ""),
           relevanceScore: chunk.similarity || 0,
         };
       });

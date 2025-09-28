@@ -235,7 +235,7 @@ export const BloomApp = () => {
           <ChatInterface
             onSourceView={handleSourceView}
             workspaceId={currentWorkspace.id}
-            userId="550e8400-e29b-41d4-a716-446655440002" // John Doe user UUID
+            userId="550e8400-e29b-41d4-a716-446655440002" // Eloka Agu user UUID
           />
         );
       case "admin":

@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Sparkles, 
-  FileText, 
-  Search, 
-  Users, 
-  Shield, 
+import {
+  Sparkles,
+  FileText,
+  Search,
+  Users,
+  Shield,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 // Removed react-router-dom import as this component is no longer used in Next.js
 
@@ -22,7 +22,7 @@ export const Homepage = () => {
     // Simulate login/authentication
     setTimeout(() => {
       // Navigation handled by Next.js routing
-      window.location.href = '/app';
+      window.location.href = "/app";
     }, 1500);
   };
 
@@ -30,30 +30,34 @@ export const Homepage = () => {
     {
       icon: Search,
       title: "Intelligent Search",
-      description: "Find information across all your documents instantly with AI-powered semantic search"
+      description:
+        "Find information across all your documents instantly with AI-powered semantic search",
     },
     {
       icon: FileText,
       title: "Document Management",
-      description: "Upload, organize, and manage all your organizational documents in one secure place"
+      description:
+        "Upload, organize, and manage all your organizational documents in one secure place",
     },
     {
       icon: Users,
       title: "Team Collaboration",
-      description: "Share knowledge and insights across your organization with granular access controls"
+      description:
+        "Share knowledge and insights across your organization with granular access controls",
     },
     {
       icon: Shield,
       title: "Enterprise Security",
-      description: "Bank-grade security with role-based access control and audit trails"
-    }
+      description:
+        "Bank-grade security with role-based access control and audit trails",
+    },
   ];
 
   const benefits = [
     "Reduce time spent searching for information by 80%",
     "Improve team productivity and knowledge sharing",
     "Ensure compliance with data governance policies",
-    "Scale your knowledge base as your organization grows"
+    "Scale your knowledge base as your organization grows",
   ];
 
   return (
@@ -67,11 +71,16 @@ export const Homepage = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Bloom</h1>
-              <p className="text-xs text-muted-foreground">AI Knowledge Platform</p>
+              <p className="text-xs text-muted-foreground">
+                AI Knowledge Platform
+              </p>
             </div>
           </div>
-          
-          <Badge variant="secondary" className="hidden sm:flex items-center space-x-1">
+
+          <Badge
+            variant="secondary"
+            className="hidden sm:flex items-center space-x-1"
+          >
             <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
             <span className="text-xs">Enterprise Ready</span>
           </Badge>
@@ -85,31 +94,34 @@ export const Homepage = () => {
             {/* Hero Content */}
             <div className="max-w-4xl mx-auto mb-12">
               <Badge variant="outline" className="mb-6 px-4 py-2">
-                <Image 
-                  src="/bloom_logo_icon.png" 
-                  alt="Bloom Logo" 
-                  width={16} 
-                  height={16} 
+                <Image
+                  src="/bloom_logo_icon.png"
+                  alt="Bloom Logo"
+                  width={16}
+                  height={16}
                   className="mr-2"
                 />
                 Powered by Advanced AI
               </Badge>
-              
+
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Transform Your
-                <span className="text-transparent bg-gradient-to-r from-primary via-primary-hover to-success bg-clip-text"> Knowledge </span>
+                <span className="text-transparent bg-gradient-to-r from-primary via-primary-hover to-success bg-clip-text">
+                  {" "}
+                  Knowledge{" "}
+                </span>
                 Into Intelligence
               </h1>
-              
+
               <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-                Bloom empowers your organization with AI-driven document intelligence. 
-                Upload, search, and discover insights from your knowledge base with 
-                unprecedented speed and accuracy.
+                Bloom empowers your organization with AI-driven document
+                intelligence. Upload, search, and discover insights from your
+                knowledge base with unprecedented speed and accuracy.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary-hover"
                   onClick={handleGetStarted}
                   disabled={isLoading}
@@ -126,8 +138,12 @@ export const Homepage = () => {
                     </>
                   )}
                 </Button>
-                
-                <Button variant="outline" size="lg" className="w-full sm:w-auto px-8 py-4 text-lg">
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto px-8 py-4 text-lg"
+                >
                   Watch Demo
                 </Button>
               </div>
@@ -135,9 +151,14 @@ export const Homepage = () => {
               {/* Benefits */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
                 {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center space-x-3 text-left">
+                  <div
+                    key={index}
+                    className="flex items-center space-x-3 text-left"
+                  >
                     <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{benefit}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {benefit}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -146,12 +167,19 @@ export const Homepage = () => {
             {/* Features Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
               {features.map((feature, index) => (
-                <Card key={index} className="p-6 text-center hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm">
+                <Card
+                  key={index}
+                  className="p-6 text-center hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm"
+                >
                   <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
                     <feature.icon className="h-6 w-6 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
                 </Card>
               ))}
             </div>
@@ -162,11 +190,11 @@ export const Homepage = () => {
                 Ready to unlock your organization&apos;s knowledge?
               </h2>
               <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Join thousands of teams already using Bloom to transform how they access, 
-                share, and discover organizational knowledge.
+                Join thousands of teams already using Bloom to transform how
+                they access, share, and discover organizational knowledge.
               </p>
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                 onClick={handleGetStarted}
                 disabled={isLoading}

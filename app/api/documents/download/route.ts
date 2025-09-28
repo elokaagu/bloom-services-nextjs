@@ -206,26 +206,26 @@ export async function GET(req: NextRequest) {
     // Return file with proper headers
     // Use the original filename from storage_path if available, otherwise use title
     let filename = document.title;
-    
+
     // Try to extract filename from storage_path
     if (document.storage_path) {
-      const pathParts = document.storage_path.split('/');
+      const pathParts = document.storage_path.split("/");
       const originalFilename = pathParts[pathParts.length - 1];
-      if (originalFilename && originalFilename.includes('.')) {
+      if (originalFilename && originalFilename.includes(".")) {
         filename = originalFilename;
       }
     }
-    
+
     // Ensure filename has proper extension based on file_type
-    if (document.file_type && !filename.includes('.')) {
-      const extension = document.file_type.split('/')[1];
+    if (document.file_type && !filename.includes(".")) {
+      const extension = document.file_type.split("/")[1];
       if (extension) {
         filename = `${filename}.${extension}`;
       }
     }
-    
+
     console.log("Using filename for download:", filename);
-    
+
     // Ensure filename is properly encoded for download
     const encodedFilename = encodeURIComponent(filename);
 

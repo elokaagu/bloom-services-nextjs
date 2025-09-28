@@ -54,8 +54,8 @@ interface Member {
 const mockMembers: Member[] = [
   {
     id: '1',
-    name: 'John Doe',
-    email: 'john.doe@company.com',
+    name: 'Eloka Agu',
+    email: 'eloka@satellitelabs.xyz',
     role: 'admin',
     joinedAt: '2024-01-15',
     lastActive: '2 hours ago',

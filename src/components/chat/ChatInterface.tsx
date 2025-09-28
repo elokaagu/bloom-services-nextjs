@@ -47,11 +47,11 @@ interface ChatInterfaceProps {
 export const ChatInterface = ({
   onSourceView,
   workspaceId = "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
-  userId = "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID
+  userId = "550e8400-e29b-41d4-a716-446655440002", // Eloka Agu user UUID
 }: ChatInterfaceProps) => {
   // Create a unique storage key for this workspace
   const storageKey = `bloom-chat-${workspaceId}`;
-  
+
   // Load messages from localStorage on component mount
   const loadMessages = (): Message[] => {
     try {
@@ -67,7 +67,7 @@ export const ChatInterface = ({
     } catch (error) {
       console.error("Error loading chat history:", error);
     }
-    
+
     // Return default welcome message if no saved history
     return [
       {

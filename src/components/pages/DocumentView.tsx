@@ -237,52 +237,59 @@ This document is ready but there's an issue accessing its content. This might be
       // Create a proper download link
       const url = window.URL.createObjectURL(blob);
       console.log("Created blob URL:", url);
-      
+
       // Method 1: Create a temporary download link (most reliable for downloads)
       try {
-        const tempLink = document.createElement('a');
+        const tempLink = document.createElement("a");
         tempLink.href = url;
-        
+
         // Try to get filename from response headers
-        const contentDisposition = response.headers.get('content-disposition');
+        const contentDisposition = response.headers.get("content-disposition");
         let filename = document.title;
-        
+
         if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          const filenameMatch = contentDisposition.match(
+            /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+          );
           if (filenameMatch && filenameMatch[1]) {
-            filename = filenameMatch[1].replace(/['"]/g, '');
+            filename = filenameMatch[1].replace(/['"]/g, "");
           }
         }
-        
+
         // Ensure filename has proper extension
-        if (!filename.includes('.')) {
+        if (!filename.includes(".")) {
           // Try to determine extension from content type
-          const contentType = response.headers.get('content-type');
+          const contentType = response.headers.get("content-type");
           if (contentType) {
-            const extension = contentType.split('/')[1];
+            const extension = contentType.split("/")[1];
             if (extension) {
               filename = `${filename}.${extension}`;
             }
           }
         }
-        
+
         tempLink.download = filename;
-        tempLink.style.display = 'none';
+        tempLink.style.display = "none";
         document.body.appendChild(tempLink);
         tempLink.click();
         document.body.removeChild(tempLink);
-        
-        console.log("✅ Download triggered successfully with filename:", filename);
+
+        console.log(
+          "✅ Download triggered successfully with filename:",
+          filename
+        );
         toast({
           title: "Download started",
           description: `${filename} is being downloaded`,
         });
-        
       } catch (downloadError) {
-        console.log("❌ Download link method failed, trying fallback:", downloadError);
-        
+        console.log(
+          "❌ Download link method failed, trying fallback:",
+          downloadError
+        );
+
         // Method 2: Fallback to opening in new tab
-        const newWindow = window.open(url, '_blank');
+        const newWindow = window.open(url, "_blank");
         if (newWindow) {
           console.log("✅ Opened file in new tab as fallback");
           toast({
@@ -304,7 +311,6 @@ This document is ready but there's an issue accessing its content. This might be
         window.URL.revokeObjectURL(url);
         console.log("Cleaned up blob URL");
       }, 5000);
-
     } catch (error) {
       console.error("Error downloading document:", error);
       toast({
