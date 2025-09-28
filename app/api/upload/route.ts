@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
         file_size: file.size,
         file_type: file.type,
         workspace_id: workspaceId,
-        owner: ownerId,
+        owner_id: ownerId, // Fixed: should be owner_id not owner
         status: "uploaded",
         acl: "private",
       })
