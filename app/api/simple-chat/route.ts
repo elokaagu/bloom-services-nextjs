@@ -88,20 +88,6 @@ export async function POST(req: NextRequest) {
       .eq("documents.workspace_id", normalizedWorkspaceId)
       .limit(20);
 
-    // Debug: Log the raw chunks data
-    console.log(
-      "Raw chunks from database:",
-      chunks?.slice(0, 1).map((chunk) => ({
-        id: chunk.id,
-        document_id: chunk.document_id,
-        hasEmbedding: !!chunk.embedding,
-        embeddingType: typeof chunk.embedding,
-        embeddingIsArray: Array.isArray(chunk.embedding),
-        embeddingLength: chunk.embedding?.length,
-        embeddingSample: chunk.embedding?.slice(0, 3),
-      }))
-    );
-
     if (chunksError) {
       console.error("Error fetching chunks:", chunksError);
       return NextResponse.json({
@@ -208,110 +194,40 @@ export async function POST(req: NextRequest) {
       // Manual vector similarity calculation
       const chunksWithSimilarity = chunks
         .map((chunk) => {
-          console.log(`Processing chunk ${chunk.id}:`, {
-            hasEmbedding: !!chunk.embedding,
-            embeddingType: typeof chunk.embedding,
-            embeddingLength: chunk.embedding?.length,
-            documentId: chunk.document_id,
-          });
+          if (!chunk.embedding) return { ...chunk, similarity: 0 };
 
-          if (!chunk.embedding) {
-            console.log(`Chunk ${chunk.id} has no embedding`);
-            return { ...chunk, similarity: 0 };
-          }
-
-          // Handle embedding data type - could be array, string, or object
+          // Handle embedding data type
           let embeddingArray;
-          try {
-            if (Array.isArray(chunk.embedding)) {
-              embeddingArray = chunk.embedding;
-              console.log(
-                `Chunk ${chunk.id} embedding is already array, length: ${embeddingArray.length}`
-              );
-            } else if (typeof chunk.embedding === "string") {
-              console.log(
-                `Chunk ${chunk.id} embedding is string, attempting to parse`
-              );
+          if (Array.isArray(chunk.embedding)) {
+            embeddingArray = chunk.embedding;
+          } else if (typeof chunk.embedding === "string") {
+            try {
               embeddingArray = JSON.parse(chunk.embedding);
-              console.log(
-                `Chunk ${chunk.id} parsed embedding, length: ${embeddingArray?.length}`
-              );
-            } else if (
-              typeof chunk.embedding === "object" &&
-              chunk.embedding !== null
-            ) {
-              console.log(
-                `Chunk ${chunk.id} embedding is object, attempting to convert to array`
-              );
-              // Try to convert object to array (might be a vector object)
-              if (chunk.embedding.data && Array.isArray(chunk.embedding.data)) {
-                embeddingArray = chunk.embedding.data;
-              } else if (
-                chunk.embedding.values &&
-                Array.isArray(chunk.embedding.values)
-              ) {
-                embeddingArray = chunk.embedding.values;
-              } else if (
-                chunk.embedding.embedding &&
-                Array.isArray(chunk.embedding.embedding)
-              ) {
-                embeddingArray = chunk.embedding.embedding;
-              } else {
-                // Try to convert object values to array
-                embeddingArray = Object.values(chunk.embedding).filter(
-                  (val) => typeof val === "number"
-                );
-              }
-              console.log(
-                `Chunk ${chunk.id} converted object to array, length: ${embeddingArray?.length}`
-              );
-            } else {
-              console.error(
-                `Chunk ${chunk.id} unknown embedding type:`,
-                typeof chunk.embedding,
-                chunk.embedding
-              );
+            } catch (e) {
               return { ...chunk, similarity: 0 };
             }
-
-            if (!Array.isArray(embeddingArray)) {
-              console.error(
-                `Chunk ${chunk.id} embedding is not an array after parsing:`,
-                typeof embeddingArray
-              );
-              return { ...chunk, similarity: 0 };
-            }
-
-            if (embeddingArray.length !== questionEmbedding.length) {
-              console.error(
-                `Chunk ${chunk.id} embedding length mismatch: ${embeddingArray.length} vs ${questionEmbedding.length}`
-              );
-              return { ...chunk, similarity: 0 };
-            }
-
-            // Calculate cosine similarity
-            const dotProduct = embeddingArray.reduce(
-              (sum, val, i) => sum + val * questionEmbedding[i],
-              0
-            );
-            const magnitudeA = Math.sqrt(
-              embeddingArray.reduce((sum, val) => sum + val * val, 0)
-            );
-            const magnitudeB = Math.sqrt(
-              questionEmbedding.reduce((sum, val) => sum + val * val, 0)
-            );
-            const similarity = dotProduct / (magnitudeA * magnitudeB);
-
-            console.log(
-              `Chunk ${chunk.id} similarity calculated: ${similarity.toFixed(
-                3
-              )}`
-            );
-            return { ...chunk, similarity };
-          } catch (error) {
-            console.error(`Error processing chunk ${chunk.id}:`, error);
+          } else {
             return { ...chunk, similarity: 0 };
           }
+
+          if (!Array.isArray(embeddingArray) || embeddingArray.length !== questionEmbedding.length) {
+            return { ...chunk, similarity: 0 };
+          }
+
+          // Calculate cosine similarity
+          const dotProduct = embeddingArray.reduce(
+            (sum, val, i) => sum + val * questionEmbedding[i],
+            0
+          );
+          const magnitudeA = Math.sqrt(
+            embeddingArray.reduce((sum, val) => sum + val * val, 0)
+          );
+          const magnitudeB = Math.sqrt(
+            questionEmbedding.reduce((sum, val) => sum + val * val, 0)
+          );
+          const similarity = dotProduct / (magnitudeA * magnitudeB);
+
+          return { ...chunk, similarity };
         })
         .sort((a, b) => b.similarity - a.similarity)
         .filter((chunk) => chunk.similarity > similarityThreshold) // Dynamic threshold based on question type
@@ -425,59 +341,17 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       completion.choices[0]?.message?.content ||
       "I couldn't generate an answer.";
 
-    // Step 7: Create citations (only for chunks actually used and with appropriate relevance)
-    console.log("Creating citations from relevant chunks...");
-    console.log("Total relevant chunks:", relevantChunks.length);
-    console.log(
-      "Relevant chunks sample:",
-      relevantChunks.slice(0, 2).map((chunk) => ({
-        id: chunk.id,
-        document_id: chunk.document_id,
-        title: chunk.documents?.title,
-        similarity: chunk.similarity,
-        hasDocumentId: !!chunk.document_id,
-        documentIdType: typeof chunk.document_id,
-      }))
-    );
-
+    // Step 7: Create citations
     const citations = relevantChunks
-      .filter((chunk) => chunk.similarity > similarityThreshold) // Use dynamic threshold
-      .map((chunk, index) => {
-        console.log(`Creating citation ${index}:`, {
-          chunkId: chunk.id,
-          documentId: chunk.document_id,
-          title: chunk.documents?.title,
-          hasDocumentId: !!chunk.document_id,
-        });
+      .filter((chunk) => chunk.similarity > similarityThreshold)
+      .map((chunk, index) => ({
+        id: `citation-${chunk.document_id}-${index}`,
+        documentId: chunk.document_id,
+        documentTitle: chunk.documents?.title || "Unknown Document",
+        snippet: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+        relevanceScore: chunk.similarity || 0,
+      }));
 
-        // Safety check: ensure we have a valid documentId
-        if (!chunk.document_id) {
-          console.error(`Chunk ${chunk.id} has no document_id, skipping citation`);
-          return null;
-        }
-
-        return {
-          id: `citation-${chunk.document_id}-${index}`,
-          documentId: chunk.document_id,
-          documentTitle: chunk.documents?.title || "Unknown Document",
-          snippet:
-            chunk.text.substring(0, 200) +
-            (chunk.text.length > 200 ? "..." : ""),
-          relevanceScore: chunk.similarity || 0,
-        };
-      })
-      .filter(citation => citation !== null); // Remove null citations
-
-    // Log final citations for debugging
-    console.log(
-      "Final citations:",
-      citations.map(
-        (c) =>
-          `${c.documentTitle} (${c.relevanceScore.toFixed(3)}) - ID: ${
-            c.documentId
-          }`
-      )
-    );
 
     console.log("=== ROBUST RAG CHAT API SUCCESS ===");
 
