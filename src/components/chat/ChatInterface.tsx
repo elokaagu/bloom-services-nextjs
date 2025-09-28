@@ -452,7 +452,7 @@ export const ChatInterface = ({
             Recent Sources
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Citations and references from your conversations
+            Citations and references
           </p>
         </div>
 
