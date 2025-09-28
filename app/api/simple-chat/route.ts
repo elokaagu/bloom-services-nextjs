@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
     console.log("Step 2: Checking for chunks with embeddings...");
     const { data: chunks, error: chunksError } = await supabase
       .from("document_chunks")
-      .select(`
+      .select(
+        `
         id,
         document_id,
         text,
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
           title,
           workspace_id
         )
-      `)
+      `
+      )
       .not("embedding", "is", null)
       .eq("documents.workspace_id", normalizedWorkspaceId)
       .limit(20);
@@ -101,9 +103,9 @@ export async function POST(req: NextRequest) {
 
     if (!chunks || chunks.length === 0) {
       console.log("No chunks with embeddings found");
-      const readyDocs = documents.filter(d => d.status === "ready");
-      const processingDocs = documents.filter(d => d.status === "processing");
-      
+      const readyDocs = documents.filter((d) => d.status === "ready");
+      const processingDocs = documents.filter((d) => d.status === "processing");
+
       if (processingDocs.length > 0) {
         return NextResponse.json({
           answer: `I can see ${documents.length} document(s) in your workspace, but they're still being processed. Please wait a moment and try again.`,
@@ -169,22 +171,54 @@ export async function POST(req: NextRequest) {
       }
     } catch (rpcError) {
       console.log("RPC function not available, using manual vector search");
-      
-      // Manual vector similarity calculation
-      const chunksWithSimilarity = chunks.map(chunk => {
-        if (!chunk.embedding) return { ...chunk, similarity: 0 };
-        
-        // Calculate cosine similarity
-        const dotProduct = chunk.embedding.reduce((sum, val, i) => 
-          sum + val * questionEmbedding[i], 0);
-        const magnitudeA = Math.sqrt(chunk.embedding.reduce((sum, val) => sum + val * val, 0));
-        const magnitudeB = Math.sqrt(questionEmbedding.reduce((sum, val) => sum + val * val, 0));
-        const similarity = dotProduct / (magnitudeA * magnitudeB);
-        
-        return { ...chunk, similarity };
-      }).sort((a, b) => b.similarity - a.similarity).slice(0, 6);
 
-      console.log(`Found ${chunksWithSimilarity.length} chunks via manual search`);
+        // Manual vector similarity calculation
+        const chunksWithSimilarity = chunks
+          .map((chunk) => {
+            if (!chunk.embedding) return { ...chunk, similarity: 0 };
+
+            // Handle embedding data type - could be array or string
+            let embeddingArray;
+            if (Array.isArray(chunk.embedding)) {
+              embeddingArray = chunk.embedding;
+            } else if (typeof chunk.embedding === 'string') {
+              try {
+                embeddingArray = JSON.parse(chunk.embedding);
+              } catch (e) {
+                console.error("Failed to parse embedding string:", e);
+                return { ...chunk, similarity: 0 };
+              }
+            } else {
+              console.error("Unknown embedding type:", typeof chunk.embedding);
+              return { ...chunk, similarity: 0 };
+            }
+
+            if (!Array.isArray(embeddingArray)) {
+              console.error("Embedding is not an array after parsing");
+              return { ...chunk, similarity: 0 };
+            }
+
+            // Calculate cosine similarity
+            const dotProduct = embeddingArray.reduce(
+              (sum, val, i) => sum + val * questionEmbedding[i],
+              0
+            );
+            const magnitudeA = Math.sqrt(
+              embeddingArray.reduce((sum, val) => sum + val * val, 0)
+            );
+            const magnitudeB = Math.sqrt(
+              questionEmbedding.reduce((sum, val) => sum + val * val, 0)
+            );
+            const similarity = dotProduct / (magnitudeA * magnitudeB);
+
+            return { ...chunk, similarity };
+          })
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 6);
+
+      console.log(
+        `Found ${chunksWithSimilarity.length} chunks via manual search`
+      );
       relevantChunks = chunksWithSimilarity;
       searchMethod = "manual_vector_search";
     }
@@ -253,7 +287,8 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       chunkId: chunk.id,
       documentId: chunk.document_id,
       documentTitle: chunk.documents?.title || "Unknown Document",
-      text: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+      text:
+        chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
       relevanceScore: chunk.similarity || 0,
     }));
 
