@@ -14,7 +14,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase-client";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
-import { EnvCheck } from "./EnvCheck";
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -105,7 +104,10 @@ export const SignInModal = ({
       console.error("Authentication error:", error);
       toast({
         title: "Authentication error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -248,11 +250,6 @@ export const SignInModal = ({
               ? "Already have an account? Sign in"
               : "Don't have an account? Sign up"}
           </Button>
-        </div>
-
-        {/* Environment Check - Temporary for debugging */}
-        <div className="mt-4">
-          <EnvCheck />
         </div>
       </DialogContent>
     </Dialog>
