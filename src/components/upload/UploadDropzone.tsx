@@ -33,7 +33,7 @@ interface UploadDropzoneProps {
 
 export const UploadDropzone = ({
   onUploadComplete,
-  maxSize = 50,
+  maxSize = 100,
   acceptedTypes = [".pdf", ".docx", ".pptx", ".txt", ".xlsx"],
   workspaceId = "550e8400-e29b-41d4-a716-446655440001", // Policy Research workspace UUID
   ownerId = "550e8400-e29b-41d4-a716-446655440002", // John Doe user UUID

@@ -13,6 +13,21 @@ const nextConfig = {
     "tesseract.js",
     "sharp",
   ],
+  experimental: {
+    serverComponentsExternalPackages: [
+      "pdf-parse",
+      "mammoth",
+      "pdfjs-dist",
+      "tesseract.js",
+      "sharp",
+    ],
+  },
+  // Increase body size limit for file uploads
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+  },
 };
 
 module.exports = nextConfig;

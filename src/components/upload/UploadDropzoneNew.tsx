@@ -31,7 +31,7 @@ interface UploadDropzoneProps {
 
 export const UploadDropzone = ({
   onUploadComplete,
-  maxSize = 50,
+  maxSize = 100,
   acceptedTypes = [".pdf", ".docx", ".pptx", ".txt", ".xlsx"],
 }: UploadDropzoneProps) => {
   const [isDragOver, setIsDragOver] = useState(false);

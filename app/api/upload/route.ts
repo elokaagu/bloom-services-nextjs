@@ -28,13 +28,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Check file size (limit to 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Check file size (limit to 100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
       console.error("File too large:", file.size, "bytes");
       return NextResponse.json(
         {
-          error: "File too large. Maximum size is 10MB.",
+          error: "File too large. Maximum size is 100MB.",
           fileSize: file.size,
           maxSize: maxSize,
         },
