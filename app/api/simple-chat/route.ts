@@ -194,43 +194,62 @@ export async function POST(req: NextRequest) {
       // Manual vector similarity calculation
       const chunksWithSimilarity = chunks
         .map((chunk) => {
-          if (!chunk.embedding) return { ...chunk, similarity: 0 };
+          console.log(`Processing chunk ${chunk.id}:`, {
+            hasEmbedding: !!chunk.embedding,
+            embeddingType: typeof chunk.embedding,
+            embeddingLength: chunk.embedding?.length,
+            documentId: chunk.document_id
+          });
+
+          if (!chunk.embedding) {
+            console.log(`Chunk ${chunk.id} has no embedding`);
+            return { ...chunk, similarity: 0 };
+          }
 
           // Handle embedding data type - could be array or string
           let embeddingArray;
-          if (Array.isArray(chunk.embedding)) {
-            embeddingArray = chunk.embedding;
-          } else if (typeof chunk.embedding === "string") {
-            try {
+          try {
+            if (Array.isArray(chunk.embedding)) {
+              embeddingArray = chunk.embedding;
+              console.log(`Chunk ${chunk.id} embedding is already array, length: ${embeddingArray.length}`);
+            } else if (typeof chunk.embedding === "string") {
+              console.log(`Chunk ${chunk.id} embedding is string, attempting to parse`);
               embeddingArray = JSON.parse(chunk.embedding);
-            } catch (e) {
-              console.error("Failed to parse embedding string:", e);
+              console.log(`Chunk ${chunk.id} parsed embedding, length: ${embeddingArray?.length}`);
+            } else {
+              console.error(`Chunk ${chunk.id} unknown embedding type:`, typeof chunk.embedding);
               return { ...chunk, similarity: 0 };
             }
-          } else {
-            console.error("Unknown embedding type:", typeof chunk.embedding);
+
+            if (!Array.isArray(embeddingArray)) {
+              console.error(`Chunk ${chunk.id} embedding is not an array after parsing:`, typeof embeddingArray);
+              return { ...chunk, similarity: 0 };
+            }
+
+            if (embeddingArray.length !== questionEmbedding.length) {
+              console.error(`Chunk ${chunk.id} embedding length mismatch: ${embeddingArray.length} vs ${questionEmbedding.length}`);
+              return { ...chunk, similarity: 0 };
+            }
+
+            // Calculate cosine similarity
+            const dotProduct = embeddingArray.reduce(
+              (sum, val, i) => sum + val * questionEmbedding[i],
+              0
+            );
+            const magnitudeA = Math.sqrt(
+              embeddingArray.reduce((sum, val) => sum + val * val, 0)
+            );
+            const magnitudeB = Math.sqrt(
+              questionEmbedding.reduce((sum, val) => sum + val * val, 0)
+            );
+            const similarity = dotProduct / (magnitudeA * magnitudeB);
+
+            console.log(`Chunk ${chunk.id} similarity calculated: ${similarity.toFixed(3)}`);
+            return { ...chunk, similarity };
+          } catch (error) {
+            console.error(`Error processing chunk ${chunk.id}:`, error);
             return { ...chunk, similarity: 0 };
           }
-
-          if (!Array.isArray(embeddingArray)) {
-            console.error("Embedding is not an array after parsing");
-            return { ...chunk, similarity: 0 };
-          }
-
-          // Calculate cosine similarity
-          const dotProduct = embeddingArray.reduce(
-            (sum, val, i) => sum + val * questionEmbedding[i],
-            0
-          );
-          const magnitudeA = Math.sqrt(
-            embeddingArray.reduce((sum, val) => sum + val * val, 0)
-          );
-          const magnitudeB = Math.sqrt(
-            questionEmbedding.reduce((sum, val) => sum + val * val, 0)
-          );
-          const similarity = dotProduct / (magnitudeA * magnitudeB);
-
-          return { ...chunk, similarity };
         })
         .sort((a, b) => b.similarity - a.similarity)
         .filter((chunk) => chunk.similarity > similarityThreshold) // Dynamic threshold based on question type
@@ -324,28 +343,32 @@ Please provide a helpful answer based on the context above. Include [Source n] c
 
     // Step 7: Create citations (only for chunks actually used and with appropriate relevance)
     console.log("Creating citations from relevant chunks...");
-    console.log("Relevant chunks sample:", relevantChunks.slice(0, 2).map(chunk => ({
-      id: chunk.id,
-      document_id: chunk.document_id,
-      title: chunk.documents?.title,
-      similarity: chunk.similarity
-    })));
-    
+    console.log(
+      "Relevant chunks sample:",
+      relevantChunks.slice(0, 2).map((chunk) => ({
+        id: chunk.id,
+        document_id: chunk.document_id,
+        title: chunk.documents?.title,
+        similarity: chunk.similarity,
+      }))
+    );
+
     const citations = relevantChunks
       .filter((chunk) => chunk.similarity > similarityThreshold) // Use dynamic threshold
       .map((chunk, index) => {
         console.log(`Creating citation ${index}:`, {
           chunkId: chunk.id,
           documentId: chunk.document_id,
-          title: chunk.documents?.title
+          title: chunk.documents?.title,
         });
-        
+
         return {
           id: `citation-${chunk.document_id}-${index}`,
           documentId: chunk.document_id,
           documentTitle: chunk.documents?.title || "Unknown Document",
           snippet:
-            chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+            chunk.text.substring(0, 200) +
+            (chunk.text.length > 200 ? "..." : ""),
           relevanceScore: chunk.similarity || 0,
         };
       });
@@ -354,7 +377,10 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     console.log(
       "Final citations:",
       citations.map(
-        (c) => `${c.documentTitle} (${c.relevanceScore.toFixed(3)}) - ID: ${c.documentId}`
+        (c) =>
+          `${c.documentTitle} (${c.relevanceScore.toFixed(3)}) - ID: ${
+            c.documentId
+          }`
       )
     );
 
