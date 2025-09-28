@@ -21,7 +21,13 @@ interface SignInModalProps {
   onSuccess: () => void;
 }
 
-export const SignInModal = ({ isOpen, onClose, onSuccess }: SignInModalProps) => {
+export const SignInModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}: SignInModalProps) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,10 +41,28 @@ export const SignInModal = ({ isOpen, onClose, onSuccess }: SignInModalProps) =>
 
     try {
       if (isSignUp) {
+        // Validate required fields for sign up
+        if (!firstName.trim() || !lastName.trim()) {
+          toast({
+            title: "Missing information",
+            description: "Please provide your first and last name.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
         // Sign up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+            },
+          },
         });
 
         if (error) {
@@ -88,6 +112,8 @@ export const SignInModal = ({ isOpen, onClose, onSuccess }: SignInModalProps) =>
   };
 
   const handleClose = () => {
+    setFirstName("");
+    setLastName("");
     setEmail("");
     setPassword("");
     setIsSignUp(false);
@@ -109,6 +135,37 @@ export const SignInModal = ({ isOpen, onClose, onSuccess }: SignInModalProps) =>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="Enter your first name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required={isSignUp}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Enter your last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required={isSignUp}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -155,12 +212,19 @@ export const SignInModal = ({ isOpen, onClose, onSuccess }: SignInModalProps) =>
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading || !email || !password}
+            disabled={
+              isLoading ||
+              !email ||
+              !password ||
+              (isSignUp && (!firstName.trim() || !lastName.trim()))
+            }
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{isSignUp ? "Creating Account..." : "Signing In..."}</span>
+                <span>
+                  {isSignUp ? "Creating Account..." : "Signing In..."}
+                </span>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
