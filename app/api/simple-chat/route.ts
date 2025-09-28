@@ -71,8 +71,7 @@ export async function POST(req: NextRequest) {
     console.log("Step 2: Checking for chunks with embeddings...");
     const { data: chunks, error: chunksError } = await supabase
       .from("document_chunks")
-      .select(
-        `
+      .select(`
         id,
         document_id,
         text,
@@ -82,8 +81,7 @@ export async function POST(req: NextRequest) {
           title,
           workspace_id
         )
-      `
-      )
+      `)
       .not("embedding", "is", null)
       .eq("documents.workspace_id", normalizedWorkspaceId)
       .limit(20);
@@ -210,7 +208,10 @@ export async function POST(req: NextRequest) {
             return { ...chunk, similarity: 0 };
           }
 
-          if (!Array.isArray(embeddingArray) || embeddingArray.length !== questionEmbedding.length) {
+          if (
+            !Array.isArray(embeddingArray) ||
+            embeddingArray.length !== questionEmbedding.length
+          ) {
             return { ...chunk, similarity: 0 };
           }
 
@@ -344,14 +345,19 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     // Step 7: Create citations
     const citations = relevantChunks
       .filter((chunk) => chunk.similarity > similarityThreshold)
-      .map((chunk, index) => ({
-        id: `citation-${chunk.document_id}-${index}`,
-        documentId: chunk.document_id,
-        documentTitle: chunk.documents?.title || "Unknown Document",
-        snippet: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
-        relevanceScore: chunk.similarity || 0,
-      }));
-
+      .map((chunk, index) => {
+        // Use document_id from chunk, or fallback to documents.id
+        const documentId = chunk.document_id || chunk.documents?.id;
+        
+        return {
+          id: `citation-${documentId}-${index}`,
+          documentId: documentId,
+          documentTitle: chunk.documents?.title || "Unknown Document",
+          snippet:
+            chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+          relevanceScore: chunk.similarity || 0,
+        };
+      });
 
     console.log("=== ROBUST RAG CHAT API SUCCESS ===");
 
