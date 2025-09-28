@@ -1,135 +1,189 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase";
+import { advancedPDFProcessor } from "@/lib/advanced-pdf-processor";
+import OpenAI from "openai";
+import { simpleChunk } from "@/lib/simple-chunk";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {
     console.log("=== MANUAL DOCUMENT PROCESSING START ===");
-
+    
     const { documentId } = await req.json();
-
+    
     if (!documentId) {
-      return NextResponse.json(
-        { error: "Document ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Document ID is required" }, { status: 400 });
     }
-
+    
     const supabase = supabaseService();
-
-    // Get document details
+    
+    // Get the document
     const { data: document, error: docError } = await supabase
       .from("documents")
       .select("*")
       .eq("id", documentId)
       .single();
-
+    
     if (docError || !document) {
-      console.error("Document not found:", docError);
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
-
-    console.log(`Processing document: ${document.title} (${document.id})`);
-    console.log(`Current status: ${document.status}`);
-
-    // Update status to processing
+    
+    console.log("Processing document:", document.title);
+    console.log("Document status:", document.status);
+    console.log("Storage path:", document.storage_path);
+    
+    if (!document.storage_path) {
+      return NextResponse.json({ error: "No storage path found" }, { status: 400 });
+    }
+    
+    // Download the file from storage
+    console.log("Downloading file from storage...");
+    const { data: fileData, error: fileError } = await supabase.storage
+      .from("documents")
+      .download(document.storage_path);
+    
+    if (fileError) {
+      console.error("Storage error:", fileError);
+      return NextResponse.json({ error: `Storage error: ${fileError.message}` }, { status: 500 });
+    }
+    
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+    console.log("File downloaded, size:", buffer.length, "bytes");
+    
+    // Process the file based on type
+    let text = "";
+    let metadata = {};
+    
+    if (document.title.endsWith(".pdf")) {
+      console.log("Processing PDF with advanced processor...");
+      const result = await advancedPDFProcessor.processPDF(buffer);
+      text = result.formattedText;
+      metadata = result.metadata;
+      
+      // Update document with metadata and page data
+      await supabase
+        .from("documents")
+        .update({
+          metadata: result.metadata,
+          page_data: result.pages.map(page => ({
+            pageNumber: page.pageNumber,
+            imageData: page.imageData,
+            text: page.text,
+            formattedText: page.formattedText,
+          })),
+        })
+        .eq("id", documentId);
+      
+      console.log("PDF processed, text length:", text.length);
+    } else if (document.title.endsWith(".docx")) {
+      console.log("Processing DOCX file...");
+      const mammoth = await import("mammoth");
+      const result = await mammoth.extractRawText({ buffer });
+      text = result.value;
+      console.log("DOCX processed, text length:", text.length);
+    } else {
+      console.log("Processing as plain text...");
+      text = buffer.toString("utf-8");
+      console.log("Text processed, length:", text.length);
+    }
+    
+    if (!text || text.trim().length === 0) {
+      return NextResponse.json({ error: "No text content extracted" }, { status: 400 });
+    }
+    
+    // Clean the text
+    const cleanedText = text
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    
+    console.log("Text cleaned, length:", cleanedText.length);
+    
+    // Create chunks
+    console.log("Creating chunks...");
+    const chunks = simpleChunk(cleanedText, {
+      maxChunkSize: 1000,
+      overlap: 200,
+    });
+    
+    console.log("Created", chunks.length, "chunks");
+    
+    // Generate embeddings for each chunk
+    console.log("Generating embeddings...");
+    const chunkPromises = chunks.map(async (chunk, index) => {
+      try {
+        console.log(`Generating embedding for chunk ${index + 1}/${chunks.length}`);
+        
+        const embeddingResponse = await openai.embeddings.create({
+          model: process.env.EMBEDDING_MODEL || "text-embedding-3-small",
+          input: chunk,
+        });
+        
+        const embedding = embeddingResponse.data[0].embedding;
+        
+        return {
+          document_id: documentId,
+          text: chunk,
+          embedding: embedding,
+          chunk_index: index,
+        };
+      } catch (error) {
+        console.error(`Error generating embedding for chunk ${index + 1}:`, error);
+        return null;
+      }
+    });
+    
+    const chunkData = await Promise.all(chunkPromises);
+    const validChunks = chunkData.filter(chunk => chunk !== null);
+    
+    console.log("Generated embeddings for", validChunks.length, "chunks");
+    
+    if (validChunks.length === 0) {
+      return NextResponse.json({ error: "Failed to generate embeddings" }, { status: 500 });
+    }
+    
+    // Insert chunks into database
+    console.log("Inserting chunks into database...");
+    const { data: insertedChunks, error: insertError } = await supabase
+      .from("document_chunks")
+      .insert(validChunks)
+      .select();
+    
+    if (insertError) {
+      console.error("Error inserting chunks:", insertError);
+      return NextResponse.json({ error: `Database error: ${insertError.message}` }, { status: 500 });
+    }
+    
+    console.log("Inserted", insertedChunks?.length || 0, "chunks");
+    
+    // Update document status
     await supabase
       .from("documents")
-      .update({ status: "processing" })
+      .update({ 
+        status: "ready",
+        error_message: null 
+      })
       .eq("id", documentId);
-
-    // Trigger ingestion
-    const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ documentId: document.id }),
+    
+    console.log("Document status updated to ready");
+    console.log("=== MANUAL DOCUMENT PROCESSING SUCCESS ===");
+    
+    return NextResponse.json({
+      success: true,
+      message: `Successfully processed ${document.title}`,
+      documentId: documentId,
+      chunksCreated: validChunks.length,
+      textLength: cleanedText.length,
+      metadata: metadata,
     });
-
-    if (!ingestResponse.ok) {
-      const errorData = await ingestResponse.json();
-      console.error("Ingest API failed:", errorData);
-      
-      await supabase
-        .from("documents")
-        .update({ status: "failed", error: errorData.error })
-        .eq("id", documentId);
-
-      return NextResponse.json({
-        success: false,
-        error: "Ingest API failed",
-        details: errorData,
-        document: {
-          id: document.id,
-          title: document.title,
-          status: "failed",
-        },
-      });
-    }
-
-    const ingestResult = await ingestResponse.json();
-    console.log("Ingest API successful:", ingestResult);
-
-    // Check if chunks were created
-    const { data: chunks, error: chunksError } = await supabase
-      .from("document_chunks")
-      .select("id, chunk_no, text")
-      .eq("document_id", documentId)
-      .order("chunk_no");
-
-    if (chunksError) {
-      console.error("Error checking chunks:", chunksError);
-    }
-
-    if (chunks && chunks.length > 0) {
-      // Update status to ready
-      await supabase
-        .from("documents")
-        .update({ status: "ready" })
-        .eq("id", documentId);
-
-      console.log(`Document processed successfully with ${chunks.length} chunks`);
-
-      return NextResponse.json({
-        success: true,
-        message: `Document ${document.title} processed successfully`,
-        document: {
-          id: document.id,
-          title: document.title,
-          status: "ready",
-        },
-        chunksCreated: chunks.length,
-        chunksPreview: chunks.slice(0, 2).map((c) => ({
-          chunkNo: c.chunk_no,
-          textPreview: c.text.substring(0, 100) + "...",
-        })),
-      });
-    } else {
-      console.error("No chunks were created");
-      await supabase
-        .from("documents")
-        .update({ status: "failed", error: "No chunks created" })
-        .eq("id", documentId);
-
-      return NextResponse.json({
-        success: false,
-        error: "No chunks were created",
-        document: {
-          id: document.id,
-          title: document.title,
-          status: "failed",
-        },
-      });
-    }
+    
   } catch (error: any) {
     console.error("=== MANUAL DOCUMENT PROCESSING ERROR ===", error);
-    return NextResponse.json(
-      {
-        error: error.message,
-        stack: error.stack,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      error: error.message,
+      stack: error.stack 
+    }, { status: 500 });
   }
 }

@@ -3,160 +3,126 @@ import { supabaseService } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== PROCESS ALL DOCUMENTS API START ===");
-
+    console.log("=== PROCESS ALL DOCUMENTS START ===");
+    
     const supabase = supabaseService();
-
-    // Get all documents that don't have chunks yet
+    
+    // Get all ready documents that don't have chunks
     const { data: documents, error: docsError } = await supabase
       .from("documents")
-      .select(
-        `
+      .select(`
         id,
         title,
-        storage_path,
         status,
+        storage_path,
         workspace_id
-      `
-      )
-      .eq("workspace_id", "550e8400-e29b-41d4-a716-446655440001") // Default workspace
-      .in("status", ["uploading", "failed", "ready"]); // Include ready to re-process if needed
-
+      `)
+      .eq("status", "ready")
+      .not("storage_path", "is", null);
+    
     if (docsError) {
       console.error("Error fetching documents:", docsError);
-      return NextResponse.json(
-        { error: `Failed to fetch documents: ${docsError.message}` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: docsError.message }, { status: 500 });
     }
-
+    
+    console.log("Found", documents?.length || 0, "documents to process");
+    
     if (!documents || documents.length === 0) {
-      console.log("No documents found to process");
-      return NextResponse.json({
-        success: true,
+      return NextResponse.json({ 
         message: "No documents found to process",
-        processed: 0,
+        processed: 0 
       });
     }
-
-    console.log(`Found ${documents.length} documents to process.`);
+    
     const results = [];
-
+    
     for (const doc of documents) {
-      // Check if chunks already exist for this document
-      const { count: chunksCount, error: chunksCountError } = await supabase
-        .from("document_chunks")
-        .select("id", { count: "exact" })
-        .eq("document_id", doc.id);
-
-      if (chunksCountError) {
-        console.error(
-          `Error checking chunks for document ${doc.id}:`,
-          chunksCountError
-        );
-        results.push({
-          documentId: doc.id,
-          title: doc.title,
-          success: false,
-          error: `Failed to check existing chunks: ${chunksCountError.message}`,
-        });
-        continue;
-      }
-
-      if (chunksCount && chunksCount > 0) {
-        console.log(
-          `Document ${doc.title} (${doc.id}) already has ${chunksCount} chunks. Skipping ingestion.`
-        );
-        results.push({
-          documentId: doc.id,
-          title: doc.title,
-          success: true,
-          message: "Already processed",
-          chunks: chunksCount,
-        });
-        continue;
-      }
-
       try {
-        console.log(`Processing document: ${doc.title} (${doc.id})`);
-
-        // Trigger ingestion for this document
-        const ingestResponse = await fetch(
-          `${req.nextUrl.origin}/api/ingest`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ documentId: doc.id }),
-          }
-        );
-
-        if (ingestResponse.ok) {
-          const ingestResult = await ingestResponse.json();
+        console.log(`Processing document: ${doc.title}`);
+        
+        // Check if document already has chunks
+        const { data: existingChunks } = await supabase
+          .from("document_chunks")
+          .select("id")
+          .eq("document_id", doc.id)
+          .limit(1);
+        
+        if (existingChunks && existingChunks.length > 0) {
+          console.log(`Document ${doc.title} already has chunks, skipping`);
           results.push({
             documentId: doc.id,
             title: doc.title,
-            success: true,
-            chunks: ingestResult.chunks || 0,
+            status: "skipped",
+            reason: "Already has chunks"
+          });
+          continue;
+        }
+        
+        // Process the document
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/process-document-manual`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ documentId: doc.id }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Successfully processed ${doc.title}`);
+          results.push({
+            documentId: doc.id,
+            title: doc.title,
+            status: "success",
+            chunksCreated: result.chunksCreated,
+            textLength: result.textLength
           });
         } else {
-          const errorData = await ingestResponse.json();
+          const error = await response.json();
+          console.error(`Failed to process ${doc.title}:`, error);
           results.push({
             documentId: doc.id,
             title: doc.title,
-            success: false,
-            error: errorData.error,
+            status: "error",
+            error: error.error || "Unknown error"
           });
-          // Update document status to failed if ingestion failed
-          await supabase
-            .from("documents")
-            .update({ status: "failed", error: errorData.error })
-            .eq("id", doc.id);
         }
+        
       } catch (error: any) {
-        console.error(`Error processing document ${doc.id}:`, error);
+        console.error(`Error processing ${doc.title}:`, error);
         results.push({
           documentId: doc.id,
           title: doc.title,
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          status: "error",
+          error: error.message
         });
-        // Update document status to failed
-        await supabase
-          .from("documents")
-          .update({
-            status: "failed",
-            error: error instanceof Error ? error.message : "Unknown error",
-          })
-          .eq("id", doc.id);
       }
     }
-
-    const successful = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
-
-    console.log(
-      `Processing complete: ${successful} successful, ${failed} failed`
-    );
-    console.log("=== PROCESS ALL DOCUMENTS API SUCCESS ===");
-
+    
+    const successCount = results.filter(r => r.status === "success").length;
+    const errorCount = results.filter(r => r.status === "error").length;
+    const skippedCount = results.filter(r => r.status === "skipped").length;
+    
+    console.log("=== PROCESS ALL DOCUMENTS COMPLETE ===");
+    console.log(`Success: ${successCount}, Errors: ${errorCount}, Skipped: ${skippedCount}`);
+    
     return NextResponse.json({
       success: true,
-      message: `Processing complete: ${successful} successful, ${failed} failed`,
-      results,
+      message: `Processed ${documents.length} documents`,
       summary: {
         total: documents.length,
-        successful,
-        failed,
+        success: successCount,
+        error: errorCount,
+        skipped: skippedCount
       },
+      results: results
     });
-  } catch (e: any) {
-    console.error("=== PROCESS ALL DOCUMENTS API ERROR ===", e);
-    return NextResponse.json(
-      {
-        error: e.message,
-        stack: e.stack,
-      },
-      { status: 500 }
-    );
+    
+  } catch (error: any) {
+    console.error("=== PROCESS ALL DOCUMENTS ERROR ===", error);
+    return NextResponse.json({ 
+      error: error.message,
+      stack: error.stack 
+    }, { status: 500 });
   }
 }
