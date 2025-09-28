@@ -295,6 +295,11 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     }
   };
 
+  const handleUploadComplete = (files: File[]) => {
+    fetchDocuments();
+    setIsUploadOpen(false);
+  };
+
   const handleDocumentDelete = async (doc: Document) => {
     try {
       setDeletingDocuments((prev) => new Set(prev).add(doc.id));
