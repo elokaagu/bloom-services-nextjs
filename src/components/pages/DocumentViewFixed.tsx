@@ -160,33 +160,34 @@ This document is ready but there's an issue accessing its content. This might be
       // Get the file blob
       const blob = await response.blob();
 
-      // Create download link using a more robust approach
+      // Use a simpler approach - create a temporary URL and open it
       const url = window.URL.createObjectURL(blob);
       
-      // Use a more defensive approach to create the link
-      let link: HTMLAnchorElement;
+      // Try to trigger download using a simple approach
       try {
-        link = document.createElement("a");
-      } catch (error) {
-        console.error("Failed to create anchor element:", error);
-        // Fallback: try to open the URL directly
-        window.open(url, '_blank');
-        window.URL.revokeObjectURL(url);
-        console.log("Download started successfully (fallback method)");
-        return;
+        // Method 1: Try using a temporary link element
+        const tempLink = document.createElement("a");
+        tempLink.href = url;
+        tempLink.download = document.title;
+        tempLink.style.display = "none";
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
+      } catch (createError) {
+        console.log("Link creation failed, trying alternative method:", createError);
+        
+        // Method 2: Fallback to opening in new tab
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+          // Method 3: Last resort - try to navigate to the URL
+          window.location.href = url;
+        }
       }
 
-      link.href = url;
-      link.download = document.title;
-      link.style.display = "none";
-
-      // Add to DOM, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      window.URL.revokeObjectURL(url);
+      // Clean up after a delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
 
       console.log("Download started successfully");
     } catch (error) {
@@ -235,16 +236,20 @@ This document is ready but there's an issue accessing its content. This might be
             // First split on double newlines
             .split(/\n\s*\n/)
             // If no double newlines, split on single newlines but be smarter about it
-            .flatMap(p => {
-              if (p.includes('\n') && !p.includes('\n\n')) {
+            .flatMap((p) => {
+              if (p.includes("\n") && !p.includes("\n\n")) {
                 // Split on single newlines but group related content
-                return p.split('\n').reduce((acc, line) => {
+                return p.split("\n").reduce((acc, line) => {
                   const trimmedLine = line.trim();
                   if (!trimmedLine) return acc;
-                  
+
                   // If current line is short and previous line is long, combine them
-                  if (acc.length > 0 && trimmedLine.length < 50 && acc[acc.length - 1].length > 50) {
-                    acc[acc.length - 1] += ' ' + trimmedLine;
+                  if (
+                    acc.length > 0 &&
+                    trimmedLine.length < 50 &&
+                    acc[acc.length - 1].length > 50
+                  ) {
+                    acc[acc.length - 1] += " " + trimmedLine;
                   } else {
                     acc.push(trimmedLine);
                   }
@@ -253,7 +258,7 @@ This document is ready but there's an issue accessing its content. This might be
               }
               return [p.trim()];
             })
-            .filter(p => p.trim().length > 0);
+            .filter((p) => p.trim().length > 0);
 
           return paragraphs.map((paragraph, index) => {
             const trimmedParagraph = paragraph.trim();
@@ -261,66 +266,66 @@ This document is ready but there's an issue accessing its content. This might be
 
             // Handle headings
             if (trimmedParagraph.startsWith("# ")) {
-            return (
-              <h1
-                key={index}
-                className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
-              >
-                {trimmedParagraph.slice(2)}
-              </h1>
-            );
-          } else if (trimmedParagraph.startsWith("## ")) {
-            return (
-              <h2
-                key={index}
-                className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
-              >
-                <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
-                {trimmedParagraph.slice(3)}
-              </h2>
-            );
-          } else if (trimmedParagraph.startsWith("### ")) {
-            return (
-              <h3
-                key={index}
-                className="text-xl font-medium mb-3 mt-6 text-foreground/90"
-              >
-                {trimmedParagraph.slice(4)}
-              </h3>
-            );
-          } else if (trimmedParagraph.startsWith("- ")) {
-            return (
-              <div key={index} className="flex items-start mb-2 ml-6">
-                <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
-                <p className="text-foreground/80 leading-relaxed">
+              return (
+                <h1
+                  key={index}
+                  className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
+                >
                   {trimmedParagraph.slice(2)}
+                </h1>
+              );
+            } else if (trimmedParagraph.startsWith("## ")) {
+              return (
+                <h2
+                  key={index}
+                  className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
+                >
+                  <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
+                  {trimmedParagraph.slice(3)}
+                </h2>
+              );
+            } else if (trimmedParagraph.startsWith("### ")) {
+              return (
+                <h3
+                  key={index}
+                  className="text-xl font-medium mb-3 mt-6 text-foreground/90"
+                >
+                  {trimmedParagraph.slice(4)}
+                </h3>
+              );
+            } else if (trimmedParagraph.startsWith("- ")) {
+              return (
+                <div key={index} className="flex items-start mb-2 ml-6">
+                  <div className="w-2 h-2 bg-primary/60 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>
+                  <p className="text-foreground/80 leading-relaxed">
+                    {trimmedParagraph.slice(2)}
+                  </p>
+                </div>
+              );
+            } else if (trimmedParagraph.match(/^\d+\. /)) {
+              const number = trimmedParagraph.match(/^(\d+)\. /)?.[1];
+              const text = trimmedParagraph.replace(/^\d+\. /, "");
+              return (
+                <div key={index} className="flex items-start mb-2 ml-6">
+                  <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
+                    {number}
+                  </span>
+                  <p className="text-foreground/80 leading-relaxed">{text}</p>
+                </div>
+              );
+            } else if (trimmedParagraph.trim() === "") {
+              return <div key={index} className="h-4"></div>;
+            } else {
+              return (
+                <p
+                  key={index}
+                  className="text-foreground/80 leading-relaxed mb-4"
+                >
+                  {trimmedParagraph}
                 </p>
-              </div>
-            );
-          } else if (trimmedParagraph.match(/^\d+\. /)) {
-            const number = trimmedParagraph.match(/^(\d+)\. /)?.[1];
-            const text = trimmedParagraph.replace(/^\d+\. /, "");
-            return (
-              <div key={index} className="flex items-start mb-2 ml-6">
-                <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
-                  {number}
-                </span>
-                <p className="text-foreground/80 leading-relaxed">{text}</p>
-              </div>
-            );
-          } else if (trimmedParagraph.trim() === "") {
-            return <div key={index} className="h-4"></div>;
-          } else {
-            return (
-              <p
-                key={index}
-                className="text-foreground/80 leading-relaxed mb-4"
-              >
-                {trimmedParagraph}
-              </p>
-            );
-          }
-        });
+              );
+            }
+          });
         })()}
       </div>
     );
@@ -485,7 +490,6 @@ This document is ready but there's an issue accessing its content. This might be
                           {document.uploadedAt}
                         </p>
                       </div>
-
 
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">

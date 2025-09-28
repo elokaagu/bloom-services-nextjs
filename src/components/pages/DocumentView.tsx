@@ -21,11 +21,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  ArrowLeft, 
-  Download, 
-  Share, 
-  FileText, 
+import {
+  ArrowLeft,
+  Download,
+  Share,
+  FileText,
   Eye,
   Users,
   Lock,
@@ -52,26 +52,26 @@ interface DocumentViewProps {
 
 const getACLInfo = (acl: Document["acl"]) => {
   const variants = {
-    private: { 
+    private: {
       label: "Private",
       icon: Lock,
       description: "Only you can access this document",
       className: "text-gray-600",
     },
-    workspace: { 
+    workspace: {
       label: "Workspace",
       icon: Users,
       description: "Accessible to all workspace members",
       className: "text-blue-600",
     },
-    organization: { 
+    organization: {
       label: "Organization",
       icon: Globe,
       description: "Accessible to all organization members",
       className: "text-green-600",
     },
   };
-  
+
   return variants[acl];
 };
 
@@ -233,36 +233,34 @@ This document is ready but there's an issue accessing its content. This might be
       // Get the file blob
       const blob = await response.blob();
 
-      // Create download link using a more robust approach
+      // Use a simpler approach - create a temporary URL and open it
       const url = window.URL.createObjectURL(blob);
       
-      // Use a more defensive approach to create the link
-      let link: HTMLAnchorElement;
+      // Try to trigger download using a simple approach
       try {
-        link = document.createElement("a");
-      } catch (error) {
-        console.error("Failed to create anchor element:", error);
-        // Fallback: try to open the URL directly
-        window.open(url, '_blank');
-        window.URL.revokeObjectURL(url);
-        toast({
-          title: "Download started",
-          description: `${document.title} is being downloaded`,
-        });
-        return;
+        // Method 1: Try using a temporary link element
+        const tempLink = document.createElement("a");
+        tempLink.href = url;
+        tempLink.download = document.title;
+        tempLink.style.display = "none";
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
+      } catch (createError) {
+        console.log("Link creation failed, trying alternative method:", createError);
+        
+        // Method 2: Fallback to opening in new tab
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+          // Method 3: Last resort - try to navigate to the URL
+          window.location.href = url;
+        }
       }
 
-      link.href = url;
-      link.download = document.title;
-      link.style.display = "none";
-
-      // Add to DOM, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      window.URL.revokeObjectURL(url);
+      // Clean up after a delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
 
       toast({
         title: "Download started",
@@ -364,16 +362,20 @@ This document is ready but there's an issue accessing its content. This might be
             // First split on double newlines
             .split(/\n\s*\n/)
             // If no double newlines, split on single newlines but be smarter about it
-            .flatMap(p => {
-              if (p.includes('\n') && !p.includes('\n\n')) {
+            .flatMap((p) => {
+              if (p.includes("\n") && !p.includes("\n\n")) {
                 // Split on single newlines but group related content
-                return p.split('\n').reduce((acc, line) => {
+                return p.split("\n").reduce((acc, line) => {
                   const trimmedLine = line.trim();
                   if (!trimmedLine) return acc;
-                  
+
                   // If current line is short and previous line is long, combine them
-                  if (acc.length > 0 && trimmedLine.length < 50 && acc[acc.length - 1].length > 50) {
-                    acc[acc.length - 1] += ' ' + trimmedLine;
+                  if (
+                    acc.length > 0 &&
+                    trimmedLine.length < 50 &&
+                    acc[acc.length - 1].length > 50
+                  ) {
+                    acc[acc.length - 1] += " " + trimmedLine;
                   } else {
                     acc.push(trimmedLine);
                   }
@@ -382,84 +384,87 @@ This document is ready but there's an issue accessing its content. This might be
               }
               return [p.trim()];
             })
-            .filter(p => p.trim().length > 0);
+            .filter((p) => p.trim().length > 0);
 
           return paragraphs.map((paragraph, index) => {
             const trimmedParagraph = paragraph.trim();
             if (!trimmedParagraph) return null;
 
-          // Handle headings
-          if (trimmedParagraph.startsWith("# ")) {
-            return (
-              <h1
-                key={index}
-                className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
-              >
-                {trimmedParagraph.slice(2)}
-              </h1>
-            );
-          } else if (trimmedParagraph.startsWith("## ")) {
-            return (
-              <h2
-                key={index}
-                className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
-              >
-                <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
-                {trimmedParagraph.slice(3)}
-              </h2>
-            );
-          } else if (trimmedParagraph.startsWith("### ")) {
-            return (
-              <h3
-                key={index}
-                className="text-xl font-medium mb-3 mt-6 text-foreground/90"
-              >
-                {trimmedParagraph.slice(4)}
-              </h3>
-            );
-          } else if (
-            trimmedParagraph.startsWith("- ") ||
-            trimmedParagraph.startsWith("• ")
-          ) {
-            // Handle bullet points
-            return (
-              <ul key={index} className="list-disc list-inside mb-4 space-y-1">
-                {trimmedParagraph
-                  .split(/\n(?=- |• )/)
-                  .map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      className="text-foreground/80 leading-relaxed"
-                    >
-                      {item.replace(/^[-•] /, "")}
-                    </li>
-                  ))}
-              </ul>
-            );
-          } else if (trimmedParagraph.match(/^\d+\. /)) {
-            // Handle numbered lists
-            const number = trimmedParagraph.match(/^(\d+)\. /)?.[1];
-            const text = trimmedParagraph.replace(/^\d+\. /, "");
-            return (
-              <div key={index} className="flex items-start mb-4 ml-6">
-                <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
-                  {number}
-                </span>
-                <p className="text-foreground/80 leading-relaxed">{text}</p>
-              </div>
-            );
-          } else {
-            // Regular paragraph
-            return (
-              <p
-                key={index}
-                className="text-foreground/80 leading-relaxed mb-4"
-              >
-                {trimmedParagraph}
-              </p>
-            );
-          }
-        });
+            // Handle headings
+            if (trimmedParagraph.startsWith("# ")) {
+              return (
+                <h1
+                  key={index}
+                  className="text-3xl font-bold mb-6 text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent border-b border-border/20 pb-3"
+                >
+                  {trimmedParagraph.slice(2)}
+                </h1>
+              );
+            } else if (trimmedParagraph.startsWith("## ")) {
+              return (
+                <h2
+                  key={index}
+                  className="text-2xl font-semibold mb-4 mt-8 text-foreground relative"
+                >
+                  <span className="absolute -left-4 top-0 w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></span>
+                  {trimmedParagraph.slice(3)}
+                </h2>
+              );
+            } else if (trimmedParagraph.startsWith("### ")) {
+              return (
+                <h3
+                  key={index}
+                  className="text-xl font-medium mb-3 mt-6 text-foreground/90"
+                >
+                  {trimmedParagraph.slice(4)}
+                </h3>
+              );
+            } else if (
+              trimmedParagraph.startsWith("- ") ||
+              trimmedParagraph.startsWith("• ")
+            ) {
+              // Handle bullet points
+              return (
+                <ul
+                  key={index}
+                  className="list-disc list-inside mb-4 space-y-1"
+                >
+                  {trimmedParagraph
+                    .split(/\n(?=- |• )/)
+                    .map((item, itemIndex) => (
+                      <li
+                        key={itemIndex}
+                        className="text-foreground/80 leading-relaxed"
+                      >
+                        {item.replace(/^[-•] /, "")}
+                      </li>
+                    ))}
+                </ul>
+              );
+            } else if (trimmedParagraph.match(/^\d+\. /)) {
+              // Handle numbered lists
+              const number = trimmedParagraph.match(/^(\d+)\. /)?.[1];
+              const text = trimmedParagraph.replace(/^\d+\. /, "");
+              return (
+                <div key={index} className="flex items-start mb-4 ml-6">
+                  <span className="w-6 h-6 bg-primary/20 text-primary text-sm font-medium rounded-full flex items-center justify-center mt-1 mr-3 flex-shrink-0">
+                    {number}
+                  </span>
+                  <p className="text-foreground/80 leading-relaxed">{text}</p>
+                </div>
+              );
+            } else {
+              // Regular paragraph
+              return (
+                <p
+                  key={index}
+                  className="text-foreground/80 leading-relaxed mb-4"
+                >
+                  {trimmedParagraph}
+                </p>
+              );
+            }
+          });
         })()}
       </div>
     );
@@ -471,9 +476,9 @@ This document is ready but there's an issue accessing its content. This might be
       <div className="border-b bg-card/50 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 gap-4">
           <div className="flex items-start space-x-4 min-w-0 flex-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onBack}
               className="text-muted-foreground hover:text-foreground flex-shrink-0"
             >
@@ -481,9 +486,9 @@ This document is ready but there's an issue accessing its content. This might be
               <span className="hidden sm:inline">Back to Library</span>
               <span className="sm:hidden">Back</span>
             </Button>
-            
+
             <Separator orientation="vertical" className="h-6 hidden sm:block" />
-            
+
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
               <div className="min-w-0 flex-1">
@@ -504,7 +509,7 @@ This document is ready but there's an issue accessing its content. This might be
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center flex-wrap gap-2">
             <Select
               value={document.acl}
@@ -549,9 +554,9 @@ This document is ready but there's an issue accessing its content. This might be
                   size="sm"
                   className="h-8 px-2 sm:px-3"
                 >
-              <Share className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
+                  <Share className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
@@ -597,7 +602,7 @@ This document is ready but there's an issue accessing its content. This might be
               {isDownloading ? (
                 <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 animate-spin" />
               ) : (
-              <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
               )}
               <span className="hidden sm:inline">
                 {isDownloading ? "Downloading..." : "Download"}
@@ -627,7 +632,7 @@ This document is ready but there's an issue accessing its content. This might be
                 Details
               </TabsTrigger>
             </TabsList>
-            
+
             {/* PDF View Mode Toggle */}
             {document.title.endsWith(".pdf") &&
               document.pageData &&
@@ -663,7 +668,7 @@ This document is ready but there's an issue accessing its content. This might be
                 </ScrollArea>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="analytics" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <div className="p-4 sm:p-8">
@@ -679,55 +684,54 @@ This document is ready but there's an issue accessing its content. This might be
                 </div>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="metadata" className="flex-1 mt-0">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80 h-full">
                 <div className="p-4 sm:p-8">
-                <div className="space-y-4">
+                  <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <FileIcon className="h-5 w-5 text-muted-foreground" />
                       <span className="font-medium">Document Details</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Title
                         </label>
                         <p className="text-sm text-foreground">
                           {document.title}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Status
                         </label>
                         <p className="text-sm text-foreground capitalize">
                           {document.status}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Size
                         </label>
                         <p className="text-sm text-foreground">
                           {document.size}
                         </p>
-                    </div>
+                      </div>
 
-                    <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Uploaded
                         </label>
                         <p className="text-sm text-foreground">
                           {document.uploadedAt}
                         </p>
-                    </div>
+                      </div>
 
-                  
-                  <div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">
                           Access Level
                         </label>
@@ -745,9 +749,9 @@ This document is ready but there's an issue accessing its content. This might be
                         <p className="text-sm text-foreground capitalize">
                           {contentSource}
                         </p>
-                  </div>
+                      </div>
                     )}
-                  
+
                     {document.summary && (
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">
@@ -831,7 +835,7 @@ This document is ready but there's an issue accessing its content. This might be
                           )}
                         </div>
                       </div>
-                  )}
+                    )}
                   </div>
                 </div>
               </Card>
