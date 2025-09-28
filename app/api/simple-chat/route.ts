@@ -323,22 +323,38 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       "I couldn't generate an answer.";
 
     // Step 7: Create citations (only for chunks actually used and with appropriate relevance)
+    console.log("Creating citations from relevant chunks...");
+    console.log("Relevant chunks sample:", relevantChunks.slice(0, 2).map(chunk => ({
+      id: chunk.id,
+      document_id: chunk.document_id,
+      title: chunk.documents?.title,
+      similarity: chunk.similarity
+    })));
+    
     const citations = relevantChunks
       .filter((chunk) => chunk.similarity > similarityThreshold) // Use dynamic threshold
-      .map((chunk, index) => ({
-        id: `citation-${chunk.document_id}-${index}`,
-        documentId: chunk.document_id,
-        documentTitle: chunk.documents?.title || "Unknown Document",
-        snippet:
-          chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
-        relevanceScore: chunk.similarity || 0,
-      }));
+      .map((chunk, index) => {
+        console.log(`Creating citation ${index}:`, {
+          chunkId: chunk.id,
+          documentId: chunk.document_id,
+          title: chunk.documents?.title
+        });
+        
+        return {
+          id: `citation-${chunk.document_id}-${index}`,
+          documentId: chunk.document_id,
+          documentTitle: chunk.documents?.title || "Unknown Document",
+          snippet:
+            chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+          relevanceScore: chunk.similarity || 0,
+        };
+      });
 
     // Log final citations for debugging
     console.log(
       "Final citations:",
       citations.map(
-        (c) => `${c.index}. ${c.documentTitle} (${c.relevanceScore.toFixed(3)})`
+        (c) => `${c.documentTitle} (${c.relevanceScore.toFixed(3)}) - ID: ${c.documentId}`
       )
     );
 
