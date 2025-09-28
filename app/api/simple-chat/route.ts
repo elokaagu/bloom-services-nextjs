@@ -54,25 +54,26 @@ export async function POST(req: NextRequest) {
 
     // Step 2: Use vector similarity search to find relevant chunks
     console.log("Step 2: Performing vector similarity search...");
-    
+
     // Use the match_chunks function for efficient vector search
     const { data: similarChunks, error: searchError } = await supabase.rpc(
-      'match_chunks',
+      "match_chunks",
       {
         p_workspace_id: normalizedWorkspaceId,
         p_query_embedding: questionEmbedding,
-        p_match_count: 8 // Get top 8 most relevant chunks
+        p_match_count: 8, // Get top 8 most relevant chunks
       }
     );
 
     if (searchError) {
       console.error("Vector search error:", searchError);
-      
+
       // Fallback to manual vector search if RPC function fails
       console.log("Falling back to manual vector search...");
       const { data: fallbackChunks, error: fallbackError } = await supabase
         .from("document_chunks")
-        .select(`
+        .select(
+          `
           id,
           document_id,
           text,
@@ -82,10 +83,11 @@ export async function POST(req: NextRequest) {
             title,
             workspace_id
           )
-        `)
+        `
+        )
         .not("embedding", "is", null)
         .eq("documents.workspace_id", normalizedWorkspaceId)
-        .limit(20);
+        .limit(50); // Increased limit for fallback
 
       if (fallbackError) {
         console.error("Fallback search also failed:", fallbackError);
@@ -98,22 +100,45 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Manual similarity calculation for fallback
-      const chunksWithSimilarity = fallbackChunks?.map(chunk => {
-        if (!chunk.embedding) return { ...chunk, similarity: 0 };
-        
-        // Calculate cosine similarity
-        const dotProduct = chunk.embedding.reduce((sum, val, i) => 
-          sum + val * questionEmbedding[i], 0);
-        const magnitudeA = Math.sqrt(chunk.embedding.reduce((sum, val) => sum + val * val, 0));
-        const magnitudeB = Math.sqrt(questionEmbedding.reduce((sum, val) => sum + val * val, 0));
-        const similarity = dotProduct / (magnitudeA * magnitudeB);
-        
-        return { ...chunk, similarity };
-      }).sort((a, b) => b.similarity - a.similarity).slice(0, 8) || [];
+      if (!fallbackChunks || fallbackChunks.length === 0) {
+        console.log("No chunks with embeddings found in workspace");
+        return NextResponse.json({
+          answer:
+            "I don't see any processed documents in your workspace yet. Upload some documents and wait for them to be processed, then I'll be able to help you find information from them!",
+          citations: [],
+          chunksFound: 0,
+          error: "No processed documents found",
+        });
+      }
 
-      console.log(`Found ${chunksWithSimilarity.length} relevant chunks via fallback`);
-      
+      // Manual similarity calculation for fallback
+      const chunksWithSimilarity =
+        fallbackChunks
+          ?.map((chunk) => {
+            if (!chunk.embedding) return { ...chunk, similarity: 0 };
+
+            // Calculate cosine similarity
+            const dotProduct = chunk.embedding.reduce(
+              (sum, val, i) => sum + val * questionEmbedding[i],
+              0
+            );
+            const magnitudeA = Math.sqrt(
+              chunk.embedding.reduce((sum, val) => sum + val * val, 0)
+            );
+            const magnitudeB = Math.sqrt(
+              questionEmbedding.reduce((sum, val) => sum + val * val, 0)
+            );
+            const similarity = dotProduct / (magnitudeA * magnitudeB);
+
+            return { ...chunk, similarity };
+          })
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 8) || [];
+
+      console.log(
+        `Found ${chunksWithSimilarity.length} relevant chunks via fallback`
+      );
+
       if (chunksWithSimilarity.length === 0) {
         return NextResponse.json({
           answer:
@@ -176,7 +201,8 @@ Please provide a helpful answer based on the context above. Include [Source n] c
         chunkId: chunk.id,
         documentId: chunk.document_id,
         documentTitle: chunk.documents?.title || "Unknown Document",
-        text: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+        text:
+          chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
         relevanceScore: chunk.similarity || 0,
       }));
 
@@ -193,7 +219,9 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       });
     }
 
-    console.log(`Found ${similarChunks?.length || 0} relevant chunks via vector search`);
+    console.log(
+      `Found ${similarChunks?.length || 0} relevant chunks via vector search`
+    );
 
     if (!similarChunks || similarChunks.length === 0) {
       return NextResponse.json({
@@ -217,16 +245,19 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     console.log(`Context built: ${context.length} characters`);
 
     // Step 4: Get document titles for better citations
-    const documentIds = [...new Set(similarChunks.map(chunk => chunk.document_id))];
+    const documentIds = [
+      ...new Set(similarChunks.map((chunk) => chunk.document_id)),
+    ];
     const { data: documents } = await supabase
       .from("documents")
       .select("id, title")
       .in("id", documentIds);
 
-    const documentTitles = documents?.reduce((acc, doc) => {
-      acc[doc.id] = doc.title;
-      return acc;
-    }, {} as Record<string, string>) || {};
+    const documentTitles =
+      documents?.reduce((acc, doc) => {
+        acc[doc.id] = doc.title;
+        return acc;
+      }, {} as Record<string, string>) || {};
 
     // Step 5: Generate answer using OpenAI
     console.log("Step 4: Generating answer...");
@@ -272,7 +303,8 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       chunkId: chunk.id,
       documentId: chunk.document_id,
       documentTitle: documentTitles[chunk.document_id] || "Unknown Document",
-      text: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+      text:
+        chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
       relevanceScore: chunk.similarity || 0,
     }));
 
