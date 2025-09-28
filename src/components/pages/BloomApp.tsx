@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { DocumentLibrary } from "./DocumentLibrary";
 import { DocumentView } from "./DocumentView";
@@ -49,7 +49,57 @@ export const BloomApp = () => {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
     null
   );
+  const [documents, setDocuments] = useState<Document[]>([]);
   const { toast } = useToast();
+
+  // Fetch documents from database
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({
+        workspaceId: "550e8400-e29b-41d4-a716-446655440001",
+      });
+
+      const response = await fetch(`/api/documents-supabase?${params}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch documents: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        const transformedDocuments: Document[] = data.documents.map(
+          (doc: any) => ({
+            id: doc.id,
+            title: doc.title,
+            type:
+              (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
+              "pdf",
+            size: doc.fileSize || "Size not available",
+            uploadedAt: new Date(doc.created_at).toLocaleDateString(),
+            status: doc.status,
+            acl: doc.acl || "workspace",
+            owner: doc.users?.name || doc.users?.email || "Unknown User",
+            error: doc.error,
+            summary: doc.summary,
+            summaryUpdatedAt: doc.summary_updated_at,
+          })
+        );
+
+        setDocuments(transformedDocuments);
+      } else {
+        throw new Error(data.error || "Failed to fetch documents");
+      }
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+      setDocuments([]);
+    }
+  }, []);
+
+  // Fetch documents on component mount
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const handleWorkspaceChange = (workspace: Workspace) => {
     setCurrentWorkspace(workspace);
@@ -117,11 +167,23 @@ export const BloomApp = () => {
 
   const handleSourceView = async (citation: Citation) => {
     try {
+      console.log("Citation object:", citation);
       console.log("Opening source document:", citation.documentId);
-      
+      console.log("Available documents:", documents.map(doc => ({ id: doc.id, title: doc.title })));
+
+      // Check if documentId exists
+      if (!citation.documentId) {
+        toast({
+          title: "Invalid citation",
+          description: "Citation missing document ID",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Find the document in the current workspace's documents
-      const document = documents.find(doc => doc.id === citation.documentId);
-      
+      const document = documents.find((doc) => doc.id === citation.documentId);
+
       if (!document) {
         toast({
           title: "Document not found",
@@ -130,10 +192,9 @@ export const BloomApp = () => {
         });
         return;
       }
-      
+
       // Use the existing handleDocumentView function to open the document
       await handleDocumentView(document);
-      
     } catch (error) {
       console.error("Error opening source document:", error);
       toast({
