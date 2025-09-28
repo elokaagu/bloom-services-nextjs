@@ -21,7 +21,7 @@ async function generateQuestionEmbedding(question: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== IMPROVED RAG CHAT API START ===");
+    console.log("=== ROBUST RAG CHAT API START ===");
 
     const { workspaceId, userId, question } = await req.json();
 
@@ -36,8 +36,99 @@ export async function POST(req: NextRequest) {
 
     const supabase = supabaseService();
 
-    // Step 1: Generate question embedding
-    console.log("Step 1: Generating question embedding...");
+    // Step 1: Check if we have any documents in the workspace
+    console.log("Step 1: Checking for documents in workspace...");
+    const { data: documents, error: docsError } = await supabase
+      .from("documents")
+      .select("id, title, status, workspace_id")
+      .eq("workspace_id", normalizedWorkspaceId)
+      .limit(10);
+
+    if (docsError) {
+      console.error("Error fetching documents:", docsError);
+      return NextResponse.json({
+        answer:
+          "I'm having trouble accessing the document database. Please try again later.",
+        citations: [],
+        error: "Database error",
+        details: docsError.message,
+      });
+    }
+
+    console.log(`Found ${documents?.length || 0} documents in workspace`);
+
+    if (!documents || documents.length === 0) {
+      console.log("No documents found in workspace");
+      return NextResponse.json({
+        answer:
+          "I don't see any documents in this workspace yet. Upload some documents and I'll be able to help you find information from them!",
+        citations: [],
+        documentsFound: 0,
+      });
+    }
+
+    // Step 2: Check if we have any chunks with embeddings
+    console.log("Step 2: Checking for chunks with embeddings...");
+    const { data: chunks, error: chunksError } = await supabase
+      .from("document_chunks")
+      .select(`
+        id,
+        document_id,
+        text,
+        embedding,
+        documents!inner (
+          id,
+          title,
+          workspace_id
+        )
+      `)
+      .not("embedding", "is", null)
+      .eq("documents.workspace_id", normalizedWorkspaceId)
+      .limit(20);
+
+    if (chunksError) {
+      console.error("Error fetching chunks:", chunksError);
+      return NextResponse.json({
+        answer:
+          "I'm having trouble accessing document content. Please try again later.",
+        citations: [],
+        error: "Chunk retrieval error",
+        details: chunksError.message,
+      });
+    }
+
+    console.log(`Found ${chunks?.length || 0} chunks with embeddings`);
+
+    if (!chunks || chunks.length === 0) {
+      console.log("No chunks with embeddings found");
+      const readyDocs = documents.filter(d => d.status === "ready");
+      const processingDocs = documents.filter(d => d.status === "processing");
+      
+      if (processingDocs.length > 0) {
+        return NextResponse.json({
+          answer: `I can see ${documents.length} document(s) in your workspace, but they're still being processed. Please wait a moment and try again.`,
+          citations: [],
+          documentsFound: documents.length,
+          processingDocuments: processingDocs.length,
+        });
+      } else if (readyDocs.length > 0) {
+        return NextResponse.json({
+          answer: `I can see ${documents.length} document(s) in your workspace, but they haven't been processed for AI search yet. This usually happens automatically after upload.`,
+          citations: [],
+          documentsFound: documents.length,
+          readyDocuments: readyDocs.length,
+        });
+      } else {
+        return NextResponse.json({
+          answer: `I can see ${documents.length} document(s) in your workspace, but they're not ready for search yet.`,
+          citations: [],
+          documentsFound: documents.length,
+        });
+      }
+    }
+
+    // Step 3: Generate question embedding
+    console.log("Step 3: Generating question embedding...");
     let questionEmbedding;
     try {
       questionEmbedding = await generateQuestionEmbedding(question);
@@ -52,178 +143,53 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Step 2: Use vector similarity search to find relevant chunks
-    console.log("Step 2: Performing vector similarity search...");
+    // Step 4: Try vector similarity search (with fallback)
+    console.log("Step 4: Performing vector similarity search...");
+    let relevantChunks = [];
+    let searchMethod = "none";
 
-    // Use the match_chunks function for efficient vector search
-    const { data: similarChunks, error: searchError } = await supabase.rpc(
-      "match_chunks",
-      {
-        p_workspace_id: normalizedWorkspaceId,
-        p_query_embedding: questionEmbedding,
-        p_match_count: 8, // Get top 8 most relevant chunks
-      }
-    );
-
-    if (searchError) {
-      console.error("Vector search error:", searchError);
-
-      // Fallback to manual vector search if RPC function fails
-      console.log("Falling back to manual vector search...");
-      const { data: fallbackChunks, error: fallbackError } = await supabase
-        .from("document_chunks")
-        .select(
-          `
-          id,
-          document_id,
-          text,
-          embedding,
-          documents!inner (
-            id,
-            title,
-            workspace_id
-          )
-        `
-        )
-        .not("embedding", "is", null)
-        .eq("documents.workspace_id", normalizedWorkspaceId)
-        .limit(50); // Increased limit for fallback
-
-      if (fallbackError) {
-        console.error("Fallback search also failed:", fallbackError);
-        return NextResponse.json({
-          answer:
-            "I'm having trouble searching through your documents. Please try again later.",
-          citations: [],
-          error: "Search error",
-          details: fallbackError.message,
-        });
-      }
-
-      if (!fallbackChunks || fallbackChunks.length === 0) {
-        console.log("No chunks with embeddings found in workspace");
-        return NextResponse.json({
-          answer:
-            "I don't see any processed documents in your workspace yet. Upload some documents and wait for them to be processed, then I'll be able to help you find information from them!",
-          citations: [],
-          chunksFound: 0,
-          error: "No processed documents found",
-        });
-      }
-
-      // Manual similarity calculation for fallback
-      const chunksWithSimilarity =
-        fallbackChunks
-          ?.map((chunk) => {
-            if (!chunk.embedding) return { ...chunk, similarity: 0 };
-
-            // Calculate cosine similarity
-            const dotProduct = chunk.embedding.reduce(
-              (sum, val, i) => sum + val * questionEmbedding[i],
-              0
-            );
-            const magnitudeA = Math.sqrt(
-              chunk.embedding.reduce((sum, val) => sum + val * val, 0)
-            );
-            const magnitudeB = Math.sqrt(
-              questionEmbedding.reduce((sum, val) => sum + val * val, 0)
-            );
-            const similarity = dotProduct / (magnitudeA * magnitudeB);
-
-            return { ...chunk, similarity };
-          })
-          .sort((a, b) => b.similarity - a.similarity)
-          .slice(0, 8) || [];
-
-      console.log(
-        `Found ${chunksWithSimilarity.length} relevant chunks via fallback`
+    // Try RPC function first
+    try {
+      const { data: rpcChunks, error: rpcError } = await supabase.rpc(
+        "match_chunks",
+        {
+          p_workspace_id: normalizedWorkspaceId,
+          p_query_embedding: questionEmbedding,
+          p_match_count: 6,
+        }
       );
 
-      if (chunksWithSimilarity.length === 0) {
-        return NextResponse.json({
-          answer:
-            "I couldn't find any relevant information in your documents to answer this question. Try asking about something else or upload more documents.",
-          citations: [],
-          chunksFound: 0,
-        });
+      if (!rpcError && rpcChunks && rpcChunks.length > 0) {
+        console.log(`Found ${rpcChunks.length} chunks via RPC function`);
+        relevantChunks = rpcChunks;
+        searchMethod = "rpc_vector_search";
+      } else {
+        console.log("RPC function failed or returned no results:", rpcError);
+        throw new Error("RPC function not available");
       }
+    } catch (rpcError) {
+      console.log("RPC function not available, using manual vector search");
+      
+      // Manual vector similarity calculation
+      const chunksWithSimilarity = chunks.map(chunk => {
+        if (!chunk.embedding) return { ...chunk, similarity: 0 };
+        
+        // Calculate cosine similarity
+        const dotProduct = chunk.embedding.reduce((sum, val, i) => 
+          sum + val * questionEmbedding[i], 0);
+        const magnitudeA = Math.sqrt(chunk.embedding.reduce((sum, val) => sum + val * val, 0));
+        const magnitudeB = Math.sqrt(questionEmbedding.reduce((sum, val) => sum + val * val, 0));
+        const similarity = dotProduct / (magnitudeA * magnitudeB);
+        
+        return { ...chunk, similarity };
+      }).sort((a, b) => b.similarity - a.similarity).slice(0, 6);
 
-      // Use fallback results
-      const finalChunks = chunksWithSimilarity;
-      const context = finalChunks
-        .map((chunk, index) => {
-          const docTitle = chunk.documents?.title || "Unknown Document";
-          return `[Source ${index + 1} - ${docTitle}]\n${chunk.text}`;
-        })
-        .join("\n\n");
-
-      // Generate answer using OpenAI
-      console.log("Step 3: Generating answer...");
-      const prompt = [
-        {
-          role: "system",
-          content: `You are Bloom, an AI assistant for a knowledge management platform. You help users find information from their uploaded documents.
-
-IMPORTANT RULES:
-- Only answer based on the provided CONTEXT from the documents
-- If the answer is not in the context, say "I don't have enough information in the uploaded documents to answer this question"
-- Be conversational, helpful, and friendly
-- Include [Source n] citations where n refers to the numbered sources
-- If you reference specific information, always cite the source
-- Use a professional but approachable tone
-- If the question is very general or unclear, provide a helpful response about what you can help with`,
-        },
-        {
-          role: "user",
-          content: `QUESTION: ${question}
-
-CONTEXT FROM DOCUMENTS:
-${context}
-
-Please provide a helpful answer based on the context above. Include [Source n] citations for any information you reference.`,
-        },
-      ] as any;
-
-      const completion = await openai.chat.completions.create({
-        model: process.env.GENERATION_MODEL || "gpt-4o-mini",
-        messages: prompt,
-        temperature: 0.3,
-        max_tokens: 1000,
-      });
-
-      const answer =
-        completion.choices[0]?.message?.content ||
-        "I couldn't generate an answer.";
-
-      // Create citations
-      const citations = finalChunks.map((chunk, index) => ({
-        index: index + 1,
-        chunkId: chunk.id,
-        documentId: chunk.document_id,
-        documentTitle: chunk.documents?.title || "Unknown Document",
-        text:
-          chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
-        relevanceScore: chunk.similarity || 0,
-      }));
-
-      console.log("=== IMPROVED RAG CHAT API SUCCESS (FALLBACK) ===");
-
-      return NextResponse.json({
-        answer,
-        citations,
-        chunksFound: finalChunks.length,
-        contextLength: context.length,
-        workspaceId: normalizedWorkspaceId,
-        userId: normalizedUserId,
-        searchMethod: "fallback_vector_search",
-      });
+      console.log(`Found ${chunksWithSimilarity.length} chunks via manual search`);
+      relevantChunks = chunksWithSimilarity;
+      searchMethod = "manual_vector_search";
     }
 
-    console.log(
-      `Found ${similarChunks?.length || 0} relevant chunks via vector search`
-    );
-
-    if (!similarChunks || similarChunks.length === 0) {
+    if (relevantChunks.length === 0) {
       return NextResponse.json({
         answer:
           "I couldn't find any relevant information in your documents to answer this question. Try asking about something else or upload more documents.",
@@ -232,35 +198,19 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       });
     }
 
-    // Step 3: Build context from most relevant chunks
-    console.log("Step 3: Building context from relevant chunks...");
-    const context = similarChunks
+    // Step 5: Build context from relevant chunks
+    console.log("Step 5: Building context from relevant chunks...");
+    const context = relevantChunks
       .map((chunk, index) => {
-        // Get document title for each chunk
-        const docTitle = `Document ${chunk.document_id}`; // We'll need to fetch this separately
+        const docTitle = chunk.documents?.title || "Unknown Document";
         return `[Source ${index + 1} - ${docTitle}]\n${chunk.text}`;
       })
       .join("\n\n");
 
     console.log(`Context built: ${context.length} characters`);
 
-    // Step 4: Get document titles for better citations
-    const documentIds = [
-      ...new Set(similarChunks.map((chunk) => chunk.document_id)),
-    ];
-    const { data: documents } = await supabase
-      .from("documents")
-      .select("id, title")
-      .in("id", documentIds);
-
-    const documentTitles =
-      documents?.reduce((acc, doc) => {
-        acc[doc.id] = doc.title;
-        return acc;
-      }, {} as Record<string, string>) || {};
-
-    // Step 5: Generate answer using OpenAI
-    console.log("Step 4: Generating answer...");
+    // Step 6: Generate answer using OpenAI
+    console.log("Step 6: Generating answer...");
     const prompt = [
       {
         role: "system",
@@ -297,30 +247,30 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       completion.choices[0]?.message?.content ||
       "I couldn't generate an answer.";
 
-    // Step 6: Create citations with document titles
-    const citations = similarChunks.map((chunk, index) => ({
+    // Step 7: Create citations
+    const citations = relevantChunks.map((chunk, index) => ({
       index: index + 1,
       chunkId: chunk.id,
       documentId: chunk.document_id,
-      documentTitle: documentTitles[chunk.document_id] || "Unknown Document",
-      text:
-        chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+      documentTitle: chunk.documents?.title || "Unknown Document",
+      text: chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
       relevanceScore: chunk.similarity || 0,
     }));
 
-    console.log("=== IMPROVED RAG CHAT API SUCCESS ===");
+    console.log("=== ROBUST RAG CHAT API SUCCESS ===");
 
     return NextResponse.json({
       answer,
       citations,
-      chunksFound: similarChunks.length,
+      chunksFound: relevantChunks.length,
+      documentsFound: documents.length,
       contextLength: context.length,
       workspaceId: normalizedWorkspaceId,
       userId: normalizedUserId,
-      searchMethod: "vector_similarity_search",
+      searchMethod,
     });
   } catch (error: any) {
-    console.error("=== IMPROVED RAG CHAT API ERROR ===", error);
+    console.error("=== ROBUST RAG CHAT API ERROR ===", error);
     return NextResponse.json(
       {
         answer:
