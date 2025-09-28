@@ -97,7 +97,7 @@ export const ChatInterface = ({
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/simple-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +116,7 @@ export const ChatInterface = ({
         await processDocumentsIfNeeded();
 
         // Try the chat request again
-        const retryResponse = await fetch("/api/chat", {
+        const retryResponse = await fetch("/api/simple-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
