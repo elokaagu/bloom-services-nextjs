@@ -215,11 +215,17 @@ export async function POST(req: NextRequest) {
         .eq("id", document.id);
 
       // Call our working direct chunk creation API
-      const chunkResponse = await fetch(`${req.nextUrl.origin}/api/create-chunks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: document.id }),
-      });
+      console.log("Calling chunk creation API for document:", document.id);
+      const chunkResponse = await fetch(
+        `${req.nextUrl.origin}/api/create-chunks`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentId: document.id }),
+          // Add timeout to prevent hanging
+          signal: AbortSignal.timeout(60000), // 60 second timeout
+        }
+      );
 
       if (chunkResponse.ok) {
         const chunkResult = await chunkResponse.json();
@@ -229,42 +235,52 @@ export async function POST(req: NextRequest) {
           // Update status to ready with chunk info
           await supabase
             .from("documents")
-            .update({ 
+            .update({
               status: "ready",
-              error: chunkResult.chunksFailed > 0 ? `${chunkResult.chunksFailed} chunks failed` : null
+              error:
+                chunkResult.chunksFailed > 0
+                  ? `${chunkResult.chunksFailed} chunks failed`
+                  : null,
             })
             .eq("id", document.id);
-          
-          console.log(`✅ Document ready with ${chunkResult.chunksCreated} chunks`);
+
+          console.log(
+            `✅ Document ready with ${chunkResult.chunksCreated} chunks`
+          );
         } else {
           // Chunk creation failed, but file is accessible
+          console.error("Chunk creation failed:", chunkResult);
           await supabase
             .from("documents")
             .update({
               status: "ready",
-              error: "Chunk creation failed but file accessible",
+              error: `Chunk creation failed: ${chunkResult.error || 'Unknown error'}`,
             })
             .eq("id", document.id);
-          
+
           console.log("⚠️ Document ready but no chunks created");
         }
       } else {
         const errorText = await chunkResponse.text();
-        console.error("Automatic chunk creation failed:", errorText);
+        console.error("Chunk creation API failed:", chunkResponse.status, errorText);
 
         // Even if chunk creation fails, mark as ready if file exists in storage
-        console.log("Checking if file exists in storage despite chunk creation failure...");
+        console.log(
+          "Checking if file exists in storage despite chunk creation failure..."
+        );
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(document.storage_path);
 
         if (!fileError && fileData) {
-          console.log("File exists in storage, marking as ready despite chunk creation failure");
+          console.log(
+            "File exists in storage, marking as ready despite chunk creation failure"
+          );
           await supabase
             .from("documents")
             .update({
               status: "ready",
-              error: "Chunk creation failed but file accessible",
+              error: `Chunk creation API failed: ${chunkResponse.status} - ${errorText}`,
             })
             .eq("id", document.id);
         } else {
@@ -277,7 +293,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (chunkError) {
       console.error("Error triggering automatic chunk creation:", chunkError);
-      
+
       // Check if file exists in storage
       try {
         const { data: fileData, error: fileError } = await supabase.storage
@@ -285,12 +301,14 @@ export async function POST(req: NextRequest) {
           .download(document.storage_path);
 
         if (!fileError && fileData) {
-          console.log("File exists in storage, marking as ready despite chunk creation error");
+          console.log(
+            "File exists in storage, marking as ready despite chunk creation error"
+          );
           await supabase
             .from("documents")
             .update({
               status: "ready",
-              error: "Chunk creation error but file accessible",
+              error: `Chunk creation error: ${chunkError instanceof Error ? chunkError.message : 'Unknown error'} - but file accessible`,
             })
             .eq("id", document.id);
         } else {

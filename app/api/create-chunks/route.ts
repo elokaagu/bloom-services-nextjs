@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     try {
       console.log("Downloading file from storage...");
       const { data: fileData, error: fileError } = await supabase.storage
-        .from("documents")
+        .from(process.env.STORAGE_BUCKET || "documents")
         .download(document.storage_path);
 
       if (fileError) {
