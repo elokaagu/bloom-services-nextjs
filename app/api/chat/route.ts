@@ -226,13 +226,24 @@ IMPORTANT RULES:
       `
       )
       .eq("documents.workspace_id", workspaceId)
-      .limit(1);
+      .not("embedding", "is", null) // Ensure embedding exists
+      .limit(10); // Get more chunks to verify they exist
 
     if (chunksError) {
       console.error("Error checking chunks:", chunksError);
     }
 
     console.log(`Found ${chunks?.length || 0} chunks in workspace`);
+    
+    // Log chunk details for debugging
+    if (chunks && chunks.length > 0) {
+      console.log("Sample chunks:", chunks.slice(0, 3).map(c => ({
+        id: c.id,
+        documentTitle: c.documents?.title,
+        textPreview: c.text?.substring(0, 50) + "...",
+        hasEmbedding: !!c.embedding
+      })));
+    }
 
     if (!chunks || chunks.length === 0) {
       const readyDocs = documents.filter((d) => d.status === "ready");
@@ -326,11 +337,36 @@ IMPORTANT RULES:
 
         if (fallbackError) {
           console.error("Fallback query error:", fallbackError);
-          throw fallbackError;
+          // If fallback also fails, use simple text search
+          console.log("Fallback failed, using simple text search...");
+          const { data: simpleChunks, error: simpleError } = await supabase
+            .from("document_chunks")
+            .select(
+              `
+              id,
+              text,
+              document_id,
+              documents!inner (
+                id,
+                title,
+                workspace_id
+              )
+            `
+            )
+            .eq("documents.workspace_id", workspaceId)
+            .limit(topK);
+          
+          if (simpleError) {
+            console.error("Simple search also failed:", simpleError);
+            throw simpleError;
+          }
+          
+          retrievedChunks = simpleChunks || [];
+          console.log("Simple search returned", retrievedChunks.length, "chunks");
+        } else {
+          retrievedChunks = fallbackChunks || [];
+          console.log("Fallback query returned", retrievedChunks.length, "chunks");
         }
-
-        retrievedChunks = fallbackChunks || [];
-        console.log("Fallback query returned", retrievedChunks.length, "chunks");
       } else {
         retrievedChunks = retrieved || [];
         console.log("RPC function returned", retrievedChunks.length, "chunks");
