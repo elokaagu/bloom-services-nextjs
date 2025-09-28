@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Send,
-  Bot,
   User,
   FileText,
   ExternalLink,
@@ -204,7 +204,13 @@ export const ChatInterface = ({
                             <AlertCircle className="h-4 w-4" />
                           )
                         ) : (
-                          <Bot className="h-4 w-4" />
+                          <Image 
+                            src="/bloom_logo_icon.png" 
+                            alt="Bloom AI" 
+                            width={16} 
+                            height={16} 
+                            className="h-4 w-4"
+                          />
                         )}
                       </div>
                     </div>
@@ -326,7 +332,13 @@ export const ChatInterface = ({
                 <div className="flex space-x-3">
                   <div className="flex-shrink-0">
                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-primary-foreground" />
+                      <Image 
+                        src="/bloom_logo_icon.png" 
+                        alt="Bloom AI" 
+                        width={16} 
+                        height={16} 
+                        className="h-4 w-4"
+                      />
                     </div>
                   </div>
                   <div className="bg-muted rounded-lg px-4 py-3">
