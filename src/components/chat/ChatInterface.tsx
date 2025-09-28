@@ -447,7 +447,7 @@ export const ChatInterface = ({
       {/* Sources Panel */}
       <div className="w-80 flex flex-col h-full">
         {/* Title Section */}
-        <div className="mb-4 flex-shrink-0">
+        <div className="mb-2 flex-shrink-0">
           <h3 className="text-lg font-semibold text-foreground">
             Recent Sources
           </h3>
@@ -455,7 +455,7 @@ export const ChatInterface = ({
 
         <Card className="flex-1 flex flex-col overflow-hidden">
           {messages.length > 1 ? (
-            <div className="flex-1 p-3 overflow-hidden">
+            <div className="flex-1 p-3 sm:p-4 overflow-hidden">
               <ScrollArea className="h-full">
                 <div className="space-y-2">
                   {messages
