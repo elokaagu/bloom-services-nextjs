@@ -34,6 +34,15 @@ export default function HomePage() {
         {/* Header content */}
         <div className="relative z-10 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-primary">
+              <Image
+                src="/bloom_logo_icon.png"
+                alt="Bloom Logo"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Bloom</h1>
               <p className="text-xs text-muted-foreground">
