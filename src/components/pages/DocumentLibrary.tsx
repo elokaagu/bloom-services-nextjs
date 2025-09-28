@@ -266,13 +266,28 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     
     switch (sortBy) {
       case "uploadedAt":
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
         break;
       case "title":
         comparison = a.title.localeCompare(b.title);
         break;
       case "size":
-        comparison = (a.fileSize || 0) - (b.fileSize || 0);
+        // Parse size strings like "1.3 MB" to numbers for comparison
+        const parseSize = (sizeStr: string) => {
+          const match = sizeStr.match(/(\d+\.?\d*)\s*(MB|KB|GB)/i);
+          if (match) {
+            const value = parseFloat(match[1]);
+            const unit = match[2].toUpperCase();
+            switch (unit) {
+              case 'KB': return value;
+              case 'MB': return value * 1024;
+              case 'GB': return value * 1024 * 1024;
+              default: return value;
+            }
+          }
+          return 0;
+        };
+        comparison = parseSize(a.size) - parseSize(b.size);
         break;
       case "owner":
         comparison = a.owner.localeCompare(b.owner);
