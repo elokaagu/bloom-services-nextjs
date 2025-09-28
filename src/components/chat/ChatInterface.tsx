@@ -126,7 +126,6 @@ export const ChatInterface = ({
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
-      }
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage: Message = {
