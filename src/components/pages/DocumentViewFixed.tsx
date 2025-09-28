@@ -486,14 +486,6 @@ This document is ready but there's an issue accessing its content. This might be
                         </p>
                       </div>
 
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Owner
-                        </label>
-                        <p className="text-sm text-foreground">
-                          {document.owner}
-                        </p>
-                      </div>
 
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">

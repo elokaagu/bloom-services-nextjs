@@ -167,11 +167,19 @@ export async function GET(req: NextRequest) {
     console.log("=== DOCUMENT DOWNLOAD API SUCCESS ===");
 
     // Return file with proper headers
+    // Ensure filename is properly encoded for download
+    const encodedFilename = encodeURIComponent(document.title);
+
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${document.title}"`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodedFilename}`,
         "Content-Length": buffer.length.toString(),
+        // Also provide a simpler filename for older browsers
+        "Content-Disposition-Fallback": `attachment; filename="${document.title.replace(
+          /[^a-zA-Z0-9.-]/g,
+          "_"
+        )}"`,
       },
     });
   } catch (error: any) {
