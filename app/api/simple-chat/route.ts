@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         {
           p_workspace_id: normalizedWorkspaceId,
           p_query_embedding: questionEmbedding,
-          p_match_count: 6,
+          p_match_count: 4,
         }
       );
 
@@ -172,53 +172,60 @@ export async function POST(req: NextRequest) {
     } catch (rpcError) {
       console.log("RPC function not available, using manual vector search");
 
-        // Manual vector similarity calculation
-        const chunksWithSimilarity = chunks
-          .map((chunk) => {
-            if (!chunk.embedding) return { ...chunk, similarity: 0 };
+      // Manual vector similarity calculation
+      const chunksWithSimilarity = chunks
+        .map((chunk) => {
+          if (!chunk.embedding) return { ...chunk, similarity: 0 };
 
-            // Handle embedding data type - could be array or string
-            let embeddingArray;
-            if (Array.isArray(chunk.embedding)) {
-              embeddingArray = chunk.embedding;
-            } else if (typeof chunk.embedding === 'string') {
-              try {
-                embeddingArray = JSON.parse(chunk.embedding);
-              } catch (e) {
-                console.error("Failed to parse embedding string:", e);
-                return { ...chunk, similarity: 0 };
-              }
-            } else {
-              console.error("Unknown embedding type:", typeof chunk.embedding);
+          // Handle embedding data type - could be array or string
+          let embeddingArray;
+          if (Array.isArray(chunk.embedding)) {
+            embeddingArray = chunk.embedding;
+          } else if (typeof chunk.embedding === "string") {
+            try {
+              embeddingArray = JSON.parse(chunk.embedding);
+            } catch (e) {
+              console.error("Failed to parse embedding string:", e);
               return { ...chunk, similarity: 0 };
             }
+          } else {
+            console.error("Unknown embedding type:", typeof chunk.embedding);
+            return { ...chunk, similarity: 0 };
+          }
 
-            if (!Array.isArray(embeddingArray)) {
-              console.error("Embedding is not an array after parsing");
-              return { ...chunk, similarity: 0 };
-            }
+          if (!Array.isArray(embeddingArray)) {
+            console.error("Embedding is not an array after parsing");
+            return { ...chunk, similarity: 0 };
+          }
 
-            // Calculate cosine similarity
-            const dotProduct = embeddingArray.reduce(
-              (sum, val, i) => sum + val * questionEmbedding[i],
-              0
-            );
-            const magnitudeA = Math.sqrt(
-              embeddingArray.reduce((sum, val) => sum + val * val, 0)
-            );
-            const magnitudeB = Math.sqrt(
-              questionEmbedding.reduce((sum, val) => sum + val * val, 0)
-            );
-            const similarity = dotProduct / (magnitudeA * magnitudeB);
+          // Calculate cosine similarity
+          const dotProduct = embeddingArray.reduce(
+            (sum, val, i) => sum + val * questionEmbedding[i],
+            0
+          );
+          const magnitudeA = Math.sqrt(
+            embeddingArray.reduce((sum, val) => sum + val * val, 0)
+          );
+          const magnitudeB = Math.sqrt(
+            questionEmbedding.reduce((sum, val) => sum + val * val, 0)
+          );
+           const similarity = dotProduct / (magnitudeA * magnitudeB);
 
-            return { ...chunk, similarity };
-          })
-          .sort((a, b) => b.similarity - a.similarity)
-          .slice(0, 6);
+           return { ...chunk, similarity };
+         })
+         .sort((a, b) => b.similarity - a.similarity)
+         .filter((chunk) => chunk.similarity > 0.1) // Only include chunks with meaningful similarity
+         .slice(0, 4); // Reduce to top 4 most relevant chunks
 
       console.log(
         `Found ${chunksWithSimilarity.length} chunks via manual search`
       );
+      
+      // Log similarity scores for debugging
+      chunksWithSimilarity.forEach((chunk, index) => {
+        console.log(`Chunk ${index + 1}: similarity=${chunk.similarity.toFixed(3)}, doc=${chunk.documents?.title}`);
+      });
+      
       relevantChunks = chunksWithSimilarity;
       searchMethod = "manual_vector_search";
     }
@@ -281,7 +288,7 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       completion.choices[0]?.message?.content ||
       "I couldn't generate an answer.";
 
-    // Step 7: Create citations
+    // Step 7: Create citations (only for chunks actually used)
     const citations = relevantChunks.map((chunk, index) => ({
       index: index + 1,
       chunkId: chunk.id,
@@ -291,6 +298,9 @@ Please provide a helpful answer based on the context above. Include [Source n] c
         chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
       relevanceScore: chunk.similarity || 0,
     }));
+
+    // Log final citations for debugging
+    console.log("Final citations:", citations.map(c => `${c.index}. ${c.documentTitle} (${c.relevanceScore.toFixed(3)})`));
 
     console.log("=== ROBUST RAG CHAT API SUCCESS ===");
 
