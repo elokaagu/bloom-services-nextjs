@@ -234,27 +234,69 @@ This document is ready but there's an issue accessing its content. This might be
       const blob = await response.blob();
       console.log("File blob received, size:", blob.size, "bytes");
 
-      // Use the simplest possible approach - direct navigation
+      // Create a proper download link
       const url = window.URL.createObjectURL(blob);
       console.log("Created blob URL:", url);
       
-      // Method 1: Try to open in new tab (most reliable)
-      const newWindow = window.open(url, '_blank');
-      if (newWindow) {
-        console.log("✅ Opened file in new tab successfully");
+      // Method 1: Create a temporary download link (most reliable for downloads)
+      try {
+        const tempLink = document.createElement('a');
+        tempLink.href = url;
+        
+        // Try to get filename from response headers
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = document.title;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1].replace(/['"]/g, '');
+          }
+        }
+        
+        // Ensure filename has proper extension
+        if (!filename.includes('.')) {
+          // Try to determine extension from content type
+          const contentType = response.headers.get('content-type');
+          if (contentType) {
+            const extension = contentType.split('/')[1];
+            if (extension) {
+              filename = `${filename}.${extension}`;
+            }
+          }
+        }
+        
+        tempLink.download = filename;
+        tempLink.style.display = 'none';
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
+        
+        console.log("✅ Download triggered successfully with filename:", filename);
         toast({
           title: "Download started",
-          description: `${document.title} is being downloaded`,
+          description: `${filename} is being downloaded`,
         });
-      } else {
-        console.log("❌ Failed to open new tab, trying direct navigation");
-        // Method 2: Direct navigation as last resort
-        window.location.href = url;
-        console.log("✅ Navigated to file URL");
-        toast({
-          title: "Download started",
-          description: `${document.title} is being downloaded`,
-        });
+        
+      } catch (downloadError) {
+        console.log("❌ Download link method failed, trying fallback:", downloadError);
+        
+        // Method 2: Fallback to opening in new tab
+        const newWindow = window.open(url, '_blank');
+        if (newWindow) {
+          console.log("✅ Opened file in new tab as fallback");
+          toast({
+            title: "File opened",
+            description: `${document.title} opened in new tab`,
+          });
+        } else {
+          console.log("❌ All download methods failed");
+          toast({
+            title: "Download failed",
+            description: "Unable to download file. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
 
       // Clean up after a delay
