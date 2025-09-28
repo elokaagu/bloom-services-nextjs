@@ -67,17 +67,6 @@ export default function HomePage() {
           <div className="text-center">
             {/* Hero Content */}
             <div className="max-w-4xl mx-auto">
-              {/* Bloom Text Logo */}
-              <div className="mb-8 flex justify-center">
-                <Image
-                  src="/bloom_logo_text.jpg"
-                  alt="Bloom"
-                  width={200}
-                  height={60}
-                  className="object-contain"
-                />
-              </div>
-
               <Badge variant="outline" className="mb-6 px-4 py-2">
                 <Zap className="h-4 w-4 mr-2" />
                 Powered by Advanced AI
