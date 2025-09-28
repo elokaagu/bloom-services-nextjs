@@ -115,11 +115,33 @@ export const BloomApp = () => {
     }
   };
 
-  const handleSourceView = (citation: Citation) => {
-    toast({
-      title: "Opening source",
-      description: `Viewing ${citation.documentTitle}`,
-    });
+  const handleSourceView = async (citation: Citation) => {
+    try {
+      console.log("Opening source document:", citation.documentId);
+      
+      // Find the document in the current workspace's documents
+      const document = documents.find(doc => doc.id === citation.documentId);
+      
+      if (!document) {
+        toast({
+          title: "Document not found",
+          description: "This document may have been deleted or moved",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Use the existing handleDocumentView function to open the document
+      await handleDocumentView(document);
+      
+    } catch (error) {
+      console.error("Error opening source document:", error);
+      toast({
+        title: "Error opening document",
+        description: "Failed to open the source document",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleNavigation = (page: string) => {

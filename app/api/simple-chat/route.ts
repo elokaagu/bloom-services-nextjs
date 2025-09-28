@@ -151,21 +151,23 @@ export async function POST(req: NextRequest) {
     let searchMethod = "none";
 
     // Determine similarity threshold based on question type
-    const isSpecificQuestion = question.length > 10 && (
-      question.toLowerCase().includes('what') ||
-      question.toLowerCase().includes('how') ||
-      question.toLowerCase().includes('why') ||
-      question.toLowerCase().includes('when') ||
-      question.toLowerCase().includes('where') ||
-      question.toLowerCase().includes('who') ||
-      question.toLowerCase().includes('which') ||
-      question.toLowerCase().includes('explain') ||
-      question.toLowerCase().includes('describe') ||
-      question.toLowerCase().includes('tell me about')
-    );
-    
+    const isSpecificQuestion =
+      question.length > 10 &&
+      (question.toLowerCase().includes("what") ||
+        question.toLowerCase().includes("how") ||
+        question.toLowerCase().includes("why") ||
+        question.toLowerCase().includes("when") ||
+        question.toLowerCase().includes("where") ||
+        question.toLowerCase().includes("who") ||
+        question.toLowerCase().includes("which") ||
+        question.toLowerCase().includes("explain") ||
+        question.toLowerCase().includes("describe") ||
+        question.toLowerCase().includes("tell me about"));
+
     const similarityThreshold = isSpecificQuestion ? 0.3 : 0.15; // Lower threshold for general conversation
-    console.log(`Using similarity threshold: ${similarityThreshold} (specific: ${isSpecificQuestion})`);
+    console.log(
+      `Using similarity threshold: ${similarityThreshold} (specific: ${isSpecificQuestion})`
+    );
 
     // Try RPC function first
     try {
@@ -231,7 +233,7 @@ export async function POST(req: NextRequest) {
           return { ...chunk, similarity };
         })
         .sort((a, b) => b.similarity - a.similarity)
-         .filter((chunk) => chunk.similarity > similarityThreshold) // Dynamic threshold based on question type
+        .filter((chunk) => chunk.similarity > similarityThreshold) // Dynamic threshold based on question type
         .slice(0, 4); // Reduce to top 4 most relevant chunks
 
       console.log(
@@ -255,13 +257,14 @@ export async function POST(req: NextRequest) {
       // For very short questions, provide a helpful response
       if (question.length <= 5) {
         return NextResponse.json({
-          answer: "Hello! I'm here to help you find information from your documents. You can ask me questions like 'What is Bloom?' or 'Tell me about your services' and I'll search through your uploaded documents to provide relevant answers.",
+          answer:
+            "Hello! I'm here to help you find information from your documents. You can ask me questions like 'What is Bloom?' or 'Tell me about your services' and I'll search through your uploaded documents to provide relevant answers.",
           citations: [],
           chunksFound: 0,
           isGeneralResponse: true,
         });
       }
-      
+
       return NextResponse.json({
         answer:
           "I couldn't find any relevant information in your documents to answer this question. Try asking about something else or upload more documents.",
@@ -323,11 +326,10 @@ Please provide a helpful answer based on the context above. Include [Source n] c
     const citations = relevantChunks
       .filter((chunk) => chunk.similarity > similarityThreshold) // Use dynamic threshold
       .map((chunk, index) => ({
-        index: index + 1,
-        chunkId: chunk.id,
+        id: `citation-${chunk.document_id}-${index}`,
         documentId: chunk.document_id,
         documentTitle: chunk.documents?.title || "Unknown Document",
-        text:
+        snippet:
           chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
         relevanceScore: chunk.similarity || 0,
       }));

@@ -20,6 +20,7 @@ import ReactMarkdown from "react-markdown";
 
 export interface Citation {
   id: string;
+  documentId: string;
   documentTitle: string;
   pageNumber?: number;
   section?: string;
@@ -204,11 +205,11 @@ export const ChatInterface = ({
                             <AlertCircle className="h-4 w-4" />
                           )
                         ) : (
-                          <Image 
-                            src="/bloom_logo_icon.png" 
-                            alt="Bloom AI" 
-                            width={16} 
-                            height={16} 
+                          <Image
+                            src="/bloom_logo_icon.png"
+                            alt="Bloom AI"
+                            width={16}
+                            height={16}
                             className="h-4 w-4"
                           />
                         )}
@@ -332,11 +333,11 @@ export const ChatInterface = ({
                 <div className="flex space-x-3">
                   <div className="flex-shrink-0">
                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                      <Image 
-                        src="/bloom_logo_icon.png" 
-                        alt="Bloom AI" 
-                        width={16} 
-                        height={16} 
+                      <Image
+                        src="/bloom_logo_icon.png"
+                        alt="Bloom AI"
+                        width={16}
+                        height={16}
                         className="h-4 w-4"
                       />
                     </div>
