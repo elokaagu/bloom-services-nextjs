@@ -306,25 +306,50 @@ export async function POST(req: NextRequest) {
       console.log("Chunks inserted successfully");
     } catch (insertError) {
       console.error("Chunk insertion failed:", insertError);
-      // Even if chunk insertion fails, we can still mark the document as ready
-      // since the file is accessible and can be viewed
-      console.log(
-        "Marking document as ready despite chunk insertion failure..."
-      );
-      await supabase
-        .from("documents")
-        .update({
-          status: "ready",
-          error: "Chunks not created but file accessible",
-        })
-        .eq("id", documentId);
+      
+      // Try a simpler approach - insert chunks one by one
+      console.log("Trying to insert chunks one by one...");
+      let successCount = 0;
+      
+      for (let i = 0; i < rows.length; i++) {
+        try {
+          const { error: singleInsertError } = await supabase
+            .from("document_chunks")
+            .insert([rows[i]]);
+          
+          if (!singleInsertError) {
+            successCount++;
+          } else {
+            console.error(`Failed to insert chunk ${i + 1}:`, singleInsertError);
+          }
+        } catch (singleError) {
+          console.error(`Error inserting chunk ${i + 1}:`, singleError);
+        }
+      }
+      
+      console.log(`Successfully inserted ${successCount} out of ${rows.length} chunks`);
+      
+      if (successCount === 0) {
+        // Even if chunk insertion fails, we can still mark the document as ready
+        // since the file is accessible and can be viewed
+        console.log(
+          "No chunks could be inserted, marking document as ready but file accessible"
+        );
+        await supabase
+          .from("documents")
+          .update({
+            status: "ready",
+            error: "Chunks not created but file accessible",
+          })
+          .eq("id", documentId);
 
-      return NextResponse.json({
-        success: true,
-        chunks: 0,
-        documentId: documentId,
-        warning: "Document marked as ready but chunks not created",
-      });
+        return NextResponse.json({
+          success: true,
+          chunks: 0,
+          documentId: documentId,
+          warning: "Document marked as ready but chunks not created",
+        });
+      }
     }
 
     // Update document status to ready
