@@ -88,6 +88,17 @@ export async function POST(req: NextRequest) {
       .eq("documents.workspace_id", normalizedWorkspaceId)
       .limit(20);
 
+    // Debug: Log the raw chunks data
+    console.log("Raw chunks from database:", chunks?.slice(0, 1).map(chunk => ({
+      id: chunk.id,
+      document_id: chunk.document_id,
+      hasEmbedding: !!chunk.embedding,
+      embeddingType: typeof chunk.embedding,
+      embeddingIsArray: Array.isArray(chunk.embedding),
+      embeddingLength: chunk.embedding?.length,
+      embeddingSample: chunk.embedding?.slice(0, 3)
+    })));
+
     if (chunksError) {
       console.error("Error fetching chunks:", chunksError);
       return NextResponse.json({
@@ -198,7 +209,7 @@ export async function POST(req: NextRequest) {
             hasEmbedding: !!chunk.embedding,
             embeddingType: typeof chunk.embedding,
             embeddingLength: chunk.embedding?.length,
-            documentId: chunk.document_id
+            documentId: chunk.document_id,
           });
 
           if (!chunk.embedding) {
@@ -211,23 +222,37 @@ export async function POST(req: NextRequest) {
           try {
             if (Array.isArray(chunk.embedding)) {
               embeddingArray = chunk.embedding;
-              console.log(`Chunk ${chunk.id} embedding is already array, length: ${embeddingArray.length}`);
+              console.log(
+                `Chunk ${chunk.id} embedding is already array, length: ${embeddingArray.length}`
+              );
             } else if (typeof chunk.embedding === "string") {
-              console.log(`Chunk ${chunk.id} embedding is string, attempting to parse`);
+              console.log(
+                `Chunk ${chunk.id} embedding is string, attempting to parse`
+              );
               embeddingArray = JSON.parse(chunk.embedding);
-              console.log(`Chunk ${chunk.id} parsed embedding, length: ${embeddingArray?.length}`);
+              console.log(
+                `Chunk ${chunk.id} parsed embedding, length: ${embeddingArray?.length}`
+              );
             } else {
-              console.error(`Chunk ${chunk.id} unknown embedding type:`, typeof chunk.embedding);
+              console.error(
+                `Chunk ${chunk.id} unknown embedding type:`,
+                typeof chunk.embedding
+              );
               return { ...chunk, similarity: 0 };
             }
 
             if (!Array.isArray(embeddingArray)) {
-              console.error(`Chunk ${chunk.id} embedding is not an array after parsing:`, typeof embeddingArray);
+              console.error(
+                `Chunk ${chunk.id} embedding is not an array after parsing:`,
+                typeof embeddingArray
+              );
               return { ...chunk, similarity: 0 };
             }
 
             if (embeddingArray.length !== questionEmbedding.length) {
-              console.error(`Chunk ${chunk.id} embedding length mismatch: ${embeddingArray.length} vs ${questionEmbedding.length}`);
+              console.error(
+                `Chunk ${chunk.id} embedding length mismatch: ${embeddingArray.length} vs ${questionEmbedding.length}`
+              );
               return { ...chunk, similarity: 0 };
             }
 
@@ -244,7 +269,11 @@ export async function POST(req: NextRequest) {
             );
             const similarity = dotProduct / (magnitudeA * magnitudeB);
 
-            console.log(`Chunk ${chunk.id} similarity calculated: ${similarity.toFixed(3)}`);
+            console.log(
+              `Chunk ${chunk.id} similarity calculated: ${similarity.toFixed(
+                3
+              )}`
+            );
             return { ...chunk, similarity };
           } catch (error) {
             console.error(`Error processing chunk ${chunk.id}:`, error);
