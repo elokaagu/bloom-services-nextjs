@@ -229,17 +229,55 @@ export const ChatInterface = ({
                       <div className="text-sm leading-relaxed prose prose-sm max-w-none">
                         <ReactMarkdown
                           components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                            em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                            li: ({ children }) => <li className="text-sm">{children}</li>,
-                            h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                            h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-                            h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
-                            code: ({ children }) => <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
-                            pre: ({ children }) => <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2">{children}</pre>,
+                            p: ({ children }) => (
+                              <p className="mb-2 last:mb-0">{children}</p>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold">
+                                {children}
+                              </strong>
+                            ),
+                            em: ({ children }) => (
+                              <em className="italic">{children}</em>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-disc list-inside mb-2 space-y-1">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal list-inside mb-2 space-y-1">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="text-sm">{children}</li>
+                            ),
+                            h1: ({ children }) => (
+                              <h1 className="text-lg font-bold mb-2">
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-base font-bold mb-2">
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-sm font-bold mb-1">
+                                {children}
+                              </h3>
+                            ),
+                            code: ({ children }) => (
+                              <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+                                {children}
+                              </code>
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2">
+                                {children}
+                              </pre>
+                            ),
                           }}
                         >
                           {message.content}
@@ -334,19 +372,19 @@ export const ChatInterface = ({
       </div>
 
       {/* Sources Panel */}
-      <div className="w-80 flex flex-col min-h-0">
+      <div className="w-80 flex flex-col h-full">
         {/* Title Section */}
-        <div className="mb-4">
+        <div className="mb-4 flex-shrink-0">
           <h3 className="text-lg font-semibold text-foreground">
             Recent Sources
           </h3>
         </div>
 
-        <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <Card className="flex-1 flex flex-col overflow-hidden">
           {messages.length > 1 ? (
-            <div className="flex-1 p-4 min-h-0">
+            <div className="flex-1 p-3 overflow-hidden">
               <ScrollArea className="h-full">
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {messages
                     .filter(
                       (m) =>
@@ -360,7 +398,7 @@ export const ChatInterface = ({
                         {message.citations?.map((citation) => (
                           <Card
                             key={citation.id}
-                            className="p-2 cursor-pointer hover:shadow-sm transition-shadow"
+                            className="p-3 cursor-pointer hover:shadow-sm transition-shadow"
                           >
                             <div
                               className="flex items-start justify-between"
@@ -372,8 +410,8 @@ export const ChatInterface = ({
                                 )
                               }
                             >
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-medium text-foreground truncate">
+                              <div className="flex-1 min-w-0 pr-2">
+                                <h4 className="text-sm font-medium text-foreground leading-tight">
                                   {citation.documentTitle}
                                 </h4>
                                 {citation.section && (
