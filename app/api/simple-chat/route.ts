@@ -209,23 +209,27 @@ export async function POST(req: NextRequest) {
           const magnitudeB = Math.sqrt(
             questionEmbedding.reduce((sum, val) => sum + val * val, 0)
           );
-           const similarity = dotProduct / (magnitudeA * magnitudeB);
+          const similarity = dotProduct / (magnitudeA * magnitudeB);
 
-           return { ...chunk, similarity };
-         })
-         .sort((a, b) => b.similarity - a.similarity)
-         .filter((chunk) => chunk.similarity > 0.1) // Only include chunks with meaningful similarity
-         .slice(0, 4); // Reduce to top 4 most relevant chunks
+          return { ...chunk, similarity };
+        })
+        .sort((a, b) => b.similarity - a.similarity)
+         .filter((chunk) => chunk.similarity > 0.3) // Only include chunks with high similarity
+        .slice(0, 4); // Reduce to top 4 most relevant chunks
 
       console.log(
         `Found ${chunksWithSimilarity.length} chunks via manual search`
       );
-      
+
       // Log similarity scores for debugging
       chunksWithSimilarity.forEach((chunk, index) => {
-        console.log(`Chunk ${index + 1}: similarity=${chunk.similarity.toFixed(3)}, doc=${chunk.documents?.title}`);
+        console.log(
+          `Chunk ${index + 1}: similarity=${chunk.similarity.toFixed(3)}, doc=${
+            chunk.documents?.title
+          }`
+        );
       });
-      
+
       relevantChunks = chunksWithSimilarity;
       searchMethod = "manual_vector_search";
     }
@@ -288,19 +292,26 @@ Please provide a helpful answer based on the context above. Include [Source n] c
       completion.choices[0]?.message?.content ||
       "I couldn't generate an answer.";
 
-    // Step 7: Create citations (only for chunks actually used)
-    const citations = relevantChunks.map((chunk, index) => ({
-      index: index + 1,
-      chunkId: chunk.id,
-      documentId: chunk.document_id,
-      documentTitle: chunk.documents?.title || "Unknown Document",
-      text:
-        chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
-      relevanceScore: chunk.similarity || 0,
-    }));
+    // Step 7: Create citations (only for chunks actually used and with high relevance)
+    const citations = relevantChunks
+      .filter((chunk) => chunk.similarity > 0.3) // Double-check high relevance
+      .map((chunk, index) => ({
+        index: index + 1,
+        chunkId: chunk.id,
+        documentId: chunk.document_id,
+        documentTitle: chunk.documents?.title || "Unknown Document",
+        text:
+          chunk.text.substring(0, 200) + (chunk.text.length > 200 ? "..." : ""),
+        relevanceScore: chunk.similarity || 0,
+      }));
 
     // Log final citations for debugging
-    console.log("Final citations:", citations.map(c => `${c.index}. ${c.documentTitle} (${c.relevanceScore.toFixed(3)})`));
+    console.log(
+      "Final citations:",
+      citations.map(
+        (c) => `${c.index}. ${c.documentTitle} (${c.relevanceScore.toFixed(3)})`
+      )
+    );
 
     console.log("=== ROBUST RAG CHAT API SUCCESS ===");
 
