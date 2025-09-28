@@ -32,6 +32,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Workspace {
   id: string;
@@ -62,6 +63,7 @@ export function AppSidebar({
   currentPage,
 }: AppSidebarProps) {
   const { state } = useSidebar();
+  const { user, logout } = useAuth();
   const collapsed = state === "collapsed";
 
   return (
@@ -179,14 +181,16 @@ export function AppSidebar({
               >
                 <Avatar className="h-9 w-9 mr-3 flex-shrink-0 ring-2 ring-border/20">
                   <AvatarImage src="" alt="User" />
-                  <AvatarFallback>EA</AvatarFallback>
+                  <AvatarFallback>
+                    {user ? (user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase() + (user.lastName?.[0] || user.email?.[1] || 'S').toUpperCase() : 'EA'}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start min-w-0 flex-1 text-left">
                   <p className="text-sm font-medium truncate w-full">
-                    Eloka Agu
+                    {user?.fullName || user?.firstName || 'User'}
                   </p>
                   <p className="text-xs text-muted-foreground truncate w-full">
-                    eloka@bloom.com
+                    {user?.email || 'user@example.com'}
                   </p>
                 </div>
                 <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
@@ -195,9 +199,11 @@ export function AppSidebar({
             <DropdownMenuContent align="end" className="w-56" side="top">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Eloka Agu</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user?.fullName || user?.firstName || 'User'}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    eloka@bloom.com
+                    {user?.email || 'user@example.com'}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -207,7 +213,10 @@ export function AppSidebar({
                 <span>Account Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem 
+                className="text-red-600 cursor-pointer"
+                onClick={logout}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

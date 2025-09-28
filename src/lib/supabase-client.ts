@@ -14,14 +14,14 @@ function getSupabaseClient() {
 
   // Environment variables - try multiple sources
   const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
     process.env.SUPABASE_URL ||
-    (typeof window !== 'undefined' && (window as any).__SUPABASE_URL__);
-    
+    (typeof window !== "undefined" && (window as any).__SUPABASE_URL__);
+
   const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_ANON_KEY ||
-    (typeof window !== 'undefined' && (window as any).__SUPABASE_ANON_KEY__);
+    (typeof window !== "undefined" && (window as any).__SUPABASE_ANON_KEY__);
 
   // Only validate and create client when actually needed
   if (!supabaseUrl) {
@@ -36,7 +36,8 @@ function getSupabaseClient() {
 
   if (!supabaseAnonKey) {
     console.error("Missing Supabase anon key. Available env vars:", {
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
     });
     throw new Error(

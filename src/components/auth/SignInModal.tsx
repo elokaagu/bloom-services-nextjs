@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const SignInModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,22 +54,26 @@ export const SignInModal = ({
         }
 
         // Sign up using direct Supabase API
-        const response = await fetch('https://rrwhcigiawoycpuizczo.supabase.co/auth/v1/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd2hjaWdpYXdveWNwdWl6Y3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NzUzMDAsImV4cCI6MjA3NDM1MTMwMH0.1GY8rrkETW-ETj_1mS1SK4_KNmVBbZS6TRk92scBYqY',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            data: {
-              first_name: firstName.trim(),
-              last_name: lastName.trim(),
-              full_name: `${firstName.trim()} ${lastName.trim()}`,
+        const response = await fetch(
+          "https://rrwhcigiawoycpuizczo.supabase.co/auth/v1/signup",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey:
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd2hjaWdpYXdveWNwdWl6Y3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NzUzMDAsImV4cCI6MjA3NDM1MTMwMH0.1GY8rrkETW-ETj_1mS1SK4_KNmVBbZS6TRk92scBYqY",
             },
-          }),
-        });
+            body: JSON.stringify({
+              email,
+              password,
+              data: {
+                first_name: firstName.trim(),
+                last_name: lastName.trim(),
+                full_name: `${firstName.trim()} ${lastName.trim()}`,
+              },
+            }),
+          }
+        );
 
         const result = await response.json();
 
@@ -86,17 +92,21 @@ export const SignInModal = ({
         }
       } else {
         // Sign in using direct Supabase API
-        const response = await fetch('https://rrwhcigiawoycpuizczo.supabase.co/auth/v1/token?grant_type=password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd2hjaWdpYXdveWNwdWl6Y3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NzUzMDAsImV4cCI6MjA3NDM1MTMwMH0.1GY8rrkETW-ETj_1mS1SK4_KNmVBbZS6TRk92scBYqY',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        });
+        const response = await fetch(
+          "https://rrwhcigiawoycpuizczo.supabase.co/auth/v1/token?grant_type=password",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey:
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd2hjaWdpYXdveWNwdWl6Y3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NzUzMDAsImV4cCI6MjA3NDM1MTMwMH0.1GY8rrkETW-ETj_1mS1SK4_KNmVBbZS6TRk92scBYqY",
+            },
+            body: JSON.stringify({
+              email,
+              password,
+            }),
+          }
+        );
 
         const result = await response.json();
 
@@ -107,6 +117,18 @@ export const SignInModal = ({
             variant: "destructive",
           });
         } else {
+          // Extract user data from response
+          const userData = {
+            id: result.user?.id || email,
+            email: result.user?.email || email,
+            firstName: result.user?.user_metadata?.first_name || firstName,
+            lastName: result.user?.user_metadata?.last_name || lastName,
+            fullName: result.user?.user_metadata?.full_name || `${firstName} ${lastName}`,
+          };
+          
+          // Login user
+          login(userData);
+          
           toast({
             title: "Welcome back!",
             description: "You've successfully signed in.",
