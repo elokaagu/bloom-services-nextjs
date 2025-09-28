@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,6 @@ import {
   Search, 
   Users, 
   Shield, 
-  Zap,
   ArrowRight,
   CheckCircle
 } from "lucide-react";
@@ -85,7 +85,13 @@ export const Homepage = () => {
             {/* Hero Content */}
             <div className="max-w-4xl mx-auto mb-12">
               <Badge variant="outline" className="mb-6 px-4 py-2">
-                <Zap className="h-4 w-4 mr-2" />
+                <Image 
+                  src="/bloom_logo_icon.png" 
+                  alt="Bloom Logo" 
+                  width={16} 
+                  height={16} 
+                  className="mr-2"
+                />
                 Powered by Advanced AI
               </Badge>
               
