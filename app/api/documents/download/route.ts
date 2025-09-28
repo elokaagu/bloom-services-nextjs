@@ -76,83 +76,103 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Download file from storage
-    console.log("Attempting to download from storage...");
-    console.log("Bucket:", process.env.STORAGE_BUCKET);
-    console.log("Path:", document.storage_path);
-
+    // Download file from storage - Focus on documents bucket
+    console.log("=== DOWNLOADING FROM SUPABASE STORAGE ===");
+    console.log("Document storage_path:", document.storage_path);
+    console.log("Environment STORAGE_BUCKET:", process.env.STORAGE_BUCKET);
+    
     let fileData = null;
     let fileError = null;
 
-    // Try multiple approaches to get the file
-    const buckets = [process.env.STORAGE_BUCKET, "documents"];
-    const paths = [
-      document.storage_path,
-      document.storage_path?.replace("documents/", ""),
-      `documents/${document.storage_path}`,
-      // Handle case where storage_path already includes documents/
-      document.storage_path?.startsWith("documents/")
-        ? document.storage_path
-        : `documents/${document.storage_path}`,
-      // Try just the filename
-      document.storage_path?.split("/").pop(),
-    ].filter(Boolean); // Remove any undefined/null paths
+    // First, let's list files in the documents bucket to see what's available
+    console.log("Listing files in documents bucket...");
+    const { data: fileList, error: listError } = await supabase.storage
+      .from("documents")
+      .list("", { limit: 50 });
+    
+    if (listError) {
+      console.error("Error listing files:", listError);
+    } else {
+      console.log("Files found in documents bucket:", fileList?.map(f => f.name) || []);
+    }
 
-    console.log("Will try these combinations:");
-    buckets.forEach((bucket) => {
-      paths.forEach((path) => {
-        console.log(`  - Bucket: ${bucket}, Path: ${path}`);
-      });
+    // Try to download the file - prioritize documents bucket
+    const downloadPaths = [
+      document.storage_path, // Original path
+      document.storage_path?.replace("documents/", ""), // Remove documents/ prefix if present
+      `documents/${document.storage_path}`, // Add documents/ prefix if not present
+    ].filter(Boolean);
+
+    console.log("Will try these download paths:");
+    downloadPaths.forEach((path, index) => {
+      console.log(`  ${index + 1}. Path: "${path}"`);
     });
 
-    for (const bucket of buckets) {
-      if (!bucket) continue;
+    // Try downloading from documents bucket first
+    for (const path of downloadPaths) {
+      if (!path) continue;
+      
+      console.log(`Attempting download from documents bucket, path: "${path}"`);
+      
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .download(path);
 
-      for (const path of paths) {
+      if (!error && data) {
+        console.log(`✅ SUCCESS! Downloaded file from documents bucket, path: "${path}"`);
+        console.log("File size:", data.size, "bytes");
+        fileData = data;
+        break;
+      } else {
+        console.log(`❌ Failed to download from documents bucket, path: "${path}"`);
+        console.log("Error:", error?.message);
+      }
+    }
+
+    // If documents bucket failed, try the environment bucket as fallback
+    if (!fileData && process.env.STORAGE_BUCKET && process.env.STORAGE_BUCKET !== "documents") {
+      console.log(`Trying fallback bucket: ${process.env.STORAGE_BUCKET}`);
+      
+      for (const path of downloadPaths) {
         if (!path) continue;
-
-        console.log(`Trying bucket: ${bucket}, path: ${path}`);
-
+        
+        console.log(`Attempting download from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`);
+        
         const { data, error } = await supabase.storage
-          .from(bucket)
+          .from(process.env.STORAGE_BUCKET)
           .download(path);
 
         if (!error && data) {
-          console.log(
-            `Success! Found file in bucket: ${bucket}, path: ${path}`
-          );
+          console.log(`✅ SUCCESS! Downloaded file from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`);
           fileData = data;
           break;
         } else {
-          console.log(
-            `Failed bucket: ${bucket}, path: ${path}, error:`,
-            error?.message
-          );
+          console.log(`❌ Failed to download from ${process.env.STORAGE_BUCKET} bucket, path: "${path}"`);
+          console.log("Error:", error?.message);
         }
       }
-
-      if (fileData) break;
     }
 
     if (!fileData) {
-      console.error("All download attempts failed");
-
-      // List files in storage to help debug
-      const { data: files, error: listError } = await supabase.storage
-        .from(process.env.STORAGE_BUCKET || "documents")
-        .list("documents", { limit: 10 });
-
-      console.log("Files in storage:", files);
-      console.log("List error:", listError);
+      console.error("=== ALL DOWNLOAD ATTEMPTS FAILED ===");
+      console.error("Document storage_path:", document.storage_path);
+      console.error("Environment STORAGE_BUCKET:", process.env.STORAGE_BUCKET);
 
       return NextResponse.json(
         {
-          error: "Failed to download file from storage",
+          error: "Failed to download file from Supabase storage",
           details: "File not found in any expected location",
           storagePath: document.storage_path,
           bucket: process.env.STORAGE_BUCKET,
-          availableFiles: files?.map((f) => f.name) || [],
+          availableFiles: fileList?.map((f) => f.name) || [],
           listError: listError?.message,
+          debugInfo: {
+            documentId: documentId,
+            documentTitle: document.title,
+            storagePath: document.storage_path,
+            environmentBucket: process.env.STORAGE_BUCKET,
+            triedPaths: downloadPaths,
+          }
         },
         { status: 404 }
       );
