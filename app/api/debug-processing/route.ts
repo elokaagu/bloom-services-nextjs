@@ -4,26 +4,26 @@ import { supabaseService } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   try {
     console.log("=== DEBUG DOCUMENT PROCESSING ===");
-    
+
     const supabase = supabaseService();
-    
+
     // Get all documents
     const { data: documents, error: docsError } = await supabase
       .from("documents")
       .select("*")
       .eq("status", "ready");
-    
+
     if (docsError) {
       return NextResponse.json({ error: docsError.message }, { status: 500 });
     }
-    
+
     console.log("Found", documents?.length || 0, "documents");
-    
+
     const debugResults = [];
-    
+
     for (const doc of documents || []) {
       console.log(`Debugging document: ${doc.title}`);
-      
+
       const debugInfo = {
         documentId: doc.id,
         title: doc.title,
@@ -32,17 +32,19 @@ export async function GET(req: NextRequest) {
         hasStoragePath: !!doc.storage_path,
         workspaceId: doc.workspace_id,
       };
-      
+
       // Check if file exists in storage
       if (doc.storage_path) {
         try {
           const { data: fileData, error: fileError } = await supabase.storage
             .from("documents")
             .download(doc.storage_path);
-          
+
           debugInfo.storageExists = !fileError;
           debugInfo.storageError = fileError?.message || null;
-          debugInfo.fileSize = fileData ? (await fileData.arrayBuffer()).byteLength : 0;
+          debugInfo.fileSize = fileData
+            ? (await fileData.arrayBuffer()).byteLength
+            : 0;
         } catch (error: any) {
           debugInfo.storageExists = false;
           debugInfo.storageError = error.message;
@@ -51,20 +53,20 @@ export async function GET(req: NextRequest) {
         debugInfo.storageExists = false;
         debugInfo.storageError = "No storage path";
       }
-      
+
       // Check if chunks exist
       const { data: chunks } = await supabase
         .from("document_chunks")
         .select("id")
         .eq("document_id", doc.id)
         .limit(1);
-      
+
       debugInfo.hasChunks = chunks && chunks.length > 0;
       debugInfo.chunkCount = chunks?.length || 0;
-      
+
       debugResults.push(debugInfo);
     }
-    
+
     return NextResponse.json({
       success: true,
       documents: debugResults,
@@ -73,14 +75,16 @@ export async function GET(req: NextRequest) {
         hasSupabaseUrl: !!process.env.SUPABASE_URL,
         hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
         storageBucket: process.env.STORAGE_BUCKET,
-      }
+      },
     });
-    
   } catch (error: any) {
     console.error("Debug error:", error);
-    return NextResponse.json({ 
-      error: error.message,
-      stack: error.stack 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 }
+    );
   }
 }
