@@ -27,6 +27,7 @@ import {
   Grid,
   List,
   SortAsc,
+  SortDesc,
   CheckSquare,
   Square,
   Trash2,
@@ -117,6 +118,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [aclFilter, setAclFilter] = useState("all");
   const [sortBy, setSortBy] = useState("uploadedAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
@@ -246,7 +248,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     });
   }, [documents, fetchDocumentPreview, loadingPreviews]);
 
-  const filteredDocuments = documents.filter((doc) => {
+  const sortedDocuments = documents.filter((doc) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -258,9 +260,39 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     return matchesSearch && matchesStatus && matchesACL;
   });
 
-  const handleUploadComplete = (files: File[]) => {
-    fetchDocuments();
-    setIsUploadOpen(false);
+  // Sort the filtered documents
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortBy) {
+      case "uploadedAt":
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        break;
+      case "title":
+        comparison = a.title.localeCompare(b.title);
+        break;
+      case "size":
+        comparison = (a.fileSize || 0) - (b.fileSize || 0);
+        break;
+      case "owner":
+        comparison = a.owner.localeCompare(b.owner);
+        break;
+      default:
+        return 0;
+    }
+    
+    return sortDirection === "desc" ? -comparison : comparison;
+  });
+
+  const handleSortChange = (newSortBy: string) => {
+    if (newSortBy === sortBy) {
+      // Toggle direction if same sort field
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Set new sort field with default direction
+      setSortBy(newSortBy);
+      setSortDirection("desc");
+    }
   };
 
   const handleDocumentDelete = async (doc: Document) => {
@@ -387,10 +419,10 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   };
 
   const handleSelectAll = () => {
-    if (selectedDocuments.size === filteredDocuments.length) {
+    if (selectedDocuments.size === sortedDocuments.length) {
       setSelectedDocuments(new Set());
     } else {
-      setSelectedDocuments(new Set(filteredDocuments.map((d) => d.id)));
+      setSelectedDocuments(new Set(sortedDocuments.map((d) => d.id)));
     }
   };
 
@@ -611,7 +643,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               Document Library
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              {filteredDocuments.length} of {documents.length} documents
+              {sortedDocuments.length} of {documents.length} documents
               {selectedDocuments.size > 0 && (
                 <span className="ml-2">
                   • {selectedDocuments.size} selected
@@ -662,8 +694,8 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           onClick={handleSelectAll}
           className="h-9 w-9 p-0 flex-shrink-0"
         >
-          {selectedDocuments.size === filteredDocuments.length &&
-          filteredDocuments.length > 0 ? (
+          {selectedDocuments.size === sortedDocuments.length &&
+          sortedDocuments.length > 0 ? (
             <CheckSquare className="h-4 w-4" />
           ) : (
             <Square className="h-4 w-4" />
@@ -692,9 +724,13 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           </SelectContent>
         </Select>
 
-        <Select value={sortBy} onValueChange={setSortBy}>
+        <Select value={sortBy} onValueChange={handleSortChange}>
           <SelectTrigger className="w-[140px] sm:w-[160px]">
-            <SortAsc className="h-4 w-4 mr-2" />
+            {sortDirection === "desc" ? (
+              <SortDesc className="h-4 w-4 mr-2" />
+            ) : (
+              <SortAsc className="h-4 w-4 mr-2" />
+            )}
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -815,7 +851,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       )}
 
       {/* Documents Grid/List */}
-      {!isLoading && !error && filteredDocuments.length > 0 && (
+      {!isLoading && !error && sortedDocuments.length > 0 && (
         <div
           className={
             viewMode === "grid"
@@ -823,12 +859,12 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               : "space-y-2"
           }
         >
-          {filteredDocuments.map(renderDocumentCard)}
+          {sortedDocuments.map(renderDocumentCard)}
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && filteredDocuments.length === 0 && (
+      {!isLoading && !error && sortedDocuments.length === 0 && (
         <div className="text-center py-8 sm:py-12 px-4">
           <div className="mb-4">
             <FileX className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto" />
