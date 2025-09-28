@@ -413,7 +413,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
     return documents.filter((doc) => doc.status === status).length;
   };
 
-  const renderDocumentCard = (document: Document) => {
+  const renderDocumentCard = (document: Document, layout: "grid" | "list" = viewMode) => {
     const isSelected = selectedDocuments.has(document.id);
     const isDeleting = deletingDocuments.has(document.id);
     const isLoadingPreview = loadingPreviews.has(document.id);
@@ -423,7 +423,9 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         key={document.id}
         className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg ${
           isSelected ? "ring-2 ring-primary bg-primary/5" : ""
-        } ${isDeleting ? "opacity-50" : ""}`}
+        } ${isDeleting ? "opacity-50" : ""} ${
+          layout === "list" ? "flex items-center p-4" : ""
+        }`}
       >
         {/* Selection Checkbox */}
         <div className="absolute top-3 left-3 z-10">
@@ -449,16 +451,48 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
           {getStatusIcon(document.status)}
         </div>
 
-        <div className="p-4 pt-8">
-          {/* Document Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center space-x-2 min-w-0 flex-1">
+        {layout === "list" ? (
+          // List Layout
+          <>
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
               <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-              <h3 className="font-semibold text-sm truncate">
-                {document.title}
-              </h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">
+                  {document.title}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {document.status === "ready" ? "Ready" : 
+                   document.status === "processing" ? "Processing..." : 
+                   document.status === "failed" ? "Failed" : "Unknown"}
+                </p>
+              </div>
             </div>
-          </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="text-xs">
+                {getACLColor(document.acl).split(' ')[0]}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDocumentView(document)}
+                className="h-8 px-2"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          // Grid Layout
+          <div className="p-4 pt-8">
+            {/* Document Header */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <h3 className="font-semibold text-sm truncate">
+                  {document.title}
+                </h3>
+              </div>
+            </div>
 
           {/* Document Preview */}
           <div className="mb-3">
@@ -555,6 +589,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             </div>
           </div>
         </div>
+        )}
       </Card>
     );
   };
@@ -772,9 +807,13 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
         </div>
       )}
 
-      {/* Documents Grid */}
+      {/* Documents Grid/List */}
       {!isLoading && !error && filteredDocuments.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className={
+          viewMode === "grid" 
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+            : "space-y-2"
+        }>
           {filteredDocuments.map(renderDocumentCard)}
         </div>
       )}
