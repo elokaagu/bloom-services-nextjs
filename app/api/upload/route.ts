@@ -204,9 +204,9 @@ export async function POST(req: NextRequest) {
 
     console.log("Document created in database:", document.id);
 
-    // Trigger document ingestion for RAG
+    // Automatically create chunks for RAG
     try {
-      console.log("Starting document ingestion for RAG...");
+      console.log("Starting automatic chunk creation for RAG...");
 
       // Update status to processing
       await supabase
@@ -214,42 +214,57 @@ export async function POST(req: NextRequest) {
         .update({ status: "processing" })
         .eq("id", document.id);
 
-      const ingestResponse = await fetch(`${req.nextUrl.origin}/api/ingest`, {
+      // Call our working direct chunk creation API
+      const chunkResponse = await fetch(`${req.nextUrl.origin}/api/create-chunks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentId: document.id }),
       });
 
-      if (ingestResponse.ok) {
-        const ingestResult = await ingestResponse.json();
-        console.log("Document ingestion completed successfully:", ingestResult);
+      if (chunkResponse.ok) {
+        const chunkResult = await chunkResponse.json();
+        console.log("Automatic chunk creation completed:", chunkResult);
 
-        // Update status to ready
-        await supabase
-          .from("documents")
-          .update({ status: "ready" })
-          .eq("id", document.id);
+        if (chunkResult.success && chunkResult.chunksCreated > 0) {
+          // Update status to ready with chunk info
+          await supabase
+            .from("documents")
+            .update({ 
+              status: "ready",
+              error: chunkResult.chunksFailed > 0 ? `${chunkResult.chunksFailed} chunks failed` : null
+            })
+            .eq("id", document.id);
+          
+          console.log(`✅ Document ready with ${chunkResult.chunksCreated} chunks`);
+        } else {
+          // Chunk creation failed, but file is accessible
+          await supabase
+            .from("documents")
+            .update({
+              status: "ready",
+              error: "Chunk creation failed but file accessible",
+            })
+            .eq("id", document.id);
+          
+          console.log("⚠️ Document ready but no chunks created");
+        }
       } else {
-        const errorText = await ingestResponse.text();
-        console.error("Document ingestion failed:", errorText);
+        const errorText = await chunkResponse.text();
+        console.error("Automatic chunk creation failed:", errorText);
 
-        // Even if ingestion fails, mark as ready if file exists in storage
-        console.log(
-          "Checking if file exists in storage despite ingestion failure..."
-        );
+        // Even if chunk creation fails, mark as ready if file exists in storage
+        console.log("Checking if file exists in storage despite chunk creation failure...");
         const { data: fileData, error: fileError } = await supabase.storage
           .from(process.env.STORAGE_BUCKET || "documents")
           .download(document.storage_path);
 
         if (!fileError && fileData) {
-          console.log(
-            "File exists in storage, marking as ready despite ingestion failure"
-          );
+          console.log("File exists in storage, marking as ready despite chunk creation failure");
           await supabase
             .from("documents")
             .update({
               status: "ready",
-              error: "Ingestion failed but file accessible",
+              error: "Chunk creation failed but file accessible",
             })
             .eq("id", document.id);
         } else {
@@ -260,13 +275,38 @@ export async function POST(req: NextRequest) {
             .eq("id", document.id);
         }
       }
-    } catch (ingestError) {
-      console.error("Error triggering document ingestion:", ingestError);
-      // Update status to failed
-      await supabase
-        .from("documents")
-        .update({ status: "failed" })
-        .eq("id", document.id);
+    } catch (chunkError) {
+      console.error("Error triggering automatic chunk creation:", chunkError);
+      
+      // Check if file exists in storage
+      try {
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from(process.env.STORAGE_BUCKET || "documents")
+          .download(document.storage_path);
+
+        if (!fileError && fileData) {
+          console.log("File exists in storage, marking as ready despite chunk creation error");
+          await supabase
+            .from("documents")
+            .update({
+              status: "ready",
+              error: "Chunk creation error but file accessible",
+            })
+            .eq("id", document.id);
+        } else {
+          console.log("File not found in storage, marking as failed");
+          await supabase
+            .from("documents")
+            .update({ status: "failed", error: chunkError.message })
+            .eq("id", document.id);
+        }
+      } catch (storageError) {
+        console.error("Error checking file in storage:", storageError);
+        await supabase
+          .from("documents")
+          .update({ status: "failed", error: chunkError.message })
+          .eq("id", document.id);
+      }
     }
 
     console.log("=== UPLOAD API SUCCESS (REAL STORAGE) ===");
