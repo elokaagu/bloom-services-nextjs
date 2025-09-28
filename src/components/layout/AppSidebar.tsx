@@ -186,7 +186,7 @@ export function AppSidebar({
                     Eloka Agu
                   </p>
                   <p className="text-xs text-muted-foreground truncate w-full">
-                    eloka@satellitelabs.xyz
+                    eloka@bloom.com
                   </p>
                 </div>
                 <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
@@ -197,7 +197,7 @@ export function AppSidebar({
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">Eloka Agu</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    eloka@satellitelabs.xyz
+                    eloka@bloom.com
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -228,7 +228,7 @@ export function AppSidebar({
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">Eloka Agu</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    eloka@satellitelabs.xyz
+                    eloka@bloom.com
                   </p>
                 </div>
               </DropdownMenuLabel>
