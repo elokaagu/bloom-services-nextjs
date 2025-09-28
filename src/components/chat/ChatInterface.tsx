@@ -109,44 +109,9 @@ export const ChatInterface = ({
 
       const data = await response.json();
 
-      // Check if we need to process documents
-      if (data.documentsFound > 0 && data.chunksFound === 0 && !data.error) {
-        // Try to process documents automatically
-        console.log("No chunks found, attempting to process documents...");
-        await processDocumentsIfNeeded();
-
-        // Try the chat request again
-        const retryResponse = await fetch("/api/simple-chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workspaceId,
-            userId,
-            question,
-          }),
-        });
-
-        const retryData = await retryResponse.json();
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: "assistant",
-          content: retryData.answer,
-          citations: retryData.citations?.map((c: any) => ({
-            id: c.chunkId?.toString() || c.index?.toString(),
-            documentTitle: c.documentTitle || `Document ${c.documentId}`,
-            snippet: c.text || "Retrieved from document",
-            relevanceScore: 0.9,
-          })),
-          timestamp: new Date(),
-          isError: false,
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-      } else {
-        // Normal response handling
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
+      // Normal response handling - the simple chat API handles everything
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
           type: "assistant",
           content: data.answer,
           citations: data.citations?.map((c: any) => ({
@@ -156,8 +121,8 @@ export const ChatInterface = ({
             relevanceScore: 0.9,
           })),
           timestamp: new Date(),
-          isError: !!data.error,
-          errorType: data.error ? "system" : undefined,
+          isError: false, // Simple chat API handles errors internally
+          errorType: undefined,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
