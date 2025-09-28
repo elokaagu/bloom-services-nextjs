@@ -7,17 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Zap, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { SignInModal } from "@/components/auth/SignInModal";
 
 export default function HomePage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
   const router = useRouter();
 
-  const handleGetStarted = () => {
-    setIsLoading(true);
-    // Simulate login/authentication
-    setTimeout(() => {
-      router.push("/app");
-    }, 1500);
+  const handleSignInSuccess = () => {
+    router.push("/app");
+  };
+
+  const handleSignInClick = () => {
+    setIsSignInOpen(true);
   };
 
   return (
@@ -91,20 +92,10 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary-hover"
-                  onClick={handleGetStarted}
-                  disabled={isLoading}
+                  onClick={handleSignInClick}
                 >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      <span>Connecting...</span>
-                    </div>
-                  ) : (
-                    <>
-                      Get Started
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
+                  Sign In
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -118,6 +109,13 @@ export default function HomePage() {
         <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-gradient-to-br from-success/20 to-transparent blur-3xl" />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
       </div>
+
+      {/* Sign In Modal */}
+      <SignInModal
+        isOpen={isSignInOpen}
+        onClose={() => setIsSignInOpen(false)}
+        onSuccess={handleSignInSuccess}
+      />
     </div>
   );
 }

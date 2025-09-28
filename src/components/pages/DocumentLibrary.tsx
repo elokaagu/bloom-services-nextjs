@@ -166,8 +166,10 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               id: doc.id,
               title: doc.title,
               type:
-                (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
-                "pdf",
+                (doc.title
+                  .split(".")
+                  .pop()
+                  ?.toLowerCase() as Document["type"]) || "pdf",
               size: doc.fileSize || "Size not available",
               uploadedAt: uploadDate.toLocaleDateString(),
               uploadedAtDate: uploadDate, // Keep original date for sorting
@@ -268,17 +270,33 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   // Sort the filtered documents
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     let comparison = 0;
-    
+
     console.log("Sorting by:", sortBy, "Direction:", sortDirection);
-    
+
     switch (sortBy) {
       case "uploadedAt":
         comparison = a.uploadedAtDate.getTime() - b.uploadedAtDate.getTime();
-        console.log("Date comparison:", a.title, a.uploadedAtDate, "vs", b.title, b.uploadedAtDate, "=", comparison);
+        console.log(
+          "Date comparison:",
+          a.title,
+          a.uploadedAtDate,
+          "vs",
+          b.title,
+          b.uploadedAtDate,
+          "=",
+          comparison
+        );
         break;
       case "title":
         comparison = a.title.localeCompare(b.title);
-        console.log("Title comparison:", a.title, "vs", b.title, "=", comparison);
+        console.log(
+          "Title comparison:",
+          a.title,
+          "vs",
+          b.title,
+          "=",
+          comparison
+        );
         break;
       case "size":
         // Parse size strings like "1.3 MB" to numbers for comparison
@@ -288,32 +306,59 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             const value = parseFloat(match[1]);
             const unit = match[2].toUpperCase();
             switch (unit) {
-              case 'KB': return value;
-              case 'MB': return value * 1024;
-              case 'GB': return value * 1024 * 1024;
-              default: return value;
+              case "KB":
+                return value;
+              case "MB":
+                return value * 1024;
+              case "GB":
+                return value * 1024 * 1024;
+              default:
+                return value;
             }
           }
           return 0;
         };
         comparison = parseSize(a.size) - parseSize(b.size);
-        console.log("Size comparison:", a.title, a.size, "vs", b.title, b.size, "=", comparison);
+        console.log(
+          "Size comparison:",
+          a.title,
+          a.size,
+          "vs",
+          b.title,
+          b.size,
+          "=",
+          comparison
+        );
         break;
       case "owner":
         comparison = a.owner.localeCompare(b.owner);
-        console.log("Owner comparison:", a.title, a.owner, "vs", b.title, b.owner, "=", comparison);
+        console.log(
+          "Owner comparison:",
+          a.title,
+          a.owner,
+          "vs",
+          b.title,
+          b.owner,
+          "=",
+          comparison
+        );
         break;
       default:
         return 0;
     }
-    
+
     const result = sortDirection === "desc" ? -comparison : comparison;
     console.log("Final result:", result);
     return result;
   });
 
   const handleSortChange = (newSortBy: string) => {
-    console.log("Sort changed to:", newSortBy, "Current direction:", sortDirection);
+    console.log(
+      "Sort changed to:",
+      newSortBy,
+      "Current direction:",
+      sortDirection
+    );
     if (newSortBy === sortBy) {
       // Toggle direction if same sort field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");

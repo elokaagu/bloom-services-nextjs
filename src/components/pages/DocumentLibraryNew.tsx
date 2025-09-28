@@ -166,8 +166,10 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
               id: doc.id,
               title: doc.title,
               type:
-                (doc.title.split(".").pop()?.toLowerCase() as Document["type"]) ||
-                "pdf",
+                (doc.title
+                  .split(".")
+                  .pop()
+                  ?.toLowerCase() as Document["type"]) || "pdf",
               size: doc.fileSize || "Size not available",
               uploadedAt: uploadDate.toLocaleDateString(),
               uploadedAtDate: uploadDate, // Keep original date for sorting
@@ -268,7 +270,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
   // Sort the filtered documents
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     let comparison = 0;
-    
+
     switch (sortBy) {
       case "uploadedAt":
         comparison = a.uploadedAtDate.getTime() - b.uploadedAtDate.getTime();
@@ -284,10 +286,14 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
             const value = parseFloat(match[1]);
             const unit = match[2].toUpperCase();
             switch (unit) {
-              case 'KB': return value;
-              case 'MB': return value * 1024;
-              case 'GB': return value * 1024 * 1024;
-              default: return value;
+              case "KB":
+                return value;
+              case "MB":
+                return value * 1024;
+              case "GB":
+                return value * 1024 * 1024;
+              default:
+                return value;
             }
           }
           return 0;
@@ -300,7 +306,7 @@ export const DocumentLibrary = ({ onDocumentView }: DocumentLibraryProps) => {
       default:
         return 0;
     }
-    
+
     return sortDirection === "desc" ? -comparison : comparison;
   });
 
