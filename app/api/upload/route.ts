@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase";
+import { createChunksForDocument } from "@/lib/chunk-creation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -119,28 +120,12 @@ export async function POST(req: NextRequest) {
 
     if (uploadError) {
       console.error("Storage upload error:", uploadError);
-      console.error("Upload error details:", {
-        message: uploadError.message,
-        statusCode: uploadError.statusCode,
-        error: uploadError.error,
-        url: uploadError.url,
-      });
-
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(
-        (bucket) => bucket.name === (process.env.STORAGE_BUCKET || "documents")
-      );
-
       return NextResponse.json(
         {
-          error: `Storage upload failed: ${uploadError.message}`,
-          details: {
-            bucket: process.env.STORAGE_BUCKET || "documents",
-            path: filePath,
-            bucketExists,
-            availableBuckets: buckets?.map((b) => b.name) || [],
-          },
+          error: "Upload failed",
+          details: uploadError.message,
+          fileSize: file.size,
+          fileName: file.name,
         },
         { status: 500 }
       );
@@ -148,19 +133,18 @@ export async function POST(req: NextRequest) {
 
     console.log("File uploaded successfully:", uploadData.path);
 
-    // Verify the file actually exists in storage
+    // Verify file exists in storage
     console.log("Verifying file exists in storage...");
     const { data: verifyData, error: verifyError } = await supabase.storage
       .from(process.env.STORAGE_BUCKET || "documents")
       .download(filePath);
 
-    if (verifyError) {
+    if (verifyError || !verifyData) {
       console.error("File verification failed:", verifyError);
       return NextResponse.json(
         {
-          error: `File uploaded but verification failed: ${verifyError.message}`,
-          uploadPath: uploadData.path,
-          verifyError: verifyError.message,
+          error: "File upload verification failed",
+          details: verifyError?.message,
         },
         { status: 500 }
       );
@@ -168,34 +152,31 @@ export async function POST(req: NextRequest) {
 
     console.log("File verification successful, file size:", verifyData.size);
     console.log("✅ FILE SUCCESSFULLY UPLOADED TO SUPABASE STORAGE");
-    console.log(
-      "Storage URL:",
-      `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.STORAGE_BUCKET}/${filePath}`
-    );
+
+    // Generate public URL
+    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.STORAGE_BUCKET}/${filePath}`;
+    console.log("Storage URL:", publicUrl);
 
     // Create document record in database
-    const documentData = {
-      title: title,
-      workspace_id: workspaceId,
-      owner_id: ownerId || "550e8400-e29b-41d4-a716-446655440002", // Default to John Doe if not provided
-      storage_path: filePath, // This will be just the filename now
-      status: "uploading", // Start with uploading status
-      acl: "workspace",
-    };
-
+    console.log("Creating document record in database...");
     const { data: document, error: docError } = await supabase
       .from("documents")
-      .insert([documentData])
+      .insert({
+        title: title,
+        storage_path: filePath,
+        storage_url: publicUrl,
+        file_size: file.size,
+        file_type: file.type,
+        workspace_id: workspaceId,
+        owner: ownerId,
+        status: "uploaded",
+        acl: "private",
+      })
       .select()
       .single();
 
     if (docError) {
       console.error("Database insert error:", docError);
-      // Clean up uploaded file
-      await supabase.storage
-        .from(process.env.STORAGE_BUCKET || "documents")
-        .remove([filePath]);
-
       return NextResponse.json(
         { error: `Database error: ${docError.message}` },
         { status: 500 }
@@ -204,92 +185,21 @@ export async function POST(req: NextRequest) {
 
     console.log("Document created in database:", document.id);
 
-    // Automatically create chunks for RAG
+    // Automatically create chunks for RAG using direct function call
     try {
       console.log("Starting automatic chunk creation for RAG...");
+      console.log("Calling direct chunk creation for document:", document.id);
+      
+      const chunkResult = await createChunksForDocument(document.id);
+      console.log("Automatic chunk creation completed:", chunkResult);
 
-      // Update status to processing
-      await supabase
-        .from("documents")
-        .update({ status: "processing" })
-        .eq("id", document.id);
-
-      // Call our working direct chunk creation API
-      console.log("Calling chunk creation API for document:", document.id);
-      const chunkResponse = await fetch(
-        `${req.nextUrl.origin}/api/create-chunks`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentId: document.id }),
-          // Add timeout to prevent hanging
-          signal: AbortSignal.timeout(60000), // 60 second timeout
-        }
-      );
-
-      if (chunkResponse.ok) {
-        const chunkResult = await chunkResponse.json();
-        console.log("Automatic chunk creation completed:", chunkResult);
-
-        if (chunkResult.success && chunkResult.chunksCreated > 0) {
-          // Update status to ready with chunk info
-          await supabase
-            .from("documents")
-            .update({
-              status: "ready",
-              error:
-                chunkResult.chunksFailed > 0
-                  ? `${chunkResult.chunksFailed} chunks failed`
-                  : null,
-            })
-            .eq("id", document.id);
-
-          console.log(
-            `✅ Document ready with ${chunkResult.chunksCreated} chunks`
-          );
-        } else {
-          // Chunk creation failed, but file is accessible
-          console.error("Chunk creation failed:", chunkResult);
-          await supabase
-            .from("documents")
-            .update({
-              status: "ready",
-              error: `Chunk creation failed: ${chunkResult.error || 'Unknown error'}`,
-            })
-            .eq("id", document.id);
-
-          console.log("⚠️ Document ready but no chunks created");
-        }
-      } else {
-        const errorText = await chunkResponse.text();
-        console.error("Chunk creation API failed:", chunkResponse.status, errorText);
-
-        // Even if chunk creation fails, mark as ready if file exists in storage
+      if (chunkResult.success && chunkResult.chunksCreated > 0) {
         console.log(
-          "Checking if file exists in storage despite chunk creation failure..."
+          `✅ Document ready with ${chunkResult.chunksCreated} chunks`
         );
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from(process.env.STORAGE_BUCKET || "documents")
-          .download(document.storage_path);
-
-        if (!fileError && fileData) {
-          console.log(
-            "File exists in storage, marking as ready despite chunk creation failure"
-          );
-          await supabase
-            .from("documents")
-            .update({
-              status: "ready",
-              error: `Chunk creation API failed: ${chunkResponse.status} - ${errorText}`,
-            })
-            .eq("id", document.id);
-        } else {
-          console.log("File not found in storage, marking as failed");
-          await supabase
-            .from("documents")
-            .update({ status: "failed", error: errorText })
-            .eq("id", document.id);
-        }
+      } else {
+        console.log("⚠️ Document ready but no chunks created");
+        console.error("Chunk creation failed:", chunkResult);
       }
     } catch (chunkError) {
       console.error("Error triggering automatic chunk creation:", chunkError);
@@ -308,7 +218,11 @@ export async function POST(req: NextRequest) {
             .from("documents")
             .update({
               status: "ready",
-              error: `Chunk creation error: ${chunkError instanceof Error ? chunkError.message : 'Unknown error'} - but file accessible`,
+              error: `Chunk creation error: ${
+                chunkError instanceof Error
+                  ? chunkError.message
+                  : "Unknown error"
+              } - but file accessible`,
             })
             .eq("id", document.id);
         } else {
@@ -337,7 +251,8 @@ export async function POST(req: NextRequest) {
     console.error("=== UPLOAD API ERROR ===", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Upload failed",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
