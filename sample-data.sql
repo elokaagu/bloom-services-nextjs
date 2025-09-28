@@ -2,7 +2,7 @@
 -- Run this in your Supabase SQL Editor after running the schema
 
 -- Insert sample organization and workspace
-INSERT INTO organizations (id, name) VALUES ('550e8400-e29b-41d4-a716-446655440000', 'Acme Corp');
+INSERT INTO organizations (id, name) VALUES ('550e8400-e29b-41d4-a716-446655440000', 'Bloom');
 INSERT INTO workspaces (id, organization_id, name) VALUES ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440000', 'Policy Research');
 INSERT INTO users (id, email, name) VALUES ('550e8400-e29b-41d4-a716-446655440002', 'john.doe@example.com', 'John Doe');
 INSERT INTO workspace_members (user_id, workspace_id, role) VALUES ('550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440001', 'admin');

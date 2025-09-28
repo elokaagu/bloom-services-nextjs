@@ -22,22 +22,22 @@ const mockWorkspaces: Workspace[] = [
   {
     id: "550e8400-e29b-41d4-a716-446655440001",
     name: "Policy Research",
-    organization: "Acme Corp",
+    organization: "Bloom",
   },
   {
     id: "550e8400-e29b-41d4-a716-446655440002",
     name: "Financial Reports",
-    organization: "Acme Corp",
+    organization: "Bloom",
   },
   {
     id: "550e8400-e29b-41d4-a716-446655440003",
     name: "HR Documentation",
-    organization: "Acme Corp",
+    organization: "Bloom",
   },
   {
     id: "550e8400-e29b-41d4-a716-446655440004",
     name: "Security & Compliance",
-    organization: "TechFlow Inc",
+    organization: "Bloom",
   },
 ];
 
@@ -168,20 +168,22 @@ export const BloomApp = () => {
   const handleSourceView = async (citation: Citation) => {
     try {
       console.log("Opening source document:", citation.documentId);
-      
+
       // Find the document in the current workspace's documents
-      let document = documents.find(doc => doc.id === citation.documentId);
-      
+      let document = documents.find((doc) => doc.id === citation.documentId);
+
       // If not found by ID, try to find by title
       if (!document && citation.documentTitle) {
-        document = documents.find(doc => doc.title === citation.documentTitle);
+        document = documents.find(
+          (doc) => doc.title === citation.documentTitle
+        );
       }
-      
+
       // If still not found, use the first available document
       if (!document && documents.length > 0) {
         document = documents[0];
       }
-      
+
       if (!document) {
         toast({
           title: "Document not found",
@@ -190,10 +192,9 @@ export const BloomApp = () => {
         });
         return;
       }
-      
+
       // Use the existing handleDocumentView function to open the document
       await handleDocumentView(document);
-      
     } catch (error) {
       console.error("Error opening source document:", error);
       toast({
